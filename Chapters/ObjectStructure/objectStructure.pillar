@@ -13,15 +13,21 @@ In both 32 and 64 bits, every object is 64 bits aligned. However, the object poi
 
 !!! Immediate objects
 
-Immediate objects are objects directly encoded in the pointer to the object it points to. In 32 bits, immediate objects are SmallIntegers and Characters. 
-In 64 bits, immediate objects are SmallIntegers, Characters and SmallFloats.
+Immediate objects are objects directly encoded in the pointer to the object it points to. In 32 bits, immediate objects are SmallIntegers and Characters (see Figure *@32bitsimm*). It means that String accessing low-level operation such as ==at:== and ==at:put:== are faster since there is not Character instance creation (==at:put:==) or extra referencing (==at:==).
 
-!!! 32 bits immediate objects
+In 64 bits, immediate objects are SmallIntegers, Characters and SmallFloats (see Figure *@64bitsimm*).
+This is possible since objects are aligned on 64 bits (8 bytes).
+
++32 bits immediate objects.>figures/32bitsImmediate.pdf|width=100|label=32bitsimm+
 
 
++64 bits immediate objects.>figures/32bitsImmediate.pdf|width=100|label=64bitsimm+
 
+!!!! The case of SmallFloat
 
+Figure *@64bitsfloatimm* shows the structure of SmallFloat. 
 
++64 bits immediate objects.>figures/64bitsFloatImmediate.pdf|width=100|label=64bitsfloatimm+
 
 !!! Object Header
 
@@ -46,3 +52,8 @@ The object format is given that the 5 bits (in pink) on the object header.
 !!! Resources
 
 - Spur *http://www.mirandabanda.org/cogblog/2013/09/05/a-spur-gear-for-cog/*
+- *https://clementbera.wordpress.com/category/spur/*
+- *https://clementbera.wordpress.com/2018/11/09/64-bits-immediate-floats/*
+- *https://clementbera.wordpress.com/2014/01/16/spurs-new-object-format/*
+- *https://clementbera.wordpress.com/2014/02/06/7-points-summary-of-the-spur-memory-manager/*
+- *http://www.mirandabanda.org/cogblog/category/spur/page/3/*
