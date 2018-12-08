@@ -21,7 +21,7 @@ This is possible since objects are aligned on 64 bits (8 bytes).
 +32 bits immediate objects.>figures/32bitsImmediate.pdf|width=100|label=32bitsimm+
 
 
-+64 bits immediate objects.>figures/32bitsImmediate.pdf|width=100|label=64bitsimm+
++64 bits immediate objects.>figures/64bitsImmediate.pdf|width=100|label=64bitsimm+
 
 !!!! The case of SmallFloat
 
