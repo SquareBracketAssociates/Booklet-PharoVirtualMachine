@@ -1,8 +1,8 @@
+_result
 **/*.aux 
 **/*.DS_Store
 **/*.out
 **/*.log
 **/*.synctex.gz
-*.pdf
 **/*.blg
 
