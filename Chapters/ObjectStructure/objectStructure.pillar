@@ -1,0 +1,48 @@
+!! Understanding Object Structure
+
+
+!!! About the Spur memory model
+
+The Spur memory model has been designed by E. Miranda . Its design is made to work on both on 32 and 64 bits. 
+
+| Architecture | 1 word size | Bytes | Header size | Alignment
+| 32 bits | 32 Bits | 4 bytes | 64 bits | 32 bits |
+| 64 bits | 64 Bits | 8 bytes | 64 bits | 64 bits |
+
+In both 32 and 64 bits, every object is 64 bits aligned. However, the object pointer representation is different.
+
+!!! Immediate objects
+
+Immediate objects are objects directly encoded in the pointer to the object it points to. In 32 bits, immediate objects are SmallIntegers and Characters. 
+In 64 bits, immediate objects are SmallIntegers, Characters and SmallFloats.
+
+!!! 32 bits immediate objects
+
+
+
+
+
+
+!!! Object Header
+
++Object Structure>figures/ObjectHeader.pdf|width=100+
+
+In memory, some memory location contain information representing objects. 
+Such location coded on 64 bits describes the 
+
+The object format is given that the 5 bits (in pink) on the object header. 
+
+- 0 : 0 sized object - nil, true, false
+- 1 : fixed sized object with instance variables - Point
+- 2 : variable sized object with no instance variables - Array
+- 3 : variable sized objects with instance variables - MethodContext
+- 4 : weak variable sized objects  - WeakArray
+- 5 : weak fixed sized objects with instance variables - Ephemeron
+- 6, 7, 8 : unused
+- 9 : 64 bits indexable
+- 10-11 : 32 bits indexable
+
+
+!!! Resources
+
+- Spur *http://www.mirandabanda.org/cogblog/2013/09/05/a-spur-gear-for-cog/*

@@ -1,8 +1,7 @@
-!My First book
+! Pharo Virtual Machine
 
 
-${inputFile:path=Chapters/Chapter1/chapter1.pillar}$
+${inputFile:path=Chapters/ObjectStructure/objectStructure.pillar}$
 
-${inputFile:path=Chapters/Chapter2/chapter2.pillar}$
 
 
