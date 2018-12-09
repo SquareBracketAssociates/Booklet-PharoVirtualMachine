@@ -3,7 +3,7 @@
 
 !!! About the Spur memory model
 
-The Spur memory model has been designed by E. Miranda . Its design is made to work on both on 32 and 64 bits. 
+The Spur memory model has been designed by E. Miranda . Its design is made to work on both on 32 and 64 bits. This chapter is inspired from the blog posts of Clément Béra.
 
 | Architecture | 1 word size | Bytes | Header size | Alignment
 | 32 bits | 32 Bits | 4 bytes | 64 bits | 32 bits |
@@ -100,6 +100,15 @@ Some object formats have several possible bits value. For instance, 32 bits inde
 
 
 !!! About class index and class table
+
+A header object has its class index. There is a need for extra explanations to understand how the system can access fast to the class of the object.
+Indeed looking up the class associated to the class index during each message send is clearly dramatic from a speed perspective. Let us see how this aspect is taken into account:
+
+- A class identity hash is its index in the table. Both the class identity hash and class index are 22 bits length. The additional benefit is that every class has a different identity hash: there is no clash possible.
+- Here is how the class message is speed it up. 
+-- The class table is a linked list of pages, with a class list on each page. Most common classes are put on the first page to avoid walking over all the pages to fetch an object's class.
+-- The class index does not change over time. It means that optimisations such as the inline cache can compare directly class index.
+
 
 
 !!! Resources
