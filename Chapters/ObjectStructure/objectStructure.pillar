@@ -53,10 +53,27 @@ Figure *@64bitsfloatimm* shows the structure of SmallFloat.
 
 !!! Object Header
 
-+Object Structure>figures/ObjectHeader.pdf|width=100+
+For objects that are not immediate, a reference will point to an object header.
+An object header is 64 bits length, which means it is 2 words in 32 bits and 1 word in 64 bits as shown in Figure *@objectheader*.
 
-In memory, some memory location contain information representing objects. 
-Such location coded on 64 bits describes the 
+
+
++Object Header.>figures/ObjectHeader.pdf|width=100|label=objectheader+
+
+Let us explain the object header structure:
+
+- The first left topmost 8 red/orange f marked bits represent the number of instance variables (or fields) of the object. When an abject has more than 254 fields, then an additional 64 bits word is allocated as a header extension with the correct size. When the 8 bits represent 255, the VM knows that there is a header extension.
+- The 22 h marked top right light blue bits are for the object identity hash.
+- The 5 pink bottom left o marked bits represent object formats as we will explain later. 
+- The 22 c yellow bottom right bits are for the class index. In Spur, there is a class table (managed as pages) where each class is given an index. An object class index is the index of the class in that table.
+- The 7 green X marked remaining bits are allocated for different reasons:
+-- 1 bit is reserved for immutability.
+-- 1 bit is reserved to mark the object as pinned. Basically, a pinned object is an object that cannot move in memory. Usually, objects are moved around by the GC. But not the pinned object. A pinned object will have this bit set.
+-- 3 bits are reserved for the GC: isGray (for tri-color marking), isRemembered (for the remembered table from old space to young space) and isMarked (for the GC mark phasis). 
+-- 2 bits are free.
+
+
+!!! Object format
 
 The object format is given that the 5 bits (in pink) on the object header. 
 
