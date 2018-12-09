@@ -75,17 +75,31 @@ Let us explain the object header structure:
 
 !!! Object format
 
-The object format is given that the 5 bits (in pink) on the object header. 
+The object format is represented by the 5 bits o marked (in pink) of the object header. It encodes the following information. 
 
-- 0 : 0 sized object - nil, true, false
-- 1 : fixed sized object with instance variables - Point
-- 2 : variable sized object with no instance variables - Array
-- 3 : variable sized objects with instance variables - MethodContext
-- 4 : weak variable sized objects  - WeakArray
-- 5 : weak fixed sized objects with instance variables - Ephemeron
+- 0 : 0 sized object - ==nil==, ==true==, ==false==
+- 1 : fixed sized object with instance variables - ==Point==
+- 2 : variable sized object with no instance variables - ==Array==
+- 3 : variable sized objects with instance variables - ==MethodContext==
+- 4 : weak variable sized objects  - ==WeakArray==
+- 5 : weak fixed sized objects with instance variables - ==Ephemeron==
 - 6, 7, 8 : unused
 - 9 : 64 bits indexable
-- 10-11 : 32 bits indexable
+- 10 -11 : 32 bits indexable
+- 12 - 15 : 16 bits indexable
+- 16 - 23 : 8 bits indexable
+- 24 - 31 : compiled methods 
+
+The format shows that a format can represent different kinds of indexable arrays: 8, 16, 32  and 64 bits indexable arrays. 
+This corresponds to ByteArray (8 bits), WordArray (32 bits unsigned integers).  See ShortRunArray, RunArray implementations and uses.
+
+
++Taking advantages of multiple bits values for indexable.>figures/32IndexableLastField.png|width=100|label=multipleBits+
+
+Some object formats have several possible bits value. For instance, 32 bits indexable can have 10 or 11 as a bits value. This is because the bit value indicates to the VM where the last slot of the object is in its last word (see Figure *@multipleBits*).
+
+
+!!! About class index and class table
 
 
 !!! Resources
