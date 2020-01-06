@@ -1,0 +1,37 @@
+
+The memory map of the image is the following.
+
++Memory Map>figures/memoryMap.pdf|width=250|label=memoryMap+
+
+In the lower address of the memory there is the C Stack, this is the stack used by the C Code and also the stack pages are allocated in this stack.
+Then the new space is, the new space is divided in three areas the Eden (5/7 of the space), the past (1/7 of the new space) and the future (1/7 of the new space).
+
+The GC is generational.
+
+For the new objects, a copying algorithm is used. Using two spaces, future and past space. 
+With the additional use of an eden for the new objects.
+
+For the old objects, in the old space, a compacting algorithm is used. 
+
+Then new objects are created in the eden, when the eden is full a scavenge is performed. 
+We call "scavenge" the operation of recovering space in the new space only.
+
+The scavenge takes all the roots and traverse all the objects, if the object is traversed it is copied to the future space. 
+Also, all the objects in the past space are also copied to the future space. 
+
+Once the scavenge is finished, the future and past spaces are switched.
+All the references of objects that have been copied are updated. 
+It updates the references in the past space and the ones in the old space (using the remembered set, see later!)
+
+If during the copy to the past space the objects does not fit, they are copied to the old space. 
+
+!!Roots
+
+The GC uses the following elements as roots: 
+
+- The stack of the processes running in the image
+- The remembered set (a set of objects that are in the old space and have references to the new space.)
+
+!! API
+
+The memory representation has two different API, one that will fail if there is no memory and the other that will execute an scavenge or a full-GC if needed.
