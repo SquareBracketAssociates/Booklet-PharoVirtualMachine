@@ -1,0 +1,2 @@
+The objective of this directory is to store the material that is publicly available in the internet in an ordered way, so it is kept for archiving.
+The content here has been produced by their authors and have been downloaded and saved for later access.
