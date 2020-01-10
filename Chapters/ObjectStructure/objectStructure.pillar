@@ -1,6 +1,5 @@
 !! Understanding Object Structure
 
-
 !!! About the Spur memory model
 
 The Spur memory model has been designed by E. Miranda . Its design is made to work on both on 32 and 64 bits. This chapter is inspired from the blog posts of Clément Béra.

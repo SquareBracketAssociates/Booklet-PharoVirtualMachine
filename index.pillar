@@ -1,9 +1,5 @@
 ! Pharo Virtual Machine
 
-
 ${inputFile:path=Chapters/ObjectStructure/objectStructure.pillar}$
 
 ${inputFile:path=Chapters/GarbageCollector/garbageCollector.pillar}$
-
-
-
