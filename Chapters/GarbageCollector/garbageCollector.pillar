@@ -4,7 +4,7 @@
 
 The memory map of the image is the following.
 
-+Memory Map>figures/memoryMap.pdf|width=250|label=memoryMap+
++Memory Map>figures/memoryMap2.pdf|width=250|label=memoryMap+
 
 In the lower address of the memory there is the Stack (both Pharo and C), this is the stack used by the C Code and also the stack pages are allocated in this stack.
 Then, the new space is divided in three areas: Eden (5/7 of the new space) and two other areas (1/7 of the new space each) that alternatively play the role of past and future space.
