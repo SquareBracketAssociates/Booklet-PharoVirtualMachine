@@ -5,3 +5,5 @@ ${inputFile:path=Chapters/ObjectStructure/objectStructure.pillar}$
 ${inputFile:path=Chapters/GarbageCollector/memoryStructure.pillar}$
 ${inputFile:path=Chapters/GarbageCollector/newSpace.pillar}$
 ${inputFile:path=Chapters/GarbageCollector/oldSpace.pillar}$
+${inputFile:path=Chapters/GarbageCollector/freeListMemory.pillar}$
+${inputFile:path=Chapters/GarbageCollector/ephemerons.pillar}$
