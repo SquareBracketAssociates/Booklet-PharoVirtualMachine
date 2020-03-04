@@ -68,7 +68,37 @@ If the old object in the remembered set does not have any more the references to
 
 !!! Weak list structure
 
-#todo
+When copying an object, the scavenger leaves a forwarder to the new location.
+When copying a weak object, the scavenger leaves a __corpse__.
+The weak list is a linked list of the __corpses__.
+Each corpse contains the address to the new location of the weak object and a reference to the next corpse in the weak list.
+
+A corpse is a normal forwarder.
+The memory format guarantees that every single object has at least one slot.
+This slot is used to hold the forwarded reference.
+It also guarantees that there is a 64 bits header.
+As there is no waranty that the object than more than one slot, the address of the next corpse in the weak list has to be encoded in the object's header.
+
+All the addresses of the corpses, including the one in the weakList instance variable (in the SpurGenerationScavenger), are offsets from the start of the New space.
+This offset is expressed in allocationUnits size (8 bytes).
+The offset starts in 1 to detect if the list has ended, a zero value for the offset is not a valid corpse marking the end of the link list.
+
+This offset is encoded in 27 bits of the object header (22 bits of the hash and 5 bits of the format).
+The remaining part of the header's informations are used by the scavenger.
+For example, the class index is used to know which objects are forwarders.
+With this trick, we can address objects inside the new space of a maximum size of one gigabyte.
+The current calculation of the VM to find the next corpse from the current one is the following:
+[[[
+allocationUnit = 8.
+offset = (formatBits + (hashbit << 5)) * allocationUnit.
+nextCorpseAddress = offset - 1 + newSpaceStart.
+]]]
+
+The corpses are added to the list in the beginning of the list. The head of the list is the last added corpse.
+This allows the scavenger not to traverse the whole list to add a new corpse.
+
+The weak list is built in the scavenging and it is discarded after it ends. 
+
 
 
 !! Ephemerons 
