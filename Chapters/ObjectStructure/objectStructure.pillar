@@ -1,12 +1,13 @@
 !! Understanding Object Structure
 
+
 !!! About the Spur memory model
 
-The Spur memory model has been designed by E. Miranda . Its design is made to work on both on 32 and 64 bits. This chapter is inspired from the blog posts of Clément Béra.
+The Spur memory model has been designed by E. Miranda. Its design is made to work on both on 32 and 64 bits. This chapter is inspired from the blog posts of Clément Béra.
 
 | Architecture | 1 word size | Bytes | Header size | Alignment
-| 32 bits | 32 Bits | 4 bytes | 64 bits | 32 bits |
-| 64 bits | 64 Bits | 8 bytes | 64 bits | 64 bits |
+| 32 bits | 32 bits | 4 bytes | 64 bits | 32 bits |
+| 64 bits | 64 bits | 8 bytes | 64 bits | 64 bits |
 
 In both 32 and 64 bits, every object is 64 bits aligned. However, the object pointer representation is different.
 
@@ -14,7 +15,7 @@ In both 32 and 64 bits, every object is 64 bits aligned. However, the object poi
 
 The fact that object addresses are all aligned either on 32 bits or 64 bits (on 64 bits architecture) is an important fact. Indeed some bits are not used to address objects so that they can be used to encode extra information. 
 
-For example, when a word is 32bits (i.e., 4 bytes) all the addresses are multiple of 4. It means that the last two bits are always zero.
+For example, when a word is 32 bits (i.e., 4 bytes) all the addresses are multiple of 4. It means that the last two bits are always zero.
 
 [[[
 4 storeStringBase: 2.
