@@ -1,0 +1,61 @@
+!!The Scavenger
+
+The scavenger is periodically triggered on some events such as: the eden is full i.e. left space reached a predefined threshold.
+There are multiple scavenger policies but the main one consists in emptying the eden space by copying surviving objects (i.e. still reachable objects from ""root objects"") into the future space. 
+If the future space is full (or reached a threshold) during the scavenge, some objects are ""tenured""  i.e. transferred into the old space.
+
+The scavenger does not iterate over all objects into the Eden space.
+Instead, the scavenger iterates over all the ==root objects==. 
+A root retains the objects it references.
+There are three kind of roots:
+
+- objects referenced in the stack i.e. used as receivers or parameters
+- objects stored in the remembered set. This set contains all objects that are in the old space and contain at least one reference to an object in the new space
+- special objects known by the VM such as: nil, true, false, class table, etc
+
+The scavenger starts by copying roots references allocated into Eden or Past spaces into the future space. 
+Then, it traverses these copied objects and copies their referenced objects that resides into Eden or Past space into the future space.
+At the same time, traversed references are fixed to correctly reference the copied objects.  
+Similarly, root objects references are also updated.
+Finally, the future space contains all reachable objects from roots that were present into the Eden and Past spaces.
+Moreover, all their references have been updated to correctly point to objects into the future space.
+If the future space is filled during the scavenge, some objects are tenured i.e. copied into the old space. 
+There are multiple strategies regarding the tenuring of objects:
+
+- By age, using the addresses in the past (older objects have smaller the addresses)
+- Tenure to shrink the remembered table, it is used when the remembered set is too big
+- Instances of a given class, it is used by the ==someInstance== primitive before its execution making all instances available into the old space. 
+
+Once the scavenge is finished, the future and past spaces are switched; it just means that the future space is now considered as the Past space and vice-versa.
+
+
+!!!!Example of a Scavenger Pass 
+
+[[[
+Roots references: A, C
+
+B -> D
+C -> A
+A -> B
+A -> C
+E
+]]]
+
+- Step 1: copy roots references
+future space: A, C
+
+- Step 2: We go over first surviving object (A)
+future space: A, C, B
+(C was already copied, so we just update the reference)
+
+- Step 3: We go over second surviving object (C)
+future space: A, C, B
+(C points to A, but A was already copied, so we just update the reference)
+
+- Step 4: We go over next surviving object (B)
+future space: A, C, B, D
+
+- Step 5: We go over next surviving object (D)
+Nothing to do, and nothing new in future space
+
+- Step 6: exchange past and future spaces
