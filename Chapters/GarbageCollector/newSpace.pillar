@@ -1,4 +1,13 @@
-!!The Scavenger
+!!The New Space
+
+!!! New Space Memory Layout
+
+The new space is divided into three areas (cf. Figure *@youngSpace*): Eden (5/7 of the new space) and two other areas (1/7 of the new space each) that alternatively play the role of past and future space.
+The VM always allocate new objects into the Eden space.
+
++The New Space Structure>figures/youngSpace.pdf|width=100|label=youngSpace+
+
+!!!The Scavenger
 
 The scavenger is periodically triggered on some events such as: the eden is full i.e. left space reached a predefined threshold.
 There are multiple scavenger policies but the main one consists in emptying the eden space by copying surviving objects (i.e. still reachable objects from ""root objects"") into the future space. 

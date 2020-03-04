@@ -1,20 +1,73 @@
-!!Memory Structure and Garbage Collection
+!! The Spur Memory Manager Overview
 
-!!!Memory Structure
+The Spur virtual machine implements an object memory manager.
+An object memory manager is a memory manager whose allocation unit are objects.
+In contrast with the operating system memory manager that manipulates raw memory, the Spur memory manager manipulates only objects.
+For example, the lowest-level allocation operation is to allocate an object specifying the desired number of slots, format and class index.
+We will study in subsequent chapters the object format, and what these three arguments mean.
 
-The memory map maintained by the VM is depicted on Figure *@memoryMap*.
+[[[smalltalk
+memoryManager
+  allocateSlots: numberOfSlots
+  format: instanceSpecification
+  classIndex: classIndex
+]]]
+
+The virtual machine tracks the life-cycle of all objects it allocates.
+The memory manager implements an automatic garbage collection mechanism.
+It detects when an object has no more incoming references, and deallocates it.
+The garbage collector of Spur is precise and generational.
+It is precise because it distinguishes non-ambiguously object pointers from random memory adresses.
+It is generational because it categorizes objects ""by age"", treating them differently depending on their age.
+
+In this chapter we do an overview of the Spur memory manager, and the concepts behind it.
+We will study how the memory is organized, how object generations impacts this organization, and how objects grow old in this generational setup.
+
+!!! Memory Structure Overview
+
+The Spur memory manager layouts its memory in two main sections: the new space and the old space.
+The new space contains objects considered young i.e., objects that have been recently created.
+The old space contains objets that did survive in the new space for some time, and were promoted as adults in the old space.
+
+At startup, the memory manager requests the operating system a chunk of raw memory to store the new space and the old space.
+The memory manager uses the first part of this memory as the new space, and the rest as old space.
+Figure *@memoryMap* depicts how the two spaces are laid-out in memory, considering that lower addresses are at the left, and higher addresses are at the right.
 
 +Memory Map>figures/memoryMap.pdf|width=100|label=memoryMap+
 
-The Stack (both Pharo and C) resides in the lower address of the memory.
-This is the stack used by the C Code and also the stack pages are allocated in this stack.
-All the execution of a process stores the information in the stack.
-The stack is the real representation of the contexts in the image. 
-The frames are in a sequence, in the stack. 
-Each frame knows the calling frame with a pointer. 
-Objects referenced into stack frames are retained i.e. never garbage collected.
+The new space and the old space are contiguous: the old space starts where the new space ends.
+This way, the VM easily determines if an object is old or young by comparing its address against the limit of the new space.
+We can query the memory manager for the limits of the new space using the ==newSpaceStart== and ==newSpaceLimit== messages.
 
-The young space (also called new space) is used by the VM to create objects and manage short-life objects.
+[[[smalltalk
+memoryManager newSpaceStart.
+memoryManager newSpaceLimit.
+]]]
+
+
+On the one hand, the new space is fixed and does not grow after it is allocated.
+On the other hand, the old space is organized in segments, and it grows by allocating new segments on demand.
+
+!!! Spur Generational Garbage Collection
+
+Spur implements a generational automatic garbage collector based on an heuristic named the generational hypothesis.
+The generational hypothesis states that most objects die young, specially true in highly-interactive applications, so young objects are stored separately than old objects.
+The memory manager allocates by default objects in the new space.
+When the new space has little space left, it is garbage collected using a copy collection algorithm named generation scavenger, that we will explore in detail in a following chapter.
+The new space is much smaller than the old space, so garbage collecting it is fast, producing unnoticeable application pauses.
+If the generational hypothesis holds, unused young objects are reclaimed shortly after their instantiation and never moved to the old space.
+
+Objects that are not reclaimed during a garbage collection are called survivors.
+As objects survive several new space garbage collections they grow old.
+Eventually, objects old-enough are ""tenured"": they are moved to the old space.
+The old space is several times bigger than the new space, thus garbage collecting it is expensive and creates long application pauses.
+Most objects are collected during new space collections, so collect the old space is not often required.
+
+When the old space has little space left, a mark-compact collection algorithm reclaims unused objects. This algorithm first marks all used objects, and then scans the entire old space freeing unmarked objects and compacting the memory.
+
+!!! New Space Overview
+
+The new space, also called young space, is used by the VM to create objects and manage short-life objects.
 The old space contains objects that survived longer. 
 
 Statistics shows that new objects die faster than older ones, therefore many objects will be discarded fastly.
@@ -26,33 +79,21 @@ This garbage collector is slower and run less often than the scavenger but the n
 
 Note that when saving the image, only the old space is saved. 
 
-In Pharo, the __TimeProfiler__ tool can report on memory usage metrics and GCs passes. 
-For example, the execution of this expression:
+When the VM starts, it requires memory from the operating system to store all objects from the read image.
+In addition, it asks memory for the new space, plus some headroom to allocate objects in the old space.
 
-[[[
-[ 10000 timesRepeat: [ Object new ] ] timeProfile
-]]]
+!!! Segments Management
 
-produces this report:
+!!! The Stack
 
-[[[
-**Memory**
-	old			+0 bytes
-	young		-4,956,688 bytes
-	used		-4,956,688 bytes
-	free		+4,956,688 bytes
-]]]
-
-It means that only young space has been used and freed.
-It is obvious because no references to these newly created objects have been stored.
+The Stack (both Pharo and C) resides in the lower address of the memory.
+This is the stack used by the C Code and also the stack pages are allocated in this stack.
+All the execution of a process stores the information in the stack.
+The stack is the real representation of the contexts in the image. 
+The frames are in a sequence, in the stack. 
+Each frame knows the calling frame with a pointer. 
+Objects referenced into stack frames are retained i.e. never garbage collected.
 
 !!! APIs
 
 The VM has two different APIs to manipulate the memory: one that will fail if there is no memory and the other one that will execute a scavenge or a full-GC if needed.
-
-!!!The New Space
-
-The new space is divided into three areas (cf. Figure *@youngSpace*): Eden (5/7 of the new space) and two other areas (1/7 of the new space each) that alternatively play the role of past and future space.
-The VM always allocate new objects into the Eden space.
-
-+The New Space Structure>figures/youngSpace.pdf|width=100|label=youngSpace+

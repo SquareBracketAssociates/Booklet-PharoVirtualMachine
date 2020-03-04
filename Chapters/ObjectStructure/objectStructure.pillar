@@ -1,20 +1,27 @@
 !! Understanding Object Structure
 
+
 !!! About the Spur memory model
 
-The Spur memory model has been designed by E. Miranda . Its design is made to work on both on 32 and 64 bits. This chapter is inspired from the blog posts of Clément Béra.
+The Spur memory model has been designed by E. Miranda. Its design is made to work on both on 32 and 64 bits. This chapter is inspired from the blog posts of Clément Béra.
+
+The following table summarizes the situation. 
 
 | Architecture | 1 word size | Bytes | Header size | Alignment
-| 32 bits | 32 Bits | 4 bytes | 64 bits | 32 bits |
-| 64 bits | 64 Bits | 8 bytes | 64 bits | 64 bits |
+| 32 bits         | 32 bits         | 4 bytes | 64 bits       | 32 bits |
+| 64 bits         | 64 bits         | 8 bytes | 64 bits       | 64 bits |
 
-In both 32 and 64 bits, every object is 64 bits aligned. However, the object pointer representation is different.
+In both 32 and 64 bits, every object is 64 bits aligned. The object header takes the same space. 
+
+
++Alignment, object header and architecture.>figures/Alignment.pdf|width=100|label=alignment+
 
 !!!! About alignment
 
-The fact that object addresses are all aligned either on 32 bits or 64 bits (on 64 bits architecture) is an important fact. Indeed some bits are not used to address objects so that they can be used to encode extra information. 
+The fact that object addresses are all aligned either on 32 bits or 64 bits (on 64 bits architecture) is an important fact. Indeed some bits are not used to address objects so that they can be used to encode extra information. Figure*@alignment* describes this situation. 
+Depending on the architecture, aligned addresses are either multiple of 4 or 8 octets. Still the object header is 64 bits long and occupies either one word or two words (on 32 bits architecture). 
 
-For example, when a word is 32bits (i.e., 4 bytes) all the addresses are multiple of 4. It means that the last two bits are always zero.
+For example, when a word is 32 bits (i.e., 4 bytes) all the addresses are multiple of 4. It means that the last two bits are always zero.
 
 [[[
 4 storeStringBase: 2.
@@ -67,7 +74,7 @@ Let us explain the object header structure:
 - The 22 c yellow bottom right bits are for the class index. In Spur, there is a class table (managed as pages) where each class is given an index. An object class index is the index of the class in that table.
 - The 7 green X marked remaining bits are allocated for different reasons:
 -- 1 bit is reserved for immutability.
--- 1 bit is reserved to mark the object as pinned. Basically, a pinned object is an object that cannot move in memory. Usually, objects are moved around by the GC. But not the pinned object. A pinned object will have this bit set.
+-- 1 bit is reserved to mark the object as pinned. Basically, a pinned object is an object that cannot move in memory. Usually, objects are moved around by the GC. But not a pinned object. A pinned object will have this bit set.
 -- 3 bits are reserved for the GC: isGray (for tri-color marking), isRemembered (for the remembered table from old space to young space) and isMarked (for the GC mark phasis). 
 -- 2 bits are free.
 
@@ -103,8 +110,8 @@ Some object formats have several possible bits value. For instance, 32 bits inde
 A header object has its class index. There is a need for extra explanations to understand how the system can access fast to the class of the object.
 Indeed looking up the class associated to the class index during each message send is clearly dramatic from a speed perspective. Let us see how this aspect is taken into account:
 
-- A class identity hash is its index in the table. Both the class identity hash and class index are 22 bits length. The additional benefit is that every class has a different identity hash: there is no clash possible.
-- Here is how the class message is speed it up. 
+- A class identity hash is its index in the class table. Both the class identity hash and class index are 22 bits length. The additional benefit is that every class has a different identity hash: there is no clash possible.
+- Here is how the ==class== message is sped up. 
 -- The class table is a linked list of pages, with a class list on each page. Most common classes are put on the first page to avoid walking over all the pages to fetch an object's class.
 -- The class index does not change over time. It means that optimisations such as the inline cache can compare directly class index.
 
