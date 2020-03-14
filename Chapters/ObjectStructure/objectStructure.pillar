@@ -1,8 +1,6 @@
 !! Understanding Object Structure
-
-In this chapter we will present how object are represented in memory. 
-The object structure of the Pharo VM is part of the Spur memory model that has been designed by E. Miranda. 
-This chapter is inspired from the blog posts of Clément Béra.
+In this chapter we present how objects are represented in memory. 
+The object structure of the Pharo VM is part of the Spur memory model.
 
 !!! About the Spur memory model
 Its design is made to work on both on 32 and 64 bits. The following table summarizes the situation. 
@@ -11,33 +9,31 @@ Its design is made to work on both on 32 and 64 bits. The following table summar
 | 32 bits         | 32 bits         | 4 bytes | 64 bits       | 32 bits |
 | 64 bits         | 64 bits         | 8 bytes | 64 bits       | 64 bits |
 
-In both 32 and 64 bits, every object is 64 bits aligned. The object header takes the same space. 
+In both 32 and 64 bits, every object is 64 bits aligned. The object header takes the same space.
 
++Alignment, object header and architecture.>figures/Aligment.pdf|width=90|label=alignment+
 
-+Alignment, object header and architecture.>figures/Aligment.pdf|width=100|label=alignment+
-
-!!!! About alignment
-
+!!!!!About alignment.
 The fact that object addresses are all aligned either on 32 bits or 64 bits (on 64 bits architecture) is an important fact. Indeed some bits are not used to address objects so that they can be used to encode extra information. Figure*@alignment* describes this situation. 
-Depending on the architecture, aligned addresses are either multiple of 4 or 8 octets. Still the object header is 64 bits long and occupies either one word or two words (on 32 bits architecture). 
+Depending on the architecture, aligned addresses are either multiple of 4 or 8 octets. Still the object header is 64 bits long and occupies either one word or two words (on 32 bits architecture).
+
 
 For example, when a word is 32 bits (i.e., 4 bytes) all the addresses are multiple of 4. It means that the last two bits are always zero.
 
 [[[
 4 storeStringBase: 2.
 >>>  '2r100'
+]]]
+[[[
 4*17879 storeStringBase: 2.
 >>> '2r10001011101011100'
 ]]]
 
 The virtual machine uses these two bits to encode immediate objects (objects whose value is encoded inside the pointer itself) as we present below.
 
-The fact that objects are aligned as also some consequences for objects 
-whose size is smaller than a word.
-For example, a byteString with 17 characters will be composed of a header 
-and the 17 characters will be allocated in the following bytes. The next object 
-will not be directly after the characters but on the next multiple of 4.
-
+The fact that objects are aligned as also some consequences for objects whose size is smaller than a word.
+For example, a byteString with 17 characters will be composed of a header and the 17 characters will be allocated in the following bytes. 
+The next object will not be directly after the characters but on the next multiple of 4.
 
 !!!Immediate objects
 Immediate objects are objects directly encoded in the pointer to the object it points to. In 32 bits, immediate objects are SmallIntegers and Characters (see Figure *@32bitsimm*). It means that String accessing low-level operation such as ==at:== and ==at:put:== are faster since there is not Character instance creation (==at:put:==) or extra referencing (==at:==).
