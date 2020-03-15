@@ -1,29 +1,119 @@
-!! Understanding Object Structure
-In this chapter we present how objects are represented in memory. 
-The object structure of the Pharo VM is part of the Spur memory model.
+!! [DRAFT] Understanding Object Structure
 
-!!! About the Spur memory model
-Its design is made to work on both on 32 and 64 bits. The following table summarizes the situation. 
+In this chapter we present how objects are represented in memory.
+The object structure of the Pharo VM is known as the Spur memory model. 
+It has been designed by E. Miranda and we are grateful for this.
+This model greatly improved the low-level infrastructure of Pharo in particular since it led to a new garbage collector.
 
-| Architecture | 1 word size | Bytes | Header size | Alignment
-| 32 bits         | 32 bits         | 4 bytes | 64 bits       | 32 bits |
-| 64 bits         | 64 bits         | 8 bytes | 64 bits       | 64 bits |
+!!! Spur features
 
-In both 32 and 64 bits, every object is 64 bits aligned. The object header takes the same space.
+The Spur memory model supports the following features:
+
+- Support for 64 bits. 
+- Performance improvement. Several decisions led to a much faster system (new GC, large hash, immediate characters).
+- Variable sized and segmented memory. The memory allocated in the operating system by the virtual machine can grow and shrink according to the image size. Images as large as several Gb are possible.
+-  Incremental and efficient garbage collector. As we describe in the following chapters, the GC is now.
+- Fast become: the model introduces forwarders are special objects that avoid to walk the complete heap to swap references.
+- Ephemerons: the model introduces advanced weak structures called ''Ephemeron''.  An Ephemeron is an object which refers strongly to its contents as long as the Ephemeron’s key is not garbage collected, and weakly from then on.
+- Pinned objects. Pinned objects will not be moved by the garbage collector. This is an important point for Foreign Function Interface - as you can read in the corresponding book.
+
+!!! Basics
+
+A regular object is made of a header and slots.
+An object header is made of a mandatory base header, and an optional extra header.
+When objects are small, they only have the base header, when they are larger (meaning that they have a large number of slots) than a threshold, they also have the extra header that encodes their (large) size.
+
+!!!! Sizes
+
+The base header has a fixed size of 8 bytes (64 bits). The extra header has also a fixed size of 8 bytes (64 bits).
+Each object slot has a size of 1 word. That is, their size depends on the platform. 1 word = 4 bytes in 32 bits, 1 word = 8 bytes in 64 bits.
+
+That means an object is composed by headers and slots that are not necessarily of the same size.
+For example, in 32 bits, headers are 8 byte long, slots are 4 byte long.
+
+!!!! Memory alignment and addressing
+
+Slots contain references to other objects.
+Inside a slot there is only a pointer/address.
+That means that we can only put valid addresses, which change from platform to platform.
+- In 32 bits, we there are only valid addresses up to 2^32.
+- In 64 bits, up to 2^64.
+
+Moreover, memory ''in the system'' is usually aligned to the word size because all the machinery is done to make it faster/easier that way.
+The VM follows the same alignment to be a good citizen.
+
+So in 32 bits, objects are aligned to 4 bytes, and in 64 bits to 8 bytes.
+That an object is aligned to X, it also means its address is a multiple of X.
+So when we check a 32bit image, all objects are in positions multiple of 4.
+
+Note that the opposite does not hold. 
+Not all adresses multiple of 4 are objects, because objects are usually larger than a single word, so some valid addresses fall in the middle of an object.
+
+!!!! Immediates
+
+The fact that memory is aligned, it makes that all addresses have a similar structure.
+For example, in 32 bits, addresses are multiple of 4 bytes: 4, 8, 12, 16…
+In binary, they also follow a pattern where the last N bits (where 2\^N=word)
+
+4   = 00100
+8   = 01000
+12 = 01100
+16 = 10000
+
+The pattern is that always ''an address'' has 2 free bits at the end.
+The VM uses that to add tagged values.
+A tagged value is a value encoded in a reference.
+It has no object header, no slots. It’s just a value.
+
+That means that a ''slot'' containing an address finishing with 00 is a normal object reference.
+But a slot containing a different pattern, is encoding a value.
+It is the example of small integers tagged with a last 1 bit.
+
+xxxxxx1
+
+Since the tagged values are inside slots, they can only have the size of a word.
+I.e., 4 bytes in 32 bits, 8 bytes in 64 bits.
+So for tagged small integers in 32 bits, the last bit marks it as a small integer, the rest 31 bits encode the value.
+
+In 64 bits the patterns change a bit, but the idea remains the same.
+
+The key point is that tagged values are in slots. Slots size = words. Words depend on the platform.
+And slots do not have anything to do with object headers.
+
+
+!!! The Spur memory model
+Its design is made to work on both on 32 and 64 bits. The following table summarizes the general situation. 
+
+| Architecture | 1 word size | Bytes    | Header size | Alignment (object padding)|
+| 32 bits         | 32 bits         | 4 bytes | 32 bits          | 64 bits |
+| 64 bits         | 64 bits         | 8 bytes | 64 bits          | 64 bits |
+
+In both 32 and 64 bits, every object is 64 bits aligned. 
+This means that for example an object with two slots will occupy 
+- on 64 bits one word of 64 bits and two slots of 64 bits: 3 words of 64 bits. And the next object will be aligned on a 64 bits address.
+- on 32 bits one word of 32 bits and two slots of 32 bits but due to the alignement to 64 bits an extra word will be added to make sure that the next header is 64 bits aligned.
+
+However the object header representation is different depending on the architecture.
 
 +Alignment, object header and architecture.>figures/Aligment.pdf|width=90|label=alignment+
 
-!!!!!About alignment.
-The fact that object addresses are all aligned either on 32 bits or 64 bits (on 64 bits architecture) is an important fact. Indeed some bits are not used to address objects so that they can be used to encode extra information. Figure*@alignment* describes this situation. 
-Depending on the architecture, aligned addresses are either multiple of 4 or 8 octets. Still the object header is 64 bits long and occupies either one word or two words (on 32 bits architecture).
 
 
-For example, when a word is 32 bits (i.e., 4 bytes) all the addresses are multiple of 4. It means that the last two bits are always zero.
+!!!About alignment.
+The fact that object header addresses are all aligned either on 32 bits or 64 bits (on 64 bits architecture) is an important fact. Indeed some bits are not used to address objects and  they can be used to encode extra information. Figure*@alignment* describes this situation. 
+Depending on the architecture, aligned addresses are either multiple of 4 or 8 octets. 
+
+Still the object header is 64 bits long and occupies either one word or two words (on 32 bits architecture).
+
+
+For example, when a word is 32 bits (i.e., 4 bytes) all the addresses are multiple of 4. It means that the last two bits are always zero
+as shown by the examples below. What you see if that the two last bits are zero.
 
 [[[
 4 storeStringBase: 2.
 >>>  '2r100'
 ]]]
+
 [[[
 4*17879 storeStringBase: 2.
 >>> '2r10001011101011100'
@@ -33,18 +123,49 @@ The virtual machine uses these two bits to encode immediate objects (objects who
 
 The fact that objects are aligned as also some consequences for objects whose size is smaller than a word.
 For example, a byteString with 17 characters will be composed of a header and the 17 characters will be allocated in the following bytes. 
-The next object will not be directly after the characters but on the next multiple of 4.
+The next object will not be directly after the characters but on the next multiple of 4. (SD: if the passdding with 64 bits is it wrong?)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 !!!Immediate objects
-Immediate objects are objects directly encoded in the pointer to the object it points to. In 32 bits, immediate objects are SmallIntegers and Characters (see Figure *@32bitsimm*). It means that String accessing low-level operation such as ==at:== and ==at:put:== are faster since there is not Character instance creation (==at:put:==) or extra referencing (==at:==).
+Immediate objects are objects directly encoded in the pointer to the object it points to. 
+Such objects are possible due to the alignment of the architectures: 2 bits with 32-bit architecture and 3 bits for the 64-bit architecture.
 
-In 64 bits, immediate objects are SmallIntegers, Characters and SmallFloats (see Figure *@64bitsimm*).
-This is possible since objects are aligned on 64 bits (8 bytes).
+In 32 bits, immediate objects are ==SmallInteger==s and ==Character==s  as shown in Figure *@32bitsimm*. 
+It means that ==String== accessing low-level operations such as ==at:== and ==at:put:== are faster since there is not ==Character== instance creation (==at:put:==) or extra referencing (==at:==).
+
+[[[caption=On 64 bits, SmallInteger are encoded on 63 bits.
+1 class maxVal
+>>> 1152921504606846975
+]]]
 
 +32 bits immediate objects.>figures/32bitsImmediate.pdf|width=100|label=32bitsimm+
 
+In 64 bits, immediate objects are ==SmallInteger==s, ==Character==s and ==SmallFloat==s (see Figure *@64bitsimm*).
+This is possible since objects are aligned on 64 bits (8 bytes).
 
 +64 bits immediate objects.>figures/64bitsImmediate.pdf|width=100|label=64bitsimm+
+
+[[[caption=On 64 bits, SmallInteger are encoded on 63 bits.
+1 class maxVal
+>>> 1152921504606846975
+]]]
+
 
 !!!!The case of SmallFloat
 

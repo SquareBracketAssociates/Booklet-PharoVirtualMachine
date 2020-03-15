@@ -1,7 +1,16 @@
-! Pharo Virtual Machine
+This book is a work in progress to document the Pharo Virtual Machine. 
+We are doing it to collect and structure the knowledge we are learning and sharing with you. 
+Most of the design of the Pharo virtual machine has been made by E. Miranda. 
+Now our effort is to document it so that a larger amount of people can understand and in the future
+modify it. We are also using as input the posts of C. Béra.
+
+Now it may happen that we wrote something wrong and this is because we are learning. 
+If you spot something wrong, please let us know.
+
+The booklet on concurrent programming in Pharo also describes some VM primitives and provide some 
+specific information. We are also working on a documentation of the compiler.
 
 ${inputFile:path=Chapters/ObjectStructure/objectStructure.pillar}$
-
 ${inputFile:path=Chapters/GarbageCollector/memoryStructure.pillar}$
 ${inputFile:path=Chapters/GarbageCollector/newSpace.pillar}$
 ${inputFile:path=Chapters/GarbageCollector/oldSpace.pillar}$
