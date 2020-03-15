@@ -1,30 +1,31 @@
 !!The New Space
 
+The new space is the region where young objects are allocated. 
+It is the place where the generational garbage collector is taking place.
+it is commonly named a scavenger. 
+
+
 !!! New Space Memory Layout
+The new space is divided into three areas (eden, future and past) as shown by Figure *@newSpace*.
+The Eden (5/7 of the new space) and two other areas (1/7 of the new space each) that alternatively play the role of ''past'' and ''future'' space.
+The VM always allocates new objects into the Eden space if there is enough space.
 
-The new space is divided into three areas (cf. Figure *@newSpace*): Eden (5/7 of the new space) and two other areas (1/7 of the new space each) that alternatively play the role of past and future space.
-The VM always allocate new objects into the Eden space if there is enough space.
++The NewSpace structure>figures/newSpace.pdf|width=60|label=newSpace+
 
-+The New Space Structure>figures/newSpace.pdf|width=100|label=newSpace+
-
-!!!The Scavenger)
+!!!The Scavenger
 
 The scavenger is a copy-collector responsible to manage the new space memory region.
-The scavenger is periodically triggered on some events such as: the eden is full i.e. left space reached a predefined threshold. There are multiple scavenger policies:	
-    -TenureByAge: default policy that consists in copying surviving objects either in future space or old space depending on a threshold (cf SpurGenerationScavenger>>shouldBeTenured:). Surviving objects in past space with addresses below this threshold are tenured i.e. copied to the old space instead of future space. Initially, the threshold value is 0 meaning that the scavenger will not tenure any surviving objects, they are copied to future space. At the end of the scavenge, the scavenger updates the treshold if the future space is filled at more than 90%. The next scavenge will then tenure objects.
-
-	-TenureByClass: policy that consists in tenuring objects instance of a specific class.
-
-	-TenureToShrinkRT: policy that consist in tenuring objects in order to shrink the remember table meaning minimizing objects in the old space thath reference objects in the new space.
-
-	-DontTenure: policy that consists in not tenuring objects (i.e. threshold fixed at 0).
-
-	-MarkOnTenure: the full mark and sweep GC of the old space calls the scavenger with this policy. The threshold will be 0.
+The scavenger is periodically triggered on some events such as: the eden is full i.e., left space reached a predefined threshold. There are multiple scavenger policies:	
+- TenureByAge: default policy that consists in copying surviving objects either in future space or old space depending on a threshold (cf SpurGenerationScavenger>>shouldBeTenured:). Surviving objects in past space with addresses below this threshold are tenured i.e. copied to the old space instead of future space. Initially, the threshold value is 0 meaning that the scavenger will not tenure any surviving objects, they are copied to future space. At the end of the scavenge, the scavenger updates the treshold if the future space is filled at more than 90%. The next scavenge will then tenure objects.
+- TenureByClass: policy that consists in tenuring objects instance of a specific class.
+- TenureToShrinkRT: policy that consist in tenuring objects in order to shrink the remember table meaning minimizing objects in the old space thath reference objects in the new space.
+- DontTenure: policy that consists in not tenuring objects (i.e. threshold fixed at 0).
+- MarkOnTenure: the full mark and sweep GC of the old space calls the scavenger with this policy. The threshold will be 0.
 
 The VM allocates new objects in the eden space.
 When a newly allocated object address in the eden space reaches the scavenge threshold, the scavenger is triggered.
 To free some space in the eden, the scavenger does not iterate over all objects it contains.
-It computes surviving objects i.e. referenced by ""root objects"".
+It computes surviving objects i.e., referenced by ""root objects"".
 There are three kind of roots:
 
 - objects referenced in the stack i.e. used as receivers or parameters

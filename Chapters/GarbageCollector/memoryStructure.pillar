@@ -1,10 +1,10 @@
 !! The Spur Memory Manager Overview
 
-The Spur virtual machine implements an object memory manager.
-An object memory manager is a memory manager whose allocation unit are objects.
-In contrast with the operating system memory manager that manipulates raw memory, the Spur memory manager manipulates only objects.
+The Pharo virtual machine implements an object memory manager named Spur.
+An object memory manager is a memory manager whose allocation units are objects.
+In contrast to the operating system memory manager that manipulates raw memory, the Spur memory manager manipulates only objects.
 For example, the lowest-level allocation operation is to allocate an object specifying the desired number of slots, format and class index.
-We will study in subsequent chapters the object format, and what these three arguments mean.
+We saw in the previous chapters the object format, and what these three arguments mean.
 
 [[[smalltalk
 memoryManager
@@ -18,7 +18,7 @@ The memory manager implements an automatic garbage collection mechanism.
 It detects when an object has no more incoming references, and deallocates it.
 The garbage collector of Spur is precise and generational.
 It is precise because it distinguishes non-ambiguously object pointers from random memory adresses.
-It is generational because it categorizes objects ""by age"", treating them differently depending on their age.
+It is generational because it categorizes objects ''by age'', treating them differently depending on their age.
 
 In this chapter we do an overview of the Spur memory manager, and the concepts behind it.
 We will study how the memory is organized, how object generations impacts this organization, and how objects grow old in this generational setup.
@@ -33,13 +33,13 @@ At startup, the memory manager requests the operating system a chunk of raw memo
 The memory manager uses the first part of this memory as the new space, and the rest as old space.
 Figure *@memoryMap* depicts how the two spaces are laid-out in memory, considering that lower addresses are at the left, and higher addresses are at the right.
 
-+Memory Map>figures/memoryMap.pdf|width=100|label=memoryMap+
++Memory Map: a new space followed by an old space.>figures/memoryMap.pdf|width=100|label=memoryMap+
 
 Addresses in the new space are lower than those in the old space.
 This way, the VM easily determines if an object is old or young by comparing its address against the limit of the new space.
 The memory manager stores the limits of the new space as ==newSpaceStart== and ==newSpaceLimit==. It defines that an object is young if its address is less than the new space limit.
 
-[[[smalltalk
+[[[smalltalk|caption=A young object is an object located below the newSpaceLimit
 memoryManager newSpaceStart.
 memoryManager newSpaceLimit.
 
@@ -82,9 +82,9 @@ When the new space has little space left, it is garbage collected using a copy c
 The new space is much smaller than the old space, so garbage collecting it is fast, producing unnoticeable application pauses.
 If the generational hypothesis holds, unused young objects are reclaimed shortly after their instantiation and never moved to the old space.
 
-Objects that are not reclaimed during a garbage collection are called survivors.
+Objects that are not reclaimed during a garbage collection are called ''survivors''.
 As objects survive several new space garbage collections they grow old.
-Eventually, objects old-enough are ""tenured"": they are moved to the old space.
+Eventually, objects old-enough are ''tenured'': they are moved to the old space.
 The old space is several times bigger than the new space, thus garbage collecting it is expensive and creates long application pauses.
 Most objects are collected during new space collections, so collect the old space is not often required.
 
@@ -92,13 +92,14 @@ When the old space has little space left, a mark and compact collection algorith
 
 !!! The Stack
 
-
-The Stack (both Pharo and C) resides in the lower address of the memory.
-This is the stack used by the C Code and also the stack pages are allocated in this stack.
+The stack (both Pharo and C) resides in the lower address of the memory.
+This is the stack used by the C code and also the stack pages are allocated in this stack.
 All the execution of a process stores the information in the stack.
 The stack is the real representation of the contexts in the image. 
-The frames are in a sequence, in the stack. 
+The frames are in a sequence in the stack. 
 Each frame knows the calling frame with a pointer. 
-Objects referenced into stack frames are retained i.e. never garbage collected.
+Objects referenced into stack frames are retained i.e., never garbage collected.
 
 !!! Conclusion
+
+We sketch a first overview of the memory architecture of Pharo.
