@@ -50,7 +50,7 @@ SpurMemoryManager >> isYoung: oop
 	  and: [self oop: oop isLessThan: newSpaceLimit]
 ]]]
 
-!!!! Memory Growing and Segments
+!!!Memory Growing and Segments
 
 The new space remains fixed once initialized i.e., it does not grow after its allocation.
 On the contrary, the old space is organized in one or more memory segments, and it can grow dynamically by adding new segments to it.
@@ -64,14 +64,14 @@ They give the Spur memory manager and its garbage collector the illusion of an o
 Bridge objects are not visible from the program and do not move during garbage collection.
 
 
-!!!! Memory Initialization
+!!!Memory Initialization
 
 When the virtual machine starts, it requires memory from the operating system to store both the new space and the first segment of the old space.
 The size of the new space is computed from a parameter stored in the image file header.
 The image file, storing all objects in previous sessions, is loaded into the first segment of the old space.
 The size of this first segment is computed as the addition of the image size and a free space headroom to fit objects coming from the new space.
 
-!!! Spur Generational Garbage Collection
+!!!Spur Generational Garbage Collection
 
 Spur implements a generational automatic garbage collector based on an heuristic named the generational hypothesis.
 The generational hypothesis states that most objects die young, specially true in highly-interactive applications, so young objects are stored separately than old objects.
@@ -90,8 +90,7 @@ Most objects are collected during new space collections, so collect the old spac
 
 When the old space has little space left, a mark and compact collection algorithm reclaims unused objects. This algorithm first marks all used objects, and then scans the entire old space freeing unmarked objects and compacting the memory.
 
-!!! The Stack
-
+!!!The Stack
 The stack (both Pharo and C) resides in the lower address of the memory.
 This is the stack used by the C code and also the stack pages are allocated in this stack.
 All the execution of a process stores the information in the stack.

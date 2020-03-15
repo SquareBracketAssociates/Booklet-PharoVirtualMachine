@@ -1,7 +1,10 @@
 !!The Free List
 
-When a new object should be allocated, the VM checks first if there is an object of the given size that can be used. 
-Else it allocates a new object by "cutting" and splitting a large free object. 
+When a new object should be allocated, the VM checks first if there is an object that was already allocated and garbage collection of the given size that can be reused. Else it allocates a new object by "cutting" and splitting a large free object. 
+The management of such used ''cells'' is managed by the ''Free List'' and its companion the ''Free Table''. 
+The Free List manages chunks of memory below numFreeLists (i.e., 63 in 64 bits architecture).
+The Free Table manages larger chunks of memory.
+
 
 
 !!! Free cells in memory
