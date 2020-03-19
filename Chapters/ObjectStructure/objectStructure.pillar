@@ -1,201 +1,168 @@
-!! [DRAFT] Understanding Object Structure
+!! Understanding the Spur Memory Model
 
-In this chapter we present how objects are represented in memory.
-The object structure of the Pharo VM is known as the Spur memory model. 
-It has been designed by E. Miranda and we are grateful for this.
-This model greatly improved the low-level infrastructure of Pharo in particular since it led to a new garbage collector.
+In this chapter, we present how objects are represented in memory.
+The object structure of the Pharo VM is known as the Spur memory model.
+This model greatly improved the low-level infrastructure of Pharo in particular since it led to a new Garbage Collector (GC).
 
 !!! Spur features
 
 The Spur memory model supports the following features:
 
-- Support for 64 bits. 
+- Support both 32 and 64 bits.
 - Performance improvement. Several decisions led to a much faster system (new GC, large hash, immediate characters).
-- Variable sized and segmented memory. The memory allocated in the operating system by the virtual machine can grow and shrink according to the image size. Images as large as several Gb are possible.
--  Incremental and efficient garbage collector. As we describe in the following chapters, the GC is now.
+- Variable sized and segmented memory. The memory allocated in the operating system by the virtual machine can grow and shrink according to the image size. Pharo images as large as several Gb are possible.
+- Incremental and efficient garbage collector. As we describe in the following chapters, the GC is now.
 - Fast become: the model introduces forwarders are special objects that avoid to walk the complete heap to swap references.
 - Ephemerons: the model introduces advanced weak structures called ''Ephemeron''.  An Ephemeron is an object which refers strongly to its contents as long as the Ephemeron’s key is not garbage collected, and weakly from then on.
 - Pinned objects. Pinned objects will not be moved by the garbage collector. This is an important point for Foreign Function Interface - as you can read in the corresponding book.
 
-!!! Basics
+!!! Basics on 32 vs 64-bits Architectures
 
-A regular object is made of a header and slots.
++Word size and Alignment on 32 and 64 bits architectures.>figures/architecture32vs64.pdf|width=100|label=32vs64Architectures+
+
+The memory is always divided into cells of 1 byte length (8 bits).
+Each cell has an address which can be stored into other memory cells.
+Figure *@32vs64Architectures* shows the memory layout on both 32 and 64 bits architectures.
+The main difference between these two architectures is their word size.
+The word size is the number of bits that a CPU can process in one cycle.
+CPUs are also faster when manipulating word adresses often called aligned addresses.
+On 32-bits architecture, aligned addresses are multiple of 32 bits (4 bytes) i.e. can divided by 4.
+On 64-bits architecture, aligned addresses are multiple of 64 bits (8 bytes) i.e. can divided by 8.
+
+In modern architectures, the size of the address space is usually one word so that an address perfectly fit into one word.
+Note that Figure *@32vs64Architectures* only shows aligned addresses wheras each 1-byte length cells also have an address.
+On 32-bits, we have 2^32 different addresses.
+On 64-bits, we may have up to 2^64 different addresses.
+However, note that all addresses are not aligned.
+On Figure *@32vs64Architectures*, we see that addresses 1, 2, 3 are valid but not aligned on 32-bits.
+On 64-bits, addresses 1, 2, 3, 4, 6, 7 are valid but not aligned.
+
+
+!!! Object Layout and Alignement
+
+!!!! Headers and Slots
+
+A regular object is made of a header and multiple slots.
 An object header is made of a mandatory base header, and an optional extra header.
-When objects are small, they only have the base header, when they are larger (meaning that they have a large number of slots) than a threshold, they also have the extra header that encodes their (large) size.
+When objects are small, they only have the base header.
+When they are larger (meaning that they have a large number of slots) than a threshold, they also have the extra header that encodes their (large) size.
 
 !!!! Sizes
 
-The base header has a fixed size of 8 bytes (64 bits). The extra header has also a fixed size of 8 bytes (64 bits).
-Each object slot has a size of 1 word. That is, their size depends on the platform. 1 word = 4 bytes in 32 bits, 1 word = 8 bytes in 64 bits.
+The base and extra headers have both a fixed size of 8 bytes (64 bits).
+Each object slot has a size of 1 word.
+It means that header sizes are fixed while slot size depends on the architecture.
+In 32 bits, object headers (8 bytes) and slots (4 bytes) do not have of the same size.
+In 64 bits, both are 8 bytes long.
 
-That means an object is composed by headers and slots that are not necessarily of the same size.
-For example, in 32 bits, headers are 8 byte long, slots are 4 byte long.
+!!!! Memory alignment and Addressing
 
-!!!! Memory alignment and addressing
++Object Layout and Alignment on 32 and 64 bits Architectures.>figures/objectLayout.pdf|width=80|label=objectLayout+
 
 Slots contain references to other objects.
-Inside a slot there is only a pointer/address.
-That means that we can only put valid addresses, which change from platform to platform.
-- In 32 bits, we there are only valid addresses up to 2^32.
-- In 64 bits, up to 2^64.
+A slots only stores an address.
+For efficiency reasons, the Pharo VM only stores objects in aligned addresses.
+So, objects must be aligned to 4 bytes in 32-bits and to 8 bytes in 64-bits.
+Saying that an object is aligned to X, means that its address is a multiple of X.
+For example, in a 32-bits image, all objects addresses are multiple of 4.
+Note that the opposite is not always true.
+Indeed, not all adresses multiple of 4 are objects, because objects are usually larger than a single word, so some aligned addresses fall in the middle of an object.
 
-Moreover, memory ''in the system'' is usually aligned to the word size because all the machinery is done to make it faster/easier that way.
-The VM follows the same alignment to be a good citizen.
+To unify the VM code such as the GC code on both 32-bits and 64-bits architectures, the Pharo VM always aligns objects on 8 bytes (64-bits alignment).
+Figure *@objectLayout* shows an example of an object with 1 header and 3 slots in 32-bits and 64-bits architectures.
+We can see that:
+- in 64-bits, the object occupies 4 words : 1 base header of 1 word, 3 slots of 1 word each.
+The next free address (32 on the Figure) is aligned can be used to store another object.
+Since an object always occupies a multiple of words of 8 bytes, the address following an object is always aligned.
+- in 32-bits, the object should occupy 6 words : 1 base header of 2 words (2 \* 4 bytes), 3 slots of 1 word each and 1 padding word.
+First, slots are smaller here because the address space is smaller.
+Second, the Pharo VM adds a padding word at the end of this object.
+This is mandatory to ensure that the next address after this object (24 on the Figure) is aligned on 8 bytes i.e. a multiple of 8.
+Padding is just memory waste (unused), but it unifies the implementation with 64-bits and ensures that objects are always aligned on all architectures.
 
-So in 32 bits, objects are aligned to 4 bytes, and in 64 bits to 8 bytes.
-That an object is aligned to X, it also means its address is a multiple of X.
-So when we check a 32bit image, all objects are in positions multiple of 4.
+!!!Immediate Objects
 
-Note that the opposite does not hold. 
-Not all adresses multiple of 4 are objects, because objects are usually larger than a single word, so some valid addresses fall in the middle of an object.
+!!!! Tagged Values
 
-!!!! Immediates
+The Pharo VM only stores object references whose addresses are aligned.
+For example, in 32-bits, possible object addresses are multiple of 4 bytes: 4, 8, 12, 16…
+Respectively, the VM never stores unaligned addresses such as: 1, 2, 3, 9, 10, 11…
+In binary, aligned addresses are as follows:
 
-The fact that memory is aligned, it makes that all addresses have a similar structure.
-For example, in 32 bits, addresses are multiple of 4 bytes: 4, 8, 12, 16…
-In binary, they also follow a pattern where the last N bits (where 2\^N=word)
+[[[
+#(4 8 12 16) collect: [ :n | n storeStringBase: 2 ]
+>>>  #('2r100' '2r1000' '2r1100' '2r10000')
+]]]
 
-4   = 00100
-8   = 01000
-12 = 01100
-16 = 10000
+We can see that addresses aligned on 4 bytes always have the last 2 bits (2^2=4) equals to 0.
+On 64 bits, addresses are aligned on 8 bytes and we have the last 3 bits (2^3=8) that are always equal to 0.
 
-The pattern is that always ''an address'' has 2 free bits at the end.
-The VM uses that to add tagged values.
+The Pharo VM uses these last bits to suport ""tagged values"".
 A tagged value is a value encoded in a reference.
-It has no object header, no slots. It’s just a value.
+It’s just a value of 1 word length whose last bits indicates the value that is encoded.
+The VM uses tagged values to represent some immediate objects such as ==SmallInteger==s and ==Character==s.
 
-That means that a ''slot'' containing an address finishing with 00 is a normal object reference.
-But a slot containing a different pattern, is encoding a value.
-It is the example of small integers tagged with a last 1 bit.
-
-xxxxxx1
-
-Since the tagged values are inside slots, they can only have the size of a word.
-I.e., 4 bytes in 32 bits, 8 bytes in 64 bits.
-So for tagged small integers in 32 bits, the last bit marks it as a small integer, the rest 31 bits encode the value.
-
-In 64 bits the patterns change a bit, but the idea remains the same.
-
-The key point is that tagged values are in slots. Slots size = words. Words depend on the platform.
-And slots do not have anything to do with object headers.
-
-
-!!! The Spur memory model
-Its design is made to work on both on 32 and 64 bits. The following table summarizes the general situation. 
-
-| Architecture | 1 word size | Bytes    | Header size | Alignment (object padding)|
-| 32 bits         | 32 bits         | 4 bytes | 32 bits          | 64 bits |
-| 64 bits         | 64 bits         | 8 bytes | 64 bits          | 64 bits |
-
-In both 32 and 64 bits, every object is 64 bits aligned. 
-This means that for example an object with two slots will occupy 
-- on 64 bits one word of 64 bits and two slots of 64 bits: 3 words of 64 bits. And the next object will be aligned on a 64 bits address.
-- on 32 bits one word of 32 bits and two slots of 32 bits but due to the alignement to 64 bits an extra word will be added to make sure that the next header is 64 bits aligned.
-
-However the object header representation is different depending on the architecture.
-
-+Alignment, object header and architecture.>figures/Aligment.pdf|width=90|label=alignment+
-
-
-
-!!!About alignment.
-The fact that object header addresses are all aligned either on 32 bits or 64 bits (on 64 bits architecture) is an important fact. Indeed some bits are not used to address objects and  they can be used to encode extra information. Figure*@alignment* describes this situation. 
-Depending on the architecture, aligned addresses are either multiple of 4 or 8 octets. 
-
-Still the object header is 64 bits long and occupies either one word or two words (on 32 bits architecture).
-
-
-For example, when a word is 32 bits (i.e., 4 bytes) all the addresses are multiple of 4. It means that the last two bits are always zero
-as shown by the examples below. What you see if that the two last bits are zero.
-
-[[[
-4 storeStringBase: 2.
->>>  '2r100'
-]]]
-
-[[[
-4*17879 storeStringBase: 2.
->>> '2r10001011101011100'
-]]]
-
-The virtual machine uses these two bits to encode immediate objects (objects whose value is encoded inside the pointer itself) as we present below.
-
-The fact that objects are aligned as also some consequences for objects whose size is smaller than a word.
-For example, a byteString with 17 characters will be composed of a header and the 17 characters will be allocated in the following bytes. 
-The next object will not be directly after the characters but on the next multiple of 4. (SD: if the passdding with 64 bits is it wrong?)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-!!!Immediate objects
-Immediate objects are objects directly encoded in the pointer to the object it points to. 
-Such objects are possible due to the alignment of the architectures: 2 bits with 32-bit architecture and 3 bits for the 64-bit architecture.
-
-In 32 bits, immediate objects are ==SmallInteger==s and ==Character==s  as shown in Figure *@32bitsimm*. 
-It means that ==String== accessing low-level operations such as ==at:== and ==at:put:== are faster since there is not ==Character== instance creation (==at:put:==) or extra referencing (==at:==).
-
-[[[caption=On 64 bits, SmallInteger are encoded on 63 bits.
-1 class maxVal
->>> 1152921504606846975
-]]]
+!!!!32-bits Immediate Objects
 
 +32 bits immediate objects.>figures/32bitsImmediate.pdf|width=100|label=32bitsimm+
 
-In 64 bits, immediate objects are ==SmallInteger==s, ==Character==s and ==SmallFloat==s (see Figure *@64bitsimm*).
-This is possible since objects are aligned on 64 bits (8 bytes).
+Immediate objects are objects directly encoded in the pointer to the object it points to as tagged values.
+An immediate object has no object header, no slots and is always 1 word length (the size of an address).
+Figure *@32bitsimm* shows the possible values of the last 2 bits of an address (gray cells):
+- ==00== means that is an aligned address and therefore an object reference in the heap.
+- ==01== tells the VM that it is an immediate ==SmallInteger== whose value is encoded in white bits. ==SmallInteger== value is therefore encoded in the remaining 30 bits.
+- ==10== tells the VM that it is an immediate ==Character== whose value is encoded in white bits. Having immediate ==Character==s makes ==String== low-level operations such as ==at:== and ==at:put:== faster since there is no ==Character== instance creation (==at:put:==) or extra referencing (==at:==).
+
++Base Object Header.>figures/ObjectHeader.pdf|width=100|label=objectheader+
+
+!!!!64-bits Immediate Objects
 
 +64 bits immediate objects.>figures/64bitsImmediate.pdf|width=100|label=64bitsimm+
 
-[[[caption=On 64 bits, SmallInteger are encoded on 63 bits.
-1 class maxVal
->>> 1152921504606846975
+In 64 bits, immediate objects are: ==SmallInteger==s, ==Character==s and ==SmallFloat==s (cf. Figure *@64bitsimm*).
+They are also encoded as tagged values (1 word value) based on the last "free" 3 bits of addresses because the VM only manipulates object addresses aligned on 8 bytes.
+
+==SmallInteger== are encoded on 61 bits (64 bits minus 3 dedicated to tagging values).
+It means that ==SmallInteger== immediate objects range is between \[-2\^60,2\^60-1\].
+
+[[[caption=On 64 bits, SmallInteger are encoded on 61 bits.
+SmallInteger minVal == (2**60) negated
+>>> true
+
+SmallInteger maxVal == (2**60-1)
+>>> true
 ]]]
 
 
-!!!!The case of SmallFloat
+Figure *@64bitsfloatimm* shows the structure of a ==SmallFloat==.
 
-Figure *@64bitsfloatimm* shows the structure of ==SmallFloat==. 
++64 bits ==SmallFloat== immediate.>figures/64bitsFloatImmediate.pdf|width=100|label=64bitsfloatimm+
 
-+64 bits immediate objects.>figures/64bitsFloatImmediate.pdf|width=100|label=64bitsfloatimm+
 
 !!! Object Header
+
+!!!! Base Object Header Structure
 
 For objects that are not immediate, a reference will point to an object header.
 An object header is 64 bits length, which means it is 2 words in 32 bits and 1 word in 64 bits as shown in Figure *@objectheader*.
 
-+Object Header.>figures/ObjectHeader.pdf|width=100|label=objectheader+
 
 Let us explain the object header structure:
 
-- The first left topmost 8 red/orange f marked bits represent the number of instance variables (or fields) of the object. When an abject has more than 254 fields, then an additional 64 bits word is allocated as a header extension with the correct size. When the 8 bits represent 255, the VM knows that there is a header extension.
+- The first left topmost 8 red/orange bits (marked with an s) represent the number of instance variables (or slots) in the object. When an abject has more than 254 slots, then an additional 64 bits word is allocated as an header extension with the correct size. When these 8 bits represent 255, the VM knows that there is an header extension.
 - The 22 h marked top right light blue bits are for the object identity hash.
-- The 5 pink bottom left marked bits represent object formats as we will explain later. 
-- The 22 c yellow bottom right bits are for the class index. In Spur, there is a class table (managed as pages) where each class is given an index. An object class index is the index of the class in that table.
+- The 5 pink bottom left marked bits represent object formats as we will explain later.
+- The 22 c yellow bottom right bits are for the class index. In Spur, there is a class table where each class is given an index. Each object stores the index of its class in that table.
 - The 7 green X marked remaining bits are allocated for different reasons:
 -- 1 bit is reserved for immutability.
--- 1 bit is reserved to mark the object as pinned. Basically, a pinned object is an object that cannot move in memory. Usually, objects are moved around by the GC. But not a pinned object. A pinned object will have this bit set.
--- 3 bits are reserved for the GC: isGray (for tri-color marking), isRemembered (for the remembered table from old space to young space) and isMarked (for the GC mark phasis). 
+-- 1 bit is reserved to mark the object as pinned. Basically, a pinned object is an object that cannot be moved in memory by the GC.
+-- 3 bits are reserved for the GC: isGray (for tri-color marking), isRemembered (for the remembered table from old space to young space) and isMarked (for the GC mark phasis).
 -- 2 bits are free.
 
+!!!! Object format
 
-!!! Object format
-
-The object format is represented by the 5 bits o marked (in pink) of the object header. It encodes the following information. 
+The object format is represented by the 5 pink bits (marked with o) of the object header.
+It encodes the following information:
 
 - 0 : 0 sized object - ==nil==, ==true==, ==false==
 - 1 : fixed sized object with instance variables - ==Point==
@@ -208,28 +175,43 @@ The object format is represented by the 5 bits o marked (in pink) of the object 
 - 10 -11 : 32 bits indexable
 - 12 - 15 : 16 bits indexable
 - 16 - 23 : 8 bits indexable
-- 24 - 31 : compiled methods 
+- 24 - 31 : compiled methods
 
-The format shows that a format can represent different kinds of indexable arrays: 8, 16, 32  and 64 bits indexable arrays. 
-This corresponds to ByteArray (8 bits), WordArray (32 bits unsigned integers).  See ShortRunArray, RunArray implementations and uses.
-
+This object format represent different kinds of indexable arrays: 8, 16, 32  and 64 bits indexable arrays.
+This corresponds to ByteArray (8 bits), WordArray (32 bits unsigned integers).
+See ShortRunArray, RunArray implementations and uses.
 
 +Taking advantages of multiple bits values for indexable.>figures/32IndexableLastField.png|width=100|label=multipleBits+
 
-Some object formats have several possible bits value. For instance, 32 bits indexable can have 10 or 11 as a bits value. This is because the bit value indicates to the VM where the last slot of the object is in its last word (see Figure *@multipleBits*).
+Some object formats have multiple bits value.
+For instance, there are two 32 bits indexable representations encoded by 10 or 11 as bits value.
+This indicates to the VM where the last slot of the object is in its last word (see Figure *@multipleBits*).
+
+!!!! Class Table and Class Indexes
+
+An object do not store a direct reference to its class but the index of its class in its header.
+Looking up the class associated to the class index for each message send would clearly be dramatic for the VM efficiency.
+To mitigate this penalty:
+
+- The index of class in the class table is its identity hash. Both the class identity hash and class index are 22 bits length.
+The additional benefit is that every class has a different identity hash: there is no clash possible.
+- The class table is a linked list of pages, with a class list on each page.
+The VM puts most common classes on the first page to avoid walking over all the pages to fetch an object's class.
+- The class index does not change over time. It means that optimisations such as the inline cache can directly compare class indexes.
 
 
-!!! About class index and class table
+!!! Summary of the Spur Memory Model
 
-A header object has its class index. There is a need for extra explanations to understand how the system can access fast to the class of the object.
-Indeed looking up the class associated to the class index during each message send is clearly dramatic from a speed perspective. Let us see how this aspect is taken into account:
+Spur's design is made to work on both on 32 and 64 bits. The following table summarizes it.
 
-- A class identity hash is its index in the class table. Both the class identity hash and class index are 22 bits length. The additional benefit is that every class has a different identity hash: there is no clash possible.
-- Here is how the ==class== message is sped up. 
--- The class table is a linked list of pages, with a class list on each page. Most common classes are put on the first page to avoid walking over all the pages to fetch an object's class.
--- The class index does not change over time. It means that optimisations such as the inline cache can compare directly class index.
+| Architecture | 1 word size | Bytes    | Header size | Alignment (object padding)|
+| 32 bits         | 32 bits         | 4 bytes | 64 bits          | 64 bits |
+| 64 bits         | 64 bits         | 8 bytes | 64 bits          | 64 bits |
 
-
+In both 32 and 64-bits, header size is 64 bits and every object is 64-bits aligned.
+In 32-bits, some padding is added to ensure this alignment.
+Immediates objects such as ==SmallInteger==s and ==Character==s are represented as tagged values.
+In 64 bits, there is one more immediate object type: ==SmallFloat==s.
 
 !!! Resources
 
