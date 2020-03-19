@@ -10,6 +10,13 @@ If you spot something wrong, please let us know.
 The booklet on concurrent programming in Pharo also describes some VM primitives and provide some 
 specific information. We are also working on a documentation of the compiler.
 
+The team composed of G. Polito, P. Tesone, S. Ducasse, L. Fabresse, C. Hernandez, P. Misse, T. Rogliano.
+
+
+
+This work is supported by Ministry of Higher Education and Research, Nord-Pas de Calais Regional Council, CPER Nord-Pas de Calais/FEDER DATA Advanced data science and technologies 2015-2020.
+The work is supported by I-Site ERC-Generator Multi project 2018-2022. We gratefully acknowledge the financial support of the Métropole Européenne de Lille.
+
 ${inputFile:path=Chapters/ObjectStructure/objectStructure.pillar}$
 ${inputFile:path=Chapters/GarbageCollector/memoryStructure.pillar}$
 ${inputFile:path=Chapters/GarbageCollector/newSpace.pillar}$
