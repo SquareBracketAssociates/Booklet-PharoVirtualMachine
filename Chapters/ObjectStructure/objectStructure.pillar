@@ -55,6 +55,13 @@ It means that header sizes are fixed while slot size depends on the architecture
 In 32 bits, object headers (8 bytes) and slots (4 bytes) do not have of the same size.
 In 64 bits, both are 8 bytes long.
 
+In Spur, the minimum size of an object (without slots) is the size of its header i.e. 2 words.
+Having this minimum size for all objects is important for some features of the VM (GC, become).
+Indeed, when the VM needs to move an object in memory, it ensures that there is always enough space to put a forwarder.
+A forwarder is a 2 words value that encodes the new position of an object.
+
+LUC TODO: Forwarder Layout?
+
 !!!! Memory alignment and Addressing
 
 +Object Layout and Alignment on 32 and 64 bits Architectures.>figures/objectLayout.pdf|width=80|label=objectLayout+
@@ -146,7 +153,6 @@ Figure *@64bitsfloatimm* shows the structure of a ==SmallFloat==.
 For objects that are not immediate, a reference will point to an object header.
 An object header is 64 bits length, which means it is 2 words in 32 bits and 1 word in 64 bits as shown in Figure *@objectheader*.
 
-
 Let us explain the object header structure:
 
 - The first left topmost 8 red/orange bits (marked with an s) represent the number of instance variables (or slots) in the object. When an abject has more than 254 slots, then an additional 64 bits word is allocated as an header extension with the correct size. When these 8 bits represent 255, the VM knows that there is an header extension.
@@ -158,6 +164,13 @@ Let us explain the object header structure:
 -- 1 bit is reserved to mark the object as pinned. Basically, a pinned object is an object that cannot be moved in memory by the GC.
 -- 3 bits are reserved for the GC: isGray (for tri-color marking), isRemembered (for the remembered table from old space to young space) and isMarked (for the GC mark phasis).
 -- 2 bits are free.
+
+!!!! Extra Object Header
+
+Luc: TODO
+Ideas:
+- Layout
+- an object address is always the one of its base header regardless it has an extra header or not. It means that the extra header comes before the base header
 
 !!!! Object format
 
