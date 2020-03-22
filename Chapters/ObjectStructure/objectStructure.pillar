@@ -38,31 +38,29 @@ On Figure *@32vs64Architectures*, we see that addresses 1, 2, 3 are valid but no
 On 64-bits, addresses 1, 2, 3, 4, 6, 7 are valid but not aligned.
 
 
-!!! Object Layout and Alignement
+!!! Object Layout and Alignment
 
 !!!! Headers and Slots
-
 A regular object is made of a header and multiple slots.
 An object header is made of a mandatory base header, and an optional extra header.
-When objects are small, they only have the base header.
-When they are larger (meaning that they have a large number of slots) than a threshold, they also have the extra header that encodes their (large) size.
+- When objects are small, they only have the base header.
+- When they are larger (meaning that they have a large number of slots) than a threshold, they also have the extra header that encodes their (large) size - such extra header is located before the base header to avoid to force a systematic test for nothing. 
 
 !!!! Sizes
-
 The base and extra headers have both a fixed size of 8 bytes (64 bits).
 Each object slot has a size of 1 word.
 It means that header sizes are fixed while slot size depends on the architecture.
-In 32 bits, object headers (8 bytes) and slots (4 bytes) do not have of the same size.
-In 64 bits, both are 8 bytes long.
+- In 32 bits, object headers (8 bytes) and slots (4 bytes) do not have of the same size.
+- In 64 bits, both are 8 bytes long.
 
-In Spur, the minimum size of an object (without slots) is the size of its header i.e. 2 words.
+In Spur, the minimum size of an object (without slots) is the size of its header i.e., 2 words.
 Having this minimum size for all objects is important for some features of the VM (GC, become).
 Indeed, when the VM needs to move an object in memory, it ensures that there is always enough space to put a forwarder.
 A forwarder is a 2 words value that encodes the new position of an object.
 
 LUC TODO: Forwarder Layout?
 
-!!!! Memory alignment and Addressing
+!!!! Memory Alignment and Addressing
 
 +Object Layout and Alignment on 32 and 64 bits Architectures.>figures/objectLayout.pdf|width=80|label=objectLayout+
 
