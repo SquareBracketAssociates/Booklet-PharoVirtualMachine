@@ -25,9 +25,9 @@ Each cell has an address which can be stored into other memory cells.
 Figure *@32vs64Architectures* shows the memory layout on both 32 and 64 bits architectures.
 The main difference between these two architectures is their word size.
 The word size is the number of bits that a CPU can process in one cycle.
-CPUs are also faster when manipulating word adresses often called aligned addresses.
-On 32-bits architecture, aligned addresses are multiple of 32 bits (4 bytes) i.e. can divided by 4.
-On 64-bits architecture, aligned addresses are multiple of 64 bits (8 bytes) i.e. can divided by 8.
+CPUs are also faster when manipulating word adresses often called ''aligned'' addresses.
+On 32-bits architecture, aligned addresses are multiple of 32 bits (4 bytes) i.e., can divided by 4.
+On 64-bits architecture, aligned addresses are multiple of 64 bits (8 bytes) i.e., can divided by 8.
 
 In modern architectures, the size of the address space is usually one word so that an address perfectly fit into one word.
 Note that Figure *@32vs64Architectures* only shows aligned addresses wheras each 1-byte length cells also have an address.
