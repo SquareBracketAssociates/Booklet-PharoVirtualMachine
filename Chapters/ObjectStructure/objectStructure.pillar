@@ -53,10 +53,17 @@ It means that header sizes are fixed while slot size depends on the architecture
 - In 32 bits, object headers (8 bytes) and slots (4 bytes) do not have of the same size.
 - In 64 bits, both are 8 bytes long.
 
-In Spur, the minimum size of an object (without slots) is the size of its header i.e., 2 words.
+@@note  In Spur, the minimum size of an object (without slots) is the size of its header and one slot.
+
 Having this minimum size for all objects is important for some features of the VM (GC, become).
 Indeed, when the VM needs to move an object in memory, it ensures that there is always enough space to put a forwarder.
 A forwarder is a 2 words value that encodes the new position of an object.
+
+
+All objects contain at least one slot, which is used as a placeholder for a forwarding pointer, used by the GC and other facilities like pointer swapping.
+This means that an object without slots will contain one extra hidden slot.
+- In 64 bits, this means an object without slots is 16 bytes long.
+- In 32 bits, an object without slots is 16 bytes long (since it is padded on 64 bits).
 
 LUC TODO: Forwarder Layout?
 
@@ -73,7 +80,8 @@ For example, in a 32-bits image, all objects addresses are multiple of 4.
 Note that the opposite is not always true.
 Indeed, not all adresses multiple of 4 are objects, because objects are usually larger than a single word, so some aligned addresses fall in the middle of an object.
 
-To unify the VM code such as the GC code on both 32-bits and 64-bits architectures, the Pharo VM always aligns objects on 8 bytes (64-bits alignment).
+@@note To unify the VM code such as the GC code on both 32-bits and 64-bits architectures, the Pharo VM always aligns objects on 8 bytes (64-bits alignment).
+
 Figure *@objectLayout* shows an example of an object with 1 header and 3 slots in 32-bits and 64-bits architectures.
 We can see that:
 - in 64-bits, the object occupies 4 words : 1 base header of 1 word, 3 slots of 1 word each.
