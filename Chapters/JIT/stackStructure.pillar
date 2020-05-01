@@ -1,30 +1,38 @@
-!! Stack Frame / Context State Terminology
+!! Looking at Stack Structure
 
-We call a stack frame, a frame in the execution stack. 
-A context is the reificated context in the image. 
-With this a frame can be in the following states:
 
-- Single: They don't have matching reificated context in the image.
+!!! Stack/Context Terminology
+Since Pharo reifies the notation of execution stack we have two separate concepts and different relationships.
+
+- A ''stack frame'' is a frame in the native execution stack. 
+- A ''context'' is the reified causally connected frame available in the image as an object.
+
+A frame can be in the following states:
+- Single: They don't have matching reified context in the image.
 - Married: It has a matching context in the image.
 
-Context in the other hand they can be in the following states:
-
-- Single: there is not matching context in the image for a given frame
-- Married: There is a matching context in the image and a corresponding frame in the stack
+A context can be in the following states:
+- Single: there is not matching context in the image for a given frame.
+- Married: There is a matching context in the image and a corresponding frame in the stack.
 - Widowed: There is a context in the image, but the frame in the stack has returned. 
 
 TODO: EXPLAIN THE DIVORCE MECHANISM
 - 
-#Cog Stack Structure
+!!!Cog Stack Structure
 
 Frameless method activation looks like
+
+[[[
 		receiver
 		args
 sp->	ret pc.
+]]]
+
 
 Format of a stack frame in a frameful activation.  Word-sized indices relative to the frame pointer.
 
-	 Stacks grow down:
+ Stacks grow down:
+ [[[
 			receiver for method activations/closure for block activations
 			arg0
 			...
@@ -39,22 +47,25 @@ Format of a stack frame in a frameful activation.  Word-sized indices relative t
 			first temp
 			...
 	sp->	Nth temp
+]]]
 
-	In an interpreter frame
-		frame flags holds
-			the backward jump count (see ifBackwardsCheckForEvents)
-			the number of arguments (since argument temporaries are above the frame)
-			the flag for a block activation
-			and the flag indicating if the context field is valid (whether the frame is married).
-		saved method ip holds the saved method ip when the callee frame is a machine code frame.
+In an interpreter frame, frame flags hold
+
+- the backward jump count (see ifBackwardsCheckForEvents)
+- the number of arguments (since argument temporaries are above the frame)
+- the flag for a block activation
+- and the flag indicating if the context field is valid (whether the frame is married).
+
+saved method ip holds the saved method ip when the callee frame is a machine code frame.
 		This is because the saved method ip is actually the ceReturnToInterpreterTrampoline address.
-	In a machine code frame
-		the flag indicating if the context is valid is the least significant bit of the method pointer
-		the flag for a block activation is the next most significant bit of the method pointer
 
-	Interpreter frames are distinguished from method frames by the method field which will
-	be a pointer into the heap for an interpreter frame and a pointer into the method zone for
-	a machine code frame.
+In a machine code frame
+- the flag indicating if the context is valid is the least significant bit of the method pointer
+- the flag for a block activation is the next most significant bit of the method pointer
 
-	The first frame in a stack page is the baseFrame and is marked as such by a saved fp being its stackPage,
-	in which case the first word on the stack is the caller context (possibly hybrid) beneath the base frame."
+Interpreter frames are distinguished from method frames by the method field which will
+be a pointer into the heap for an interpreter frame and a pointer into the method zone for
+a machine code frame.
+
+The first frame in a stack page is the baseFrame and is marked as such by a saved fp being its stackPage,
+in which case the first word on the stack is the caller context (possibly hybrid) beneath the base frame.
