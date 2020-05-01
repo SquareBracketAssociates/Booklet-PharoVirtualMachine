@@ -1,4 +1,4 @@
-#Stack Frame / Context State Terminology
+!! Stack Frame / Context State Terminology
 
 We call a stack frame, a frame in the execution stack. 
 A context is the reificated context in the image. 
