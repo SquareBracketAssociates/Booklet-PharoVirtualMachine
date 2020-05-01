@@ -18,5 +18,5 @@ Since we are not a native english speaker, we appreciate pull requests that help
 
 Pablo, Guille, Stef, Pierre, Theo, Luc, Carolina and...
 
-[travis]: https://travis-ci.com/SquareBracketAssociates/PharoVirtualMachine
-[badge]: https://travis-ci.com/SquareBracketAssociates/PharoVirtualMachine.svg?branch=master
+[travis]: https://travis-ci.com/SquareBracketAssociates/Booklet-PharoVirtualMachine
+[badge]: https://travis-ci.com/SquareBracketAssociates/Booklet-PharoVirtualMachine.svg?branch=master
