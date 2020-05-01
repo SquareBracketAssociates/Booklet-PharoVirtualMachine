@@ -32,7 +32,7 @@ sp->	ret pc.
 Format of a stack frame in a frameful activation.  Word-sized indices relative to the frame pointer.
 
  Stacks grow down:
- [[[
+[[[
 			receiver for method activations/closure for block activations
 			arg0
 			...
