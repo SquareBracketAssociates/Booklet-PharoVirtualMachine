@@ -78,14 +78,8 @@ Indeed, not all adresses multiple of 4 are objects, because objects are usually 
 To unify the VM code such as the GC code on both 32-bits and 64-bits architectures, the Pharo VM always aligns objects on 8 bytes (64-bits alignment).
 Figure *@objectLayout* shows an example of an object with 1 header and 3 slots in 32-bits and 64-bits architectures.
 We can see that:
-- in 64-bits, the object occupies 4 words : 1 base header of 1 word, 3 slots of 1 word each.
-The next free address (32 on the Figure) is aligned can be used to store another object.
-Since an object always occupies a multiple of words of 8 bytes, the address following an object is always aligned.
-- in 32-bits, the object should occupy 6 words : 1 base header of 2 words (2 \* 4 bytes), 3 slots of 1 word each and 1 padding word.
-First, slots are smaller here because the address space is smaller.
-Second, the Pharo VM adds a padding word at the end of this object.
-This is mandatory to ensure that the next address after this object (24 on the Figure) is aligned on 8 bytes i.e. a multiple of 8.
-Padding is just memory waste (unused), but it unifies the implementation with 64-bits and ensures that objects are always aligned on all architectures.
+- in 64-bits, the object occupies 4 words : 1 base header of 1 word, 3 slots of 1 word each. The next free address (32 on the Figure) is aligned can be used to store another object. Since an object always occupies a multiple of words of 8 bytes, the address following an object is always aligned.
+- in 32-bits, the object should occupy 6 words : 1 base header of 2 words (2 \* 4 bytes), 3 slots of 1 word each and 1 padding word. First, slots are smaller here because the address space is smaller. Second, the Pharo VM adds a padding word at the end of this object. This is mandatory to ensure that the next address after this object (24 on the Figure) is aligned on 8 bytes i.e. a multiple of 8. Padding is just memory waste (unused), but it unifies the implementation with 64-bits and ensures that objects are always aligned on all architectures.
 
 !!!Immediate Objects
 
@@ -120,8 +114,6 @@ Figure *@32bitsimm* shows the possible values of the last 2 bits of an address (
 - ==01== tells the VM that it is an immediate ==SmallInteger== whose value is encoded in white bits. ==SmallInteger== value is therefore encoded in the remaining 30 bits.
 - ==10== tells the VM that it is an immediate ==Character== whose value is encoded in white bits. Having immediate ==Character==s makes ==String== low-level operations such as ==at:== and ==at:put:== faster since there is no ==Character== instance creation (==at:put:==) or extra referencing (==at:==).
 
-+Base Object Header.>figures/ObjectHeader.pdf|width=100|label=objectheader+
-
 !!!!64-bits Immediate Objects
 
 +64 bits immediate objects.>figures/64bitsImmediate.pdf|width=100|label=64bitsimm+
@@ -140,22 +132,23 @@ SmallInteger maxVal == (2**60-1)
 >>> true
 ]]]
 
-
 Figure *@64bitsfloatimm* shows the structure of a ==SmallFloat==.
 
 +64 bits ==SmallFloat== immediate.>figures/64bitsFloatImmediate.pdf|width=100|label=64bitsfloatimm+
-
 
 !!! Object Header
 
 !!!! Base Object Header Structure
 
-For objects that are not immediate, a reference will point to an object header.
-An object header is 64 bits length, which means it is 2 words in 32 bits and 1 word in 64 bits as shown in Figure *@objectheader*.
+For objects that are not immediate, a reference always points to an object's base header.
+A base object header is 64 bits length, which means it is 2 words in 32 bits and 1 word in 64 bits as shown in Figure *@objectheader*.
+
++Base Object Header.>figures/ObjectHeader.pdf|width=100|label=objectheader+
 
 Let us explain the object header structure:
 
-- The first left topmost 8 red/orange bits (marked with an s) represent the number of instance variables (or slots) in the object. When an abject has more than 254 slots, then an additional 64 bits word is allocated as an header extension with the correct size. When these 8 bits represent 255, the VM knows that there is an header extension.
+- The first left topmost 8 red/orange bits (marked with an s) represent the number of instance variables (or slots) in the object. When an object has more than 254 slots, then an additional 64 bits word is allocated as an header extension with the correct size. When these 8 bits represent 255, the VM knows that there is an header extension.
+The header extension is allocated before the base object header still, all references to the these point to the address of the base object header.
 - The 22 h marked top right light blue bits are for the object identity hash.
 - The 5 pink bottom left marked bits represent object formats as we will explain later.
 - The 22 c yellow bottom right bits are for the class index. In Spur, there is a class table where each class is given an index. Each object stores the index of its class in that table.
