@@ -85,7 +85,12 @@ We can see that:
 
 !!!! Tagged Values
 
+The address of an object in memory is used to make a reference towards it.
+Sometimes, for performances or memory consumption reasons, instead of an address, a reference can represent another value. 
+A ""tagged value"" is a value encoded inside a reference and are used to represent some immediate objects such as ==SmallInteger==s and ==Character==s.
 The Pharo VM only stores object references whose addresses are aligned.
+It means that some of the last significant bits of reference cannot be set to ==1==.
+
 For example, in 32-bits, possible object addresses are multiple of 4 bytes: 4, 8, 12, 16…
 Respectively, the VM never stores unaligned addresses such as: 1, 2, 3, 9, 10, 11…
 In binary, aligned addresses are as follows:
@@ -98,10 +103,10 @@ In binary, aligned addresses are as follows:
 We can see that addresses aligned on 4 bytes always have the last 2 bits (2^2=4) equals to 0.
 On 64 bits, addresses are aligned on 8 bytes and we have the last 3 bits (2^3=8) that are always equal to 0.
 
-The Pharo VM uses these last bits to suport ""tagged values"".
-A tagged value is a value encoded in a reference.
-It’s just a value of 1 word length whose last bits indicates the value that is encoded.
-The VM uses tagged values to represent some immediate objects such as ==SmallInteger==s and ==Character==s.
+In other words, in the Pharo VM, a tagged value is just a value of 1 word length whose the least significant bits indicates the type of value that is encoded.
+The VM uses either the two least significant bits of a reference to support tagged values in 32-bits or the three least significant bits in 64-bits.
+This means that 30 bits are free to encode a value in 32-bits and 61 bits are free in 64-bits.
+In the Pharo VM tagged values are used to represent some immediate objects such as ==SmallInteger==s and ==Character==s.
 
 !!!!32-bits Immediate Objects
 
