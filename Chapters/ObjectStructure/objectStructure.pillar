@@ -86,7 +86,7 @@ We can see that:
 !!!! Tagged Values
 
 The address of an object in memory is used to make a reference towards it.
-Sometimes, for performances or memory consumption reasons, instead of an address, a reference can represent another value. 
+Sometimes, for performances or memory consumption reasons, instead of an address, a reference is used to represent another value. 
 A ""tagged value"" is a value encoded inside a reference and are used to represent some immediate objects such as ==SmallInteger==s and ==Character==s.
 The Pharo VM only stores object references whose addresses are aligned.
 It means that some of the last significant bits of reference cannot be set to ==1==.
@@ -128,6 +128,7 @@ They are also encoded as tagged values (1 word value) based on the last "free" 3
 
 ==SmallInteger== are encoded on 61 bits (64 bits minus 3 dedicated to tagging values).
 It means that ==SmallInteger== immediate objects range is between \[-2\^60,2\^60-1\].
+For example: ==2r1010001== represents the number ==10== (the immediate value is shifted by three to the right).
 
 [[[caption=On 64 bits, SmallInteger are encoded on 61 bits.
 SmallInteger minVal == (2**60) negated
@@ -140,6 +141,8 @@ SmallInteger maxVal == (2**60-1)
 Figure *@64bitsfloatimm* shows the structure of a ==SmallFloat==.
 
 +64 bits ==SmallFloat== immediate.>figures/64bitsFloatImmediate.pdf|width=100|label=64bitsfloatimm+
+
+In the VM, ==SmallFloat== immediate object works with IEEE double precision floating pointer format.
 
 !!! Object Header
 
