@@ -116,8 +116,8 @@ Immediate objects are objects directly encoded in the pointer to the object it p
 An immediate object has no object header, no slots and is always 1 word length (the size of an address).
 Figure *@32bitsimm* shows the possible values of the last 2 bits of an address (gray cells):
 - ==00== means that is an aligned address and therefore an object reference in the heap.
-- ==01== tells the VM that it is an immediate ==SmallInteger== whose value is encoded in white bits. ==SmallInteger== value is therefore encoded in the remaining 30 bits.
-- ==10== tells the VM that it is an immediate ==Character== whose value is encoded in white bits. Having immediate ==Character==s makes ==String== low-level operations such as ==at:== and ==at:put:== faster since there is no ==Character== instance creation (==at:put:==) or extra referencing (==at:==).
+- ==1== tells the VM that it is an immediate ==SmallInteger==. This case is special as only the least significant bit is used to mark the tagged value as a ==SmallInteger==. It means that the value is encoded on the remaining 31 bits as a signed integer (in white in the Figure). The ==SmallInteger== immediate objects range is between \[-2\^30,2\^30-1\]. For example: ==2r10101== represents number ==10== (the immediate value is shifted by one to the right).
+- ==10== tells the VM that it is an immediate ==Character== whose value is encoded in the remaining 30 bits (in white in the Figure). Having immediate ==Character==s makes ==String== low-level operations such as ==at:== and ==at:put:== faster since there is no ==Character== instance creation (==at:put:==) or extra referencing (==at:==). For example: ==2r100000110== represents the character ==$A== (==65==).
 
 !!!!64-bits Immediate Objects
 
