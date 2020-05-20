@@ -86,7 +86,7 @@ We can see that:
 !!!! Tagged Values
 
 The address of an object in memory is used to make a reference towards it.
-Sometimes, for performances or memory consumption reasons, instead of an address, a reference is used to represent another value. 
+Sometimes, for performance or memory consumption reasons, instead of an address, a reference is used to represent another value. 
 A ""tagged value"" is a value encoded inside a reference and are used to represent some immediate objects such as ==SmallInteger==s and ==Character==s.
 The Pharo VM only stores object references whose addresses are aligned.
 It means that some of the last significant bits of reference cannot be set to ==1==.
