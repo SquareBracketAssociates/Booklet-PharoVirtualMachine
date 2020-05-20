@@ -205,7 +205,7 @@ Typically, this is the case of ==Array== where the memory allocation directly de
 Each element contained in the object is stored as a slot.
 Consequently, the number of elements of the object is stored by the number of slots in its header.
 
-Variable sized objects with instances variables represent objects that can have a specific size during allocation, but which also owns dedicated instance variables.
+Variable sized objects with instance variables represent objects that can have a specific size during allocation, but which also own dedicated instance variables.
 This is the case, for example, of ==Context==s instances which some instance variables (==receiver==, ==method==...) and a variable number of temporary variables.
 The variable array and the instances are all in the slots of the object.
 As the header of the object only contains the total number of slots, it cannot be used to know where the slots related to the beginning of the array starts.
