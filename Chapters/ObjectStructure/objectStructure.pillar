@@ -85,7 +85,12 @@ We can see that:
 
 !!!! Tagged Values
 
+The address of an object in memory is used to make a reference towards it.
+Sometimes, for performance or memory consumption reasons, instead of an address, a reference is used to represent another value. 
+A ""tagged value"" is a value encoded inside a reference. Tagged values are used to represent some immediate objects such as ==SmallInteger==s and ==Character==s.
 The Pharo VM only stores object references whose addresses are aligned.
+It means that some of the last significant bits of reference cannot be set to ==1==.
+
 For example, in 32-bits, possible object addresses are multiple of 4 bytes: 4, 8, 12, 16…
 Respectively, the VM never stores unaligned addresses such as: 1, 2, 3, 9, 10, 11…
 In binary, aligned addresses are as follows:
@@ -98,10 +103,10 @@ In binary, aligned addresses are as follows:
 We can see that addresses aligned on 4 bytes always have the last 2 bits (2^2=4) equals to 0.
 On 64 bits, addresses are aligned on 8 bytes and we have the last 3 bits (2^3=8) that are always equal to 0.
 
-The Pharo VM uses these last bits to suport ""tagged values"".
-A tagged value is a value encoded in a reference.
-It’s just a value of 1 word length whose last bits indicates the value that is encoded.
-The VM uses tagged values to represent some immediate objects such as ==SmallInteger==s and ==Character==s.
+In other words, in the Pharo VM, a tagged value is just a value of 1 word length whose the least significant bits indicates the type of value that is encoded.
+The VM uses either the two least significant bits of a reference to support tagged values in 32-bits or the three least significant bits in 64-bits.
+This means that 30 bits are free to encode a value in 32-bits and 61 bits are free in 64-bits.
+In the Pharo VM tagged values are used to represent some immediate objects such as ==SmallInteger==s and ==Character==s.
 
 !!!!32-bits Immediate Objects
 
@@ -111,8 +116,8 @@ Immediate objects are objects directly encoded in the pointer to the object it p
 An immediate object has no object header, no slots and is always 1 word length (the size of an address).
 Figure *@32bitsimm* shows the possible values of the last 2 bits of an address (gray cells):
 - ==00== means that is an aligned address and therefore an object reference in the heap.
-- ==01== tells the VM that it is an immediate ==SmallInteger== whose value is encoded in white bits. ==SmallInteger== value is therefore encoded in the remaining 30 bits.
-- ==10== tells the VM that it is an immediate ==Character== whose value is encoded in white bits. Having immediate ==Character==s makes ==String== low-level operations such as ==at:== and ==at:put:== faster since there is no ==Character== instance creation (==at:put:==) or extra referencing (==at:==).
+- ==1== tells the VM that it is an immediate ==SmallInteger==. This case is special as only the least significant bit is used to mark the tagged value as a ==SmallInteger==. It means that the value is encoded on the remaining 31 bits as a signed integer (in white in the Figure). The ==SmallInteger== immediate objects range is between \[-2\^30,2\^30-1\]. For example: ==2r10101== represents number ==10== (the immediate value is shifted by one to the right).
+- ==10== tells the VM that it is an immediate ==Character== whose value is encoded in the remaining 30 bits (in white in the Figure). Having immediate ==Character==s makes ==String== low-level operations such as ==at:== and ==at:put:== faster since there is no ==Character== instance creation (==at:put:==) or extra referencing (==at:==). For example: ==2r100000110== represents the character ==$A== (==65==).
 
 !!!!64-bits Immediate Objects
 
@@ -123,6 +128,7 @@ They are also encoded as tagged values (1 word value) based on the last "free" 3
 
 ==SmallInteger== are encoded on 61 bits (64 bits minus 3 dedicated to tagging values).
 It means that ==SmallInteger== immediate objects range is between \[-2\^60,2\^60-1\].
+For example: ==2r1010001== represents the number ==10== (the immediate value is shifted by three to the right).
 
 [[[caption=On 64 bits, SmallInteger are encoded on 61 bits.
 SmallInteger minVal == (2**60) negated
@@ -135,6 +141,8 @@ SmallInteger maxVal == (2**60-1)
 Figure *@64bitsfloatimm* shows the structure of a ==SmallFloat==.
 
 +64 bits ==SmallFloat== immediate.>figures/64bitsFloatImmediate.pdf|width=100|label=64bitsfloatimm+
+
+In the VM, ==SmallFloat== immediate object works with IEEE double precision floating pointer format.
 
 !!! Object Header
 
