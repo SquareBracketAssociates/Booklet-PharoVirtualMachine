@@ -177,31 +177,86 @@ This layout avoid systematically testing the presence of the extra-header.
 
 !!!! Object format
 
-The object format is represented by the 5 pink bits (marked with o) of the object header.
+The object format is represented by the 5 pink bits (marked with ==o==) of the object header.
 It encodes the following information:
 
-- 0 : 0 sized object - ==nil==, ==true==, ==false==
-- 1 : fixed sized object with instance variables - ==Point==
-- 2 : variable sized object with no instance variables - ==Array==
-- 3 : variable sized objects with instance variables - ==MethodContext==
-- 4 : weak variable sized objects  - ==WeakArray==
-- 5 : weak fixed sized objects with instance variables - ==Ephemeron==
-- 6, 7, 8 : unused
-- 9 : 64 bits indexable
-- 10 -11 : 32 bits indexable
-- 12 - 15 : 16 bits indexable
-- 16 - 23 : 8 bits indexable
-- 24 - 31 : compiled methods
+- ==0== : 0 sized objects - ==nil==, ==true==, ==false==
+- ==1== : fixed sized objects with instance variables - ==Point==
+- ==2== : variable sized objects with no instance variables - ==Array==
+- ==3== : variable sized objects with instance variables - ==Context==
+- ==4== : weak variable sized objects  - ==WeakArray==
+- ==5== : weak fixed sized objects with instance variables - ==Ephemeron==
+- ==6==, ==7==, ==8== : unused
+- ==9== : 64 bits indexable
+- ==10 - 11== : 32 bits indexable
+- ==12 - 15== : 16 bits indexable
+- ==16 - 23== : 8 bits indexable
+- ==24 - 31== : compiled methods
 
-This object format represent different kinds of indexable arrays: 8, 16, 32  and 64 bits indexable arrays.
-This corresponds to ByteArray (8 bits), WordArray (32 bits unsigned integers).
-See ShortRunArray, RunArray implementations and uses.
+Zero sized objects are objects that only have a header and does not contain any slots.
+They are often special objects, among them is ==nil==, ==true== and ==false==.
+
+Fixed size object with instance variables represent objects that have a fixed number of slot which is always the same when the memory for the object is allocated.
+These objects represent classical instances.
+For example, a ==Point== instance is always created with two instances variables ==x== and ==y==, when the memory is allocated, there will be always two slots for this object.
+
+Variable sized objects with no instance variables represent objects that can be allocated with a specific size, regarding the data that are stored inside.
+Typically, this is the case of ==Array== where the memory allocation directly depends on the number of elements that are stored inside.
+Each element contained in the object is stored as a slot.
+Consequently, the number of elements of the object is stored by the number of slots in its header.
+
+Variable sized objects with instances variables represent objects that can have a specific size during allocation, but which also owns dedicated instance variables.
+This is the case, for example, of ==Context==s instances which some instance variables (==receiver==, ==method==...) and a variable number of temporary variables.
+The variable array and the instances are all in the slots of the object.
+As the header of the object only contains the total number of slots, it cannot be used to know where the slots related to the beginning of the array starts.
+Consequently, the decoding of this object cannot be only done using only the header.
+The number of instance variables of an instance can be found by going up onto its class.
+The format of a class imposes that the third slot of a class (==format==) is an integer that encodes two pieces of information: the object format needed for the instances (encoded in the higher part of the integer) and the number of slot (encoded in the lower part of the integer), as shown in the following code example.
+
+
+[[[caption=Number of instance variables and format of instances is encoded in the class.
+(Context format & 16rFFFF0000) >> 16
+>>> 3  "the object format for instances of Context"
+
+Context format & 16rFFFF
+>>> 6  "the number of instance variable for instances of Context"
+]]]
+
+
+Weak variable sized objects ... TODO
+
+Weak fixed sized objects with instance variables ... TODO
+
+Indexable arrays represents objects that encodes multiple raw values on a same slot (from 1 to 8 depending on if the VM is 32-bits or 64-bits).
+More precisely: 
+
+- 64 bits indexable are only available for 64-bits VM and can stores one 64 bits raw value by slot.
+- 32 bits indexable are only available for 64-bits VM and can store up to two 32 bits raw values by slot.
+- 16 bits indexable can store up to two 16 bits raw values by slot for 32-bits VM and four 16 bits raw values by slot for 64-bits VM.
+- 8 bits indexable can store up to four 8 bits raw values by slot for 32-bits VM and eight 8 bits raw values by slot for 64-bits VM.
+
+Each different format indicates how many "non used" values there is on the last slot of the object:
+
+- format 10 indicates that there is no "unused" part of the last slot. 
+- format 11 indicates that there is one "unused" part of the last slot, meaning that the last 32 bits raw value is located in the higher part of the last slot and that the lower part is not used.
+- format 12 indicates that there is no "unused" par of the last slot.
+- format 13 indicates that there is one "unused" part of the last slot.
+- format 14 indicates that there is two "unused" parts of the last slot.
+- ...
+- format 23 indicates that there is seven "unused" parts of the last slot.
+
+Figure *@multipleBits* shows how raw 32 bits values are stored in slots for format 10 and 11 with a 64-bits VM.
 
 +Taking advantages of multiple bits values for indexable.>figures/32IndexableLastField.png|width=100|label=multipleBits+
 
-Some object formats have multiple bits value.
-For instance, there are two 32 bits indexable representations encoded by 10 or 11 as bits value.
-This indicates to the VM where the last slot of the object is in its last word (see Figure *@multipleBits*).
+The number of elements contained in an object can then be computed by the knowing the number of slots and the object format.
+For example, for an object of ==15== slots with format 18 on a 32 bits VM, we know it has ==4== values by slot, then we can compute that it has ==(15 * 4) - 3 = 57== values. 
+
+For more examples, check ==ByteArray== (8 bits), ==WordArray== (32 bits unsigned integers).
+See ShortRunArray, RunArray implementations and uses.
+
+Compiled methods objects represents different kind of compiled methods.
+This kind of object will be detailed later in the document.
 
 !!!! Class Table and Class Indexes
 
