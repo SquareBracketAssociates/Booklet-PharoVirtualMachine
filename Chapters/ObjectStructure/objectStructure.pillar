@@ -198,7 +198,7 @@ They are often special objects, among them is ==nil==, ==true== and ==false==.
 
 Fixed size object with instance variables represent objects that have a fixed number of slot which is always the same when the memory for the object is allocated.
 These objects represent classical instances.
-For example, a ==Point== instance is always created with two instances variables ==x== and ==y==, when the memory is allocated, there will be always two slots for this object.
+For example, a ==Point== instance is always created with two instance variables ==x== and ==y==, when the memory is allocated, there will be always two slots for this object.
 
 Variable sized objects with no instance variables represent objects that can be allocated with a specific size, regarding the data that are stored inside.
 Typically, this is the case of ==Array== where the memory allocation directly depends on the number of elements that are stored inside.
