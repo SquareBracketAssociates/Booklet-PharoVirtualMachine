@@ -1,4 +1,23 @@
+!! JIT Vocabulary
+
+A Jitted method is a function/routine that was translated to native code at runtime from a bytecode method (I know you know this, just putting this to contrast with what is below).
+An intrinsic is a function/routine defined by the compiler that is not a method.
+
+Intrinsics are defined by compilers for things that cannot generally be expressed in the host language (nor Smalltalk nor C), because for example you want to do some strange register usage.
+
+For example, trampolines are intrinsics of our JIT compiler, they are not methods.
+Other intrinsics in our VM are routines to expose the Stack Pointer, or the machine code implementation of pushThisContext, which is a separate function.
+When the JIT compiler starts, it will define all intrinsics these as little assembly functions.
+Intrinsics are never garbage collected.
+
+
+
 !! Looking at Stack Structure
+
+
+
+
+
 
 
 !!! Stack/Context Terminology
