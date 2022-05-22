@@ -585,7 +585,7 @@ Is it needed...
 
 !!! Primitive Methods?
 
-The interpreter's actions after finding a compiled method depend on whether or not the compiled method indicates that a primitive method may be able to respond to the message. If no primitive method is indicated, a new method context is created and made active as described in previous sections. If a primitive method is indicated in the compiled method, the interpreter may be able to respond to the message without actually executing the bytecodes. For example, one of the primitive methods is associated with the + message to instances of SmallInteger.
+The interpreter's actions after finding a compiled method depend on whether or not the compiled method indicates that a primitive method may be able to respond to the message. If no primitive method is indicated, a new method context is created and made active as described in previous sections. If a primitive method is indicated in the compiled method, the interpreter may be able to respond to the message without actually executing the bytecodes. For example, one of the primitive methods is associated with the ==\+== message to instances of ==SmallInteger==.
 
 [[[
 SmallInteger >> + addend
@@ -594,7 +594,7 @@ SmallInteger >> + addend
 ]]]
 
 - <F8 01 00> callPrimitive: 1 
-- <4C> self
-- <40> pushTemp: 0 
-- <EB 01> superSend: + 
-- <5C> returnTop
+- <4C> self - push the receiver on the stack
+- <40> pushTemp: 0 - push the first argument
+- <EB 01> superSend: ==\+== - send a message via super
+- <5C> returnTop  - return the object on top of the stack as the value of the message
