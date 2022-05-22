@@ -282,14 +282,84 @@ The control structures that are so optimized by the compiler are conditional sel
 
 
 
+!!! The Interpreter
+
+The virtual machine contains one interpreter and a compiler (that compiles to assembly code). Here we talk about the interpreter. It executes the bytecode instructions found in CompiledMethods. The interpreter uses five pieces of information refered hereafter as the state of the interpreter and repeatedly performs a three-step cycle.
+
+!!!!! The State of the Interpreter.
+- The CompiledMethod whose bytecodes are being executed.
+- The location of the next bytecode to be executed in that CompiledMethod. This is the interpreter's ''instruction pointer''.
+- The receiver and arguments of the message that invoked the CompiledMethod.
+- Any temporary variables needed by the CompiledMethod.
+- A stack.
+
+The execution of most bytecodes involves the interpreter's stack. Push bytecodes tell where to find objects to add to the stack. Store bytecodes tell where to put objects found on the stack. Send bytecodes remove the receiver and arguments of messages from the stack. When the result of a message is computed, it is pushed onto the stack.
+
+!!!!! The Cycle of the Interpreter. 
+- Fetch the bytecode from the CompiledMethod indicated by the instruction pointer.
+- Increment the instruction pointer.
+- Perform the function specified by the bytecode.
+
+As an example of the interpreter's function, we will trace its execution of the CompiledMethod  ==Rectangle>>#width==. The state of the interpreter will be displayed after each of its cycles. The instruction pointer will be indicated by an arrow pointing at the next bytecode in the CompiledMethod to be executed. 
+ 
+- ""\=\=>"" <01> pushRcvr: 1 - push the value of the receiver's second instance variable (corner) onto the stack
 
 
+The receiver, arguments, temporary variables, and objects on the stack will be shown as normally printed. 
+For example, if a message is sent to a Rectangle, the receiver will be shown as:
+
+- ""Receiver:""	100@100 corner: 200@200 
 
 
+At the start of execution, the stack is empty and the instruction pointer indicates the first bytecode in the CompiledMethod. This CompiledMethod does not require temporaries and the invoking message did not have arguments, so these two categories are also empty. 
+
+!!!! Step 1.
+The interpreter is in an initial state. It points to the next instructions to be executed. It knows the receiver of the method to be executed.
+
+Rectangle >> #width
+- ""\=\=>"" <01> pushRcvr: 1 - push the value of the receiver's second instance variable (corner) onto the stack
+- <7E> send: x - send the unray message with the selector x
+- <00> pushRcvr: 0 - push the value of the receiver's first instance variable (origin) onto the stack
+- <7E> send: x  - send the unary message with the selector x
+- <61> send: -  - send the binary message with the selector -
+- <5C> returnTop - return the object on top of the stack as the value of the message (width) 
+- ""Receiver:"" 100@100 corner: 200@200
+- ""Arguments:""
+- ""Temporary Variables:""
+- ""Stack:""
+
+!!!! Step 2.
+Following one cycle of the interpreter,  the value of the receiver's second instance variable has been copied onto the stack and the instruction pointer has been advanced.
+
+Rectangle >> #width
+- <01> pushRcvr: 1 - push the value of the receiver's second instance variable (corner) onto the stack
+- ""\=\=>"" <7E> send: x - send the unray message with the selector x
+- <00> pushRcvr: 0 - push the value of the receiver's first instance variable (origin) onto the stack
+- <7E> send: x  - send the unary message with the selector x
+- <61> send: -  - send the binary message with the selector -
+- <5C> returnTop - return the object on top of the stack as the value of the message (width) 
+- ""Receiver:"" 100@100 corner: 200@200
+- ""Arguments:""
+- ""Temporary Variables:""
+- ""Stack"" 200@200
 
 
+!!!! Step 3.
+The interpreter's third cycle encounters a send bytecode. It removes one object from the stack and uses it as the receiver of a message with selector ==x==.
+The procedure for sending the message will not be described in detail here. 
+For the moment, it is only necessary to know that eventually the result of the ==x== message will be pushed onto the stack. Sending messages will be described in later sections.
 
-
+Rectangle >> #width
+- <01> pushRcvr: 1 - push the value of the receiver's second instance variable (corner) onto the stack
+- ""\=\=>"" <7E> send: x - send the unray message with the selector x
+- <00> pushRcvr: 0 - push the value of the receiver's first instance variable (origin) onto the stack
+- <7E> send: x  - send the unary message with the selector x
+- <61> send: -  - send the binary message with the selector -
+- <5C> returnTop - return the object on top of the stack as the value of the message (width) 
+- ""Receiver:"" 100@100 corner: 200@200
+- ""Arguments:""
+- ""Temporary Variables:""
+- ""Stack"" 200@200
 
 
 
