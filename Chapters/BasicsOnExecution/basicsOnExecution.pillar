@@ -1,0 +1,138 @@
+!! Basics on Execution
+
+In this chapter we will explain how a method is compiled and then execution.
+
+We will start with the source methods written by programmers. A method is compiled into sequences of instructions called ''bytecodes''. 
+
+The bytecodes produced by the compiler are instructions for an interpreter, which is described in the second section. 
+
+
+
+!!! Reminder
+Imagine the method ==Rectangle>>center== defined as follows
+
+[[[
+Rectangle >> width
+	"Answer the width of the receiver."
+
+	^ corner x - origin x
+]]]
+
+A programmer does not interact directly with the compiler. When a new source method is added to a class (==Rectangle== in this example), the system asks the compiler for an instance of CompiledMethod containing the bytecode translation of the source method. The class provides the compiler with some necessary information not given in the source method, including the names of the receiver's instance variables and the dictionaries containing accessible shared variables (global, class, and pool variables). The compiler translates the source text into a CompiledMethod and the class stores the method in its message dictionary. 
+
+!!! Bytecodes 
+
+Source methods are translated by the compiler into sequences of instructions for a stack-oriented interpreter. 
+The instructions are numbers called bytecodes. For example, the bytecodes corresponding to the source method shown above are: 1, 126, 0, 126, 97, and 92.
+
+[[[
+(Rectangle >> #width) bytecode
+>>> #[1 126 0 126 97 92]
+]]]
+
+
+Pharo supports a simple description of the byecode using the message ==symbolicBytecodes==.
+
+[[[
+(Rectangle >> #width) symbolicBytecodes  
+	25 <01> pushRcvr: 1 
+	26 <7E> send: x 
+	27 <00> pushRcvr: 0 
+	28 <7E> send: x 
+	29 <61> send: - 
+	30 <5C> returnTop
+]]]
+
+
+A bytecode's value gives us little indication of its meaning to the interpreter. In this chapter will follow the convention of the Blue Book and accompany lists of bytecodes with comments about their functions. 
+
+
+Any part of a bytecode's comment that depends on the context of the method in which it appears will be parenthesized. The unparenthesized part of the comment describes its general function. For example, the bytecode 0 always instructs the interpreter to push the value of the receiver's first instance variable on to its stack. The fact that the variable is named ==origin== depends on the fact that this method is used by the class ==Rectangle==, so ==origin== is parenthesized. The commented form of the bytecodes for Rectangle center is shown below: 
+
+
+Rectangle >> #width
+- <01> pushRcvr: 1 -- push the value of the receiver's second instance variable (corner) onto the stack
+- <7E> send: x -- send the unray message with the selector x
+- <00> pushRcvr: 0 push the value of the receiver's first instance variable (origin) onto the stack
+- <7E> send: x  -- send the unary message with the selector x
+- <61> send: -  -- send the binary message with the selector -
+- <5C> returnTop -- return the object on top of the stack as the value of the message (width) 
+
+
+!!! About the stack
+     
+The stack mentioned in some of the bytecodes is used for several purposes:
+- In method ==width==, it is used to hold the receiver, arguments, and results of the two messages that are sent. 
+- The stack is also used as the source of the result to be returned from the ==width== method. 
+
+
+
+!!! Illustrating a store bytecode
+Another example of the bytecodes compiled from a source method illustrates the use of a store bytecode.
+Let us define the method ==extent:== as follows:
+
+[[[
+Rectangle >> extent: aPoint
+		corner := origin + aPoint
+]]] 
+
+The message ==extent:== changes the receiver's width and height to be equal to the x and y coordinates of the argument (a Point). The receiver's upper left corner (origin) is kept the same and the lower right corner (corner) is moved.
+
+
+[[[
+(Rectangle >> #extent:) bytecode 
+>>> #[0 64 96 201 88]
+]]]
+
+Rectangle >> #extent: 
+- <00> pushRcvr: 0 -- push the value of the receiver's first instance variable (==origin==) onto the stack 
+- <40> pushTemp: 0 -- push the argument (aPoint) onto the stack 
+- <60> send: + -- send a binary message with the selector + 
+- <C9> popIntoRcvr: 1 -- pop the top object off of the stack and store it in the receiver's second instance variable (==corner==) 
+- 29 <58> returnSelf -- return the receiver as the value of the message (==extent:==) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
