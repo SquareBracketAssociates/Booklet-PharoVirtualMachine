@@ -580,15 +580,21 @@ Literal frame
 - ""Stack:"" 200
 
 
-
-
-
-
 !!! Block context? 
 Is it needed...
 
 !!! Primitive Methods?
 
-What should we say. 
+The interpreter's actions after finding a compiled method depend on whether or not the compiled method indicates that a primitive method may be able to respond to the message. If no primitive method is indicated, a new method context is created and made active as described in previous sections. If a primitive method is indicated in the compiled method, the interpreter may be able to respond to the message without actually executing the bytecodes. For example, one of the primitive methods is associated with the + message to instances of SmallInteger.
 
+[[[
+SmallInteger >> + addend
+	<primitive: 1>
+	^super + addend
+]]]
 
+- <F8 01 00> callPrimitive: 1 
+- <4C> self
+- <40> pushTemp: 0 
+- <EB 01> superSend: + 
+- <5C> returnTop
