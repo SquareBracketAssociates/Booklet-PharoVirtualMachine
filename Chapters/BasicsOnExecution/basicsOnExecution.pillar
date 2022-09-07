@@ -49,50 +49,52 @@ A bytecode's value gives us little indication of its meaning to the interpreter.
 In this chapter we follow the convention of the Blue Book and accompany lists of bytecodes with comments about their functions. 
 
 
-We wrap in parentheses Any part of a bytecode's comment that depends on the context of the method in which it appears. 
+We wrap in parentheses any part of a bytecode's comment that depends on the context of the method in which it appears. 
 The unparenthesized part of the comment describes its general function. 
 For example, the bytecode 0 always instructs the interpreter to push the value of the receiver's first instance variable on to its stack.
 The fact that the variable is named ==origin== depends on the fact that this method is used by the class ==Rectangle==, so ==origin== is parenthesized. 
 The commented form of the bytecodes for Rectangle center is shown below: 
 
-[[[
+
 Rectangle >> #width
 - <01> pushRcvr: 1 - push the value of the receiver's second instance variable (corner) onto the stack
-- <7E> send: x - send the unray message with the selector x
+- <7E> send: x - send the unary message x
 - <00> pushRcvr: 0 - push the value of the receiver's first instance variable (origin) onto the stack
-- <7E> send: x  - send the unary message with the selector x
-- <61> send: -  - send the binary message with the selector -
+- <7E> send: x  - send the unary message x
+- <61> send: -  - send the binary message -
 - <5C> returnTop - return the object on top of the stack as the value of the message (width) 
-]]]
+
 
 !!!! About the stack.
 The stack mentioned in some of the bytecodes is used for several purposes:
 - In method ==width==, it is used to hold the receiver, arguments, and results of the two messages that are sent. 
-- The stack is also used as the source of the result to be returned from the ==width== method. 
+- The stack is also used as the source of the result returned from the ==width== method. 
 
 
 
-!!! Illustrating a store bytecode
+!!! A store bytecode
+
 Another example of the bytecodes compiled from a source method illustrates the use of a store bytecode.
 Let us define the method ==extent:== as follows:
 
 [[[
 Rectangle >> extent: aPoint
-		corner := origin + aPoint
+	corner := origin + aPoint
 ]]] 
 
-The message ==extent:== changes the receiver's width and height to be equal to the x and y coordinates of the argument (a Point). The receiver's upper left corner (origin) is kept the same and the lower right corner (corner) is moved.
-
+The message ==extent:== changes the receiver's ==width== and ==height== to be equal to the ==x== and ==y== coordinates of the argument (==a Point==). 
+The receiver's upper left corner (==origin==) is kept the same and the lower right corner (==corner==) is moved.
 
 [[[
 (Rectangle >> #extent:) bytecode 
 >>> #[0 64 96 201 88]
 ]]]
 
+
 Rectangle >> #extent: 
-- <00> pushRcvr: 0 - push the value of the receiver's first instance variable (==origin==) onto the stack 
+- <00> pushRcvr: 0 - push the value of the receiver's first instance variable (origin) onto the stack 
 - <40> pushTemp: 0 - push the argument (aPoint) onto the stack 
-- <60> send: ==\+== - send a binary message with the selector + 
+- <60> send: ==\+== - send a binary message + 
 - <C9> popIntoRcvr: 1 - pop the top object off of the stack and store it in the receiver's second instance variable (==corner==) 
 - 29 <58> returnSelf - return the receiver as the value of the message (==extent:==) 
 
@@ -102,14 +104,17 @@ Rectangle >> #extent:
 
 !!! Compiled Methods
 
-The compiler creates an instance of ==CompiledMethod== to hold the bytecode translation of a source method. In addition to the bytecodes themselves, a CompiledMethod contains a set of objects called its ''literal frame''. The literal frame contains any objects that could not be referred to directly by bytecodes. 
+The compiler creates an instance of ==CompiledMethod== to hold the bytecode translation of a source method. In addition to the bytecodes themselves, a ==CompiledMethod== contains a set of objects called its ''literal frame''.
+The literal frame contains any objects that could not be referred to directly by bytecodes. 
 
-All of the objects in the method ==Rectangle>>#extent:== were referred to directly by bytecodes, so the CompiledMethods for these methods do not need literal frames. 
+All of the objects in the methods ==Rectangle>>#extent:== and ==Rectangle>>#width== were referred to directly by bytecodes, so the ==CompiledMethod== of these methods do not need literal frames. 
 
-As an example of a CompiledMethod with a literal frame, consider the method ==Rectangle>>#squishedWithin:==. The ==squishedWithin:== message changes the receiver fits within aRectangle by reducing its size, not by changing its origin.
+As an example of a ==CompiledMethod== with a literal frame, consider the method ==Rectangle>>#squishedWithin:==. 
+The ==squishedWithin:== message changes the receiver fits within ==aRectangle== by reducing its size, not by changing its origin.
+
 [[[
 Rectangle >> squishedWithin: aRectangle
-	"Return an adjustment of the receiver that fits within aRectangle by reducing its size, not by changing its origin.  "
+	"Return an adjustment of the receiver that fits within aRectangle by reducing its size, not by changing its origin."
 
 	^ origin corner: (corner min: aRectangle bottomRight)
 ]]]
@@ -121,7 +126,9 @@ Rectangle >> squishedWithin: aRectangle
 ]]]
 
 
-The message selectors (==bottomRight==, ==min:==, ==corner:==)  are not in the set that can be directly referenced by bytecodes. These selectors are included in the CompiledMethod's literal frame and the send bytecodes refer to the selectors by their position in the literal frame. A CompiledMethod's literal frame will be shown after its bytecodes. 
+The message selectors (==bottomRight==, ==min:==, ==corner:==)  are not in the set that can be directly referenced by bytecodes.
+These selectors are included in the ==CompiledMethod=='s literal frame and the send bytecodes refer to the selectors by their position in the literal frame. 
+We show the compiledMethod's literal frame after its bytecodes.
  
 ==Rectangle>>#squishedWithin:==
 - <00> pushRcvr: 0 - push the value of the receiver's first instance variable (==origin==) onto the stack 
@@ -137,7 +144,7 @@ Literal frame
 - 3 ==#corner:==
 	
 The categories of objects that can be referred to directly by bytecodes are:
-- the receiver and arguments of the invoking message
+- the receiver and arguments of the message
 - the values of the receiver's instance variables
 - the values of any temporary variables required by the method
 -  special constants (true, false, nil, -1, 0, 1, and 2)
@@ -190,19 +197,29 @@ Objects of these three types may be intermixed in the literal frame.
 %#origin:corner:  
 %Association: #Rectangle -> Rectangle  
 
-!!!! Temporary Variables.
- Temporary variables are created for a particular execution of a CompiledMethod and cease to exist when the execution is complete. The CompiledMethod indicates to the interpreter how many temporary variables will be required. The arguments of the invoking message and the values of the temporary variables are stored together in the temporary frame. The arguments are stored first and the temporary variable values immediately after. They are accessed by the same type of bytecode (whose comments refer to a temporary frame location). 
+!!! Temporary Variables
+Temporary variables are created for a particular execution of a CompiledMethod and cease to exist when the execution is complete. 
+The CompiledMethod indicates to the interpreter how many temporary variables are required. 
+The arguments of the message and the values of the temporary variables are stored together in the temporary frame.
+The arguments are stored first and the temporary variable values immediately after.
+They are accessed by the same type of bytecode (whose comments refer to a temporary frame location). 
  
 The compiler enforces the fact that the values of the argument names cannot be changed by never issuing a store bytecode referring to the part of the temporary frame inhabited by the arguments.
 
 !!!! Shared Variables.
-Shared variables are found in dictionaries.
+Shared variables are held in dictionaries or environments.
 
-- global variables in a dictionary whose names can appear in any method
-- class variables in a dictionary whose names can only appear in the methods of a single class and its subclasses
-- pool variables in a dictionary whose names can appear in the methods of several classes
+- global variables in the system dictionary unique instance.
+- class variables in a dictionary held in the class declaring them.
+- pool variables in collection held in shared pool classes.
 
-Shared variables are the individual associations that make up these dictionaries. The system represents associations in general, and shared variables in particular, with instances of Association. When the compiler encounters the name of a shared variable in a source method, the Association with the same name is included in the CompiledMethod's literal frame. The bytecodes that access shared variables indicate the location of an Association in the literal frame. The actual value of the variable is stored in an instance variable of the Association. 
+The system represents associations in general, and shared variables in particular, with instances of ==Association== (representing key value pair of information). 
+When the compiler encounters the name of a shared variable in a source method, the ==Association== with the same name is included in the CompiledMethod's literal frame.
+The bytecodes that access shared variables indicate the location of an ==Association== in the literal frame. 
+The actual value of the variable is stored in an instance variable of the ==Association==. 
+
+Note that the literal frame or dictionaries are holding an ==Association== and not just the value because this way it does not force a recompilation of all the users of a shared variable when its value change.
+
 
 
 !!! The bytecodes
@@ -220,9 +237,12 @@ Some of the bytecodes take extensions. An extension is one or two bytes followin
 - the literal frame of the CompiledMethod
 - the top of the stack (i.e., this bytecode duplicates the top of stack)
 
-Examples of most of the types of push bytecode have been included in the examples. The bytecode that duplicates the top of the stack is used to implement cascaded messages. 
+Examples of most of the types of push bytecode have been included in the examples.
+The bytecode that duplicates the top of the stack is used to implement cascaded messages. 
 
-Two different types of push bytecode use the literal frame as their source. One is used to push literal constants and the other to push the value of shared variables. Literal constants are stored directly in the literal frame, but the values of shared variables are stored in an Association that is pointed to by the literal frame. 
+Two different types of push bytecode use the literal frame as their source.
+One is used to push literal constants and the other to push the value of shared variables.
+Literal constants are stored directly in the literal frame, but the values of shared variables are stored in an Association that is pointed to by the literal frame. 
 
 
 %The following example method uses one shared variable and one literal constant.
@@ -292,7 +312,7 @@ The control structures that are so optimized by the compiler are conditional sel
 
 The virtual machine contains one interpreter and a compiler (that compiles to assembly code). Here we talk about the interpreter. It executes the bytecode instructions found in CompiledMethods. The interpreter uses five pieces of information refered hereafter as the state of the interpreter and repeatedly performs a three-step cycle.
 
-!!!!! The State of the Interpreter.
+!!!! The State of the Interpreter.
 - The CompiledMethod whose bytecodes are being executed.
 - The location of the next bytecode to be executed in that CompiledMethod. This is the interpreter's ''instruction pointer''.
 - The receiver and arguments of the message that invoked the CompiledMethod.
@@ -306,7 +326,9 @@ The execution of most bytecodes involves the interpreter's stack. Push bytecodes
 - Increment the instruction pointer.
 - Perform the function specified by the bytecode.
 
-As an example of the interpreter's function, we will trace its execution of the CompiledMethod  ==Rectangle>>#width==. The state of the interpreter will be displayed after each of its cycles. The instruction pointer will be indicated by an arrow pointing at the next bytecode in the CompiledMethod to be executed. 
+As an example of the interpreter's function, we will trace its execution of the CompiledMethod  ==Rectangle>>#width==.
+The state of the interpreter will be displayed after each of its cycles.
+The instruction pointer will be indicated by an arrow pointing at the next bytecode in the CompiledMethod to be executed. 
  
 - ""\=\=>"" <01> pushRcvr: 1 - push the value of the receiver's second instance variable (corner) onto the stack
 
@@ -319,22 +341,22 @@ For example, if a message is sent to a Rectangle, the receiver will be shown as:
 
 At the start of execution, the stack is empty and the instruction pointer indicates the first bytecode in the CompiledMethod. This CompiledMethod does not require temporaries and the invoking message did not have arguments, so these two categories are also empty. 
 
-!!!!! Step 1.
+!!!! Step 1.
 The interpreter is in an initial state. It points to the next instructions to be executed. It knows the receiver of the method to be executed.
 
 Rectangle >> #width
 - ""\=\=>"" <01> pushRcvr: 1 - push the value of the receiver's second instance variable (corner) onto the stack
-- <7E> send: x - send the unray message with the selector x
+- <7E> send: x - send the unaay message  x
 - <00> pushRcvr: 0 - push the value of the receiver's first instance variable (origin) onto the stack
-- <7E> send: x  - send the unary message with the selector x
-- <61> send: -  - send the binary message with the selector -
+- <7E> send: x  - send the unary message x
+- <61> send: -  - send the binary message -
 - <5C> returnTop - return the object on top of the stack as the value of the message (width) 
 - ""Receiver:"" 50@50  corner: 200@200
 - ""Arguments:""
 - ""Temporary Variables:""
 - ""Stack:""
 
-!!!!! Step 2.
+!!!! Step 2.
 Following one cycle of the interpreter,  the value of the receiver's second instance variable has been copied onto the stack and the instruction pointer has been advanced.
 
 Rectangle >> #width
@@ -347,11 +369,14 @@ Rectangle >> #width
 - ""Receiver:"" 50@50 corner: 200@200
 - ""Arguments:""
 - ""Temporary Variables:""
-- ""Stack"" 200@200
+- ""Stack:"" 200@200
 
 
-!!!!! Step 3.
-The interpreter encounters a send bytecode. It removes one object from the stack and uses it as the receiver of a message with selector ==x==. Sending a message will not be described in detail here. Sending messages will be described in later sections.
+!!!! Step 3.
+The interpreter encounters a send bytecode. 
+It removes one object from the stack and uses it as the receiver of a message with selector ==x==. 
+Sending a message will not be described in detail here. 
+Sending messages will be described in later sections.
 For the moment, it is only necessary to know that eventually the result of the ==x== message will be pushed onto the stack. 
 
 Rectangle >> #width
@@ -364,9 +389,9 @@ Rectangle >> #width
 - ""Receiver:"" 50@50 corner: 200@200
 - ""Arguments:""
 - ""Temporary Variables:""
-- ""Stack"" 200
+- ""Stack:"" 200
 
-!!!!! Step 4.
+!!!! Step 4.
 In this cycle, the value of the first receiver's first instance variables (origin) onto the stack
 
 Rectangle >> #width
@@ -379,11 +404,11 @@ Rectangle >> #width
 - ""Receiver:"" 50@50  corner: 200@200
 - ""Arguments:""
 - ""Temporary Variables:""
-- ""Stack"" 200
-- ""Stack"" 50@50 
+- ""Stack:"" 200
+- ""Stack:"" 50@50 
 
 
-!!!!! Step 5.
+!!!! Step 5.
 In this cycle, the message x is sent: it removes one object from the stack and uses it as the receiver of a message with selector ==x== and push back the result on the stack.
 
 Rectangle >> #width
@@ -396,10 +421,10 @@ Rectangle >> #width
 - ""Receiver:"" 50@50  corner: 200@200
 - ""Arguments:""
 - ""Temporary Variables:""
-- ""Stack"" 200
-- ""Stack"" 50
+- ""Stack:"" 200
+- ""Stack:"" 50
 
-!!!!! Step 6.
+!!!! Step 6.
 The final bytecode returns a result to the width message. The result is found on the stack (150). It is clear by this point that a return bytecode must involve pushing the result onto another stack. 
 The details of returning a value to a message will be described after the description of sending a message.
 
@@ -414,7 +439,7 @@ Rectangle >> #width
 - ""Receiver:"" 50@50  corner: 200@200
 - ""Arguments:""
 - ""Temporary Variables:""
-- ""Stack"" 150
+- ""Stack:"" 150
 
 
 !!! Contexts
