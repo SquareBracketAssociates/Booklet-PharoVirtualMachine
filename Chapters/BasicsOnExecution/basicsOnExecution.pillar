@@ -8,18 +8,18 @@ We will start with the source methods written by programmers. A method is compil
 Then we present contexts that support the execution of messages. 
 
 
-
 !!! Reminder
 Imagine the method ==Rectangle>>center== defined as follows
 
 [[[
 Rectangle >> width
 	"Answer the width of the receiver."
-
 	^ corner x - origin x
 ]]]
 
-A programmer does not interact directly with the compiler. When a new source method is added to a class (==Rectangle== in this example), the system asks the compiler for an instance of CompiledMethod containing the bytecode translation of the source method. The class provides the compiler with some necessary information not given in the source method, including the names of the receiver's instance variables and the dictionaries containing accessible shared variables (global, class, and pool variables). The compiler translates the source text into a CompiledMethod and the class stores the method in its message dictionary. 
+A programmer does not interact directly with the compiler. When a new source method is added to a class (==Rectangle== in this example), the system asks the compiler for an instance of ==CompiledMethod== containing the bytecode translation of the source method. 
+The class provides the compiler with some necessary information not given in the source method, including the names of the receiver's instance variables and the dictionaries containing accessible shared variables (global, class, and pool variables). 
+The compiler translates the source text into a ==CompiledMethod== and the class stores the method in its message dictionary. 
 
 !!! Bytecodes by example
 
@@ -45,12 +45,17 @@ Pharo supports a simple description of the bytecode using the message ==symbolic
 ]]]
 
 
-A bytecode's value gives us little indication of its meaning to the interpreter. In this chapter will follow the convention of the Blue Book and accompany lists of bytecodes with comments about their functions. 
+A bytecode's value gives us little indication of its meaning to the interpreter. 
+In this chapter we follow the convention of the Blue Book and accompany lists of bytecodes with comments about their functions. 
 
 
-Any part of a bytecode's comment that depends on the context of the method in which it appears will be parenthesized. The unparenthesized part of the comment describes its general function. For example, the bytecode 0 always instructs the interpreter to push the value of the receiver's first instance variable on to its stack. The fact that the variable is named ==origin== depends on the fact that this method is used by the class ==Rectangle==, so ==origin== is parenthesized. The commented form of the bytecodes for Rectangle center is shown below: 
+We wrap in parentheses Any part of a bytecode's comment that depends on the context of the method in which it appears. 
+The unparenthesized part of the comment describes its general function. 
+For example, the bytecode 0 always instructs the interpreter to push the value of the receiver's first instance variable on to its stack.
+The fact that the variable is named ==origin== depends on the fact that this method is used by the class ==Rectangle==, so ==origin== is parenthesized. 
+The commented form of the bytecodes for Rectangle center is shown below: 
 
-
+[[[
 Rectangle >> #width
 - <01> pushRcvr: 1 - push the value of the receiver's second instance variable (corner) onto the stack
 - <7E> send: x - send the unray message with the selector x
@@ -58,7 +63,7 @@ Rectangle >> #width
 - <7E> send: x  - send the unary message with the selector x
 - <61> send: -  - send the binary message with the selector -
 - <5C> returnTop - return the object on top of the stack as the value of the message (width) 
-
+]]]
 
 !!!! About the stack.
 The stack mentioned in some of the bytecodes is used for several purposes:
@@ -580,8 +585,31 @@ Literal frame
 - ""Stack:"" 200
 
 
-!!! Block context? 
-Is it needed...
+!!! Handling blocks: inlined ones
+
+[[[
+Rectangle >> containsPoint: aPoint 
+	"Answer whether aPoint is within the receiver."
+	^origin <= aPoint and: [aPoint < corner]
+]]]
+
+- <00> pushRcvr: 0 
+- <40> pushTemp: 0 
+- <64> send: <= 
+- <C3> jumpFalse: 41 
+- <40> pushTemp: 0 
+- <01> pushRcvr: 1 
+- <62> send: < 
+- <B0> jumpTo: 42 
+- 41 <4E> pushConstant: false 
+- 42 <5C> returnTop)"
+
+
+!!! Blocks
+
+Context should have a receiver because executing ==[ self foo ] value== should execute foo on self and not the block
+
+
 
 !!! Primitive Methods?
 
