@@ -85,13 +85,11 @@ Otherwise, if each procedure leaves the registers and the stack in different sta
 The interpreter and the JIT share the same calling conventions.
 
 
-%![....](figures/pillar.png width=100&label=stackGrowing)
+![....](figures/StackGrowingDown.pdf width=30&label=stackGrowing)
 
-![....](figures/StackGrowingDown.png width=100&label=stackGrowing)
+![....](figures/BeforeSend.pdf width=80&label=beforesend)
 
-![....](figures/BeforeSend.png width=100&label=beforesend)
-
-![....](figures/AfterSend.png width=100&label=aftersend)
+![....](figures/AfterSend.pdf width=80&label=aftersend)
 
 ![....](figures/GeneralArgument.png width=100&label=generalArguments)
 
