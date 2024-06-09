@@ -74,17 +74,20 @@ We say that the _most significant_ bit in a byte is the bit that has most value 
 We can define the most and least significant bytes in a word in the same way.
 For example, the bit string 00000101 represents the number 5 in binary, and its least significant bit is represented by the rightest bit with value 1.
 
-While we usually represent bytes from left-to-right (most-to-least significant), this is only the case of some architectures.
+While we usually represent bytes from left-to-right (most-to-least significant), this is only the case with some architectures.
 The order in which individual bytes of a word are stored in memory is again a trait of the computer architecture: the endianness.
 An architecture is said to be little-endian if data bytes are stored from the least significant to the most significant, and big-endian otherwise.
+(SD: why this is "stored from least to most?" because 08 is store in 0 in the following)
 Understanding endianness is important when reading and writing values smaller than a word.
 
 Nowadays, the most popular architectures out there are little-endian.
-This means that a 64-bit word with value `16r0102030405060708` is stored backwards.
+This means that a 64-bit word with the value `16r0102030405060708` is stored backward.
 Let's imagine that the word spans from address 0 to 7.
-The lowest address -0- contains the least significant byte -16r08-.
-The highest address -7- contains the most significant byte -16r01-.
-If we wanted to read the bytes in most-to-least significance order, then we need to iterate it backwards: from 7 to 0.
+- The lowest address -0- contains the least significant byte -16r08-.
+- The highest address -7- contains the most significant byte -16r01- (see Fig. *@fig:LittleEndian@*).
+If we wanted to read the bytes in most-to-least significance order, then we need to iterate it backward: from 7 to 0.
+
+![16r0102030405060708 in LittleEndian: least significant bit stored in lowest address.](figures/LittleEndian.pdf width=20&label=fig:LittleEndian)
 
 ### Object Layout
 
@@ -92,11 +95,12 @@ Pharo programs are made of objects which are, for the most part, allocated in me
 We call these objects _heap-allocated_ because they reside in a memory region managed by the VM called the _heap_, that we will explore in later chapters.
 
 #### Object Formats
-@sec:layout
+@sec:layout 
+@sec:formats
 
-Pharo objects contain contain _slots_ that store the object's data.
+Pharo objects contain _slots_ that store the object's data.
 Objects come in different kinds, determining the number of slots they contain and how their slot contents is interpreted.
-The following table summarizes the most common type of objects and their variations.
+The following table summarizes the most common types of objects and their variations.
 
 | Type/Format    | # slots | Slot type       | Slot size    | Variations |
 | -------------- | --------------- | --------------- | --------------- | ---------- |
@@ -118,11 +122,11 @@ Plain data is stored as raw bytes in a slot, typically representing low-level da
 Reference slots store an address, and thus are a word long.
 Byte slots store a sequence of bytes, and thus element size can be 1, 2, 4 or 8 bytes.
 All fixed slots in an object are of type reference.
-All variable slots in an object are of the same type, and are defined by its class.
-For example, instances of the class `ByteArray` have 1 byte slots, instances of `FloatArray` have 8 byte slots containing IEEE-754 double precision floating-point numbers.
+All variable slots in an object are of the same type and are defined by its class.
+For example, instances of the class `ByteArray` have 1-byte slots, and instances of `FloatArray` have 8-byte slots containing IEEE-754 double precision floating-point numbers.
 
 **Weak and Ephemeron.** Weak and Ephemeron object formats are variations of the types described above, extending them with special semantics for the memory manager.
-Weak objects are objects whose variable slots work as weak references~(in contrast with strong references). That is, they don't prevent the garbage collection of the referenced object.
+Weak objects are objects whose variable slots work as weak references (in contrast with strong references). That is, they don't prevent the garbage collection of the referenced object.
 Ephemeron objects are fixed objects representing a key-value mapping whose value is referenced strongly as long as the key is referenced by objects other than the ephemeron.
 These special objects will be further discussed in the chapters about memory management.
 
@@ -141,19 +145,19 @@ Figure *@fig:objectLayout@* illustrates the layout of a 3-slot object in both 32
 Each object has a mandatory base header that contains common information such as its class, its size and mutable bits for the Garbage Collector.
 When objects are more than 254 words long, they are considered large, and their actual size is stored in an overflow header that precedes the base header.
 The base and overflow headers have each a fixed size of 8 bytes \(64 bits\).
-Headers are discussed in-depth in *@sec:header@*.
+Headers are discussed in-depth in Section *@sec:header@*.
 
 Data slots contain the different slots in an object.
 However, there is not a one-to-one mapping between an object slots and its underlying data slots.
 Data slots are always 1 word long each and their number is chosen to accommodate all the slots of the object.
 Each reference slot occupies one data slot.
 Byte slots, however, may occupy less than a data slot.
-For example, in a 64-bit system a data slot can accommodate 8 1-byte-long slots, 4 2-byte-long slots, 2 4-byte-long slots or 1 8-byte-long slots.
+For example, in a 64-bit system, a data slot can accommodate 8 1-byte-long slots, 4 2-byte-long slots, 2 4-byte-long slots or 1 8-byte-long slots.
 
 A special case arises when byte slots do not entirely fill an object data slots.
 For example, a 3-slot byte array occupies 3 bytes in a word-long data slot.
 In such a case, the Pharo VM introduces padding _i.e.,_ filling space.
-Such unused filler is used to guarantee that the next object is aligned to the 8-byte boundary, property that can be exploited for both performance and the representation of immediate objects explained in Section *@sec:alignment@*
+Such unused filler is used to guarantee that the next object is aligned to the 8-byte boundary, a property that can be exploited for both performance and the representation of immediate objects explained in Section *@sec:alignment@*
 
 #### References and Ordinary Object Pointers
 @sec:references
@@ -161,7 +165,7 @@ Such unused filler is used to guarantee that the next object is aligned to the 8
 Objects reference each other forming a directed graph.
 Nodes in the graph are objects themselves, edges in the graph are usually called _object references_.
 In the Pharo VM, object references are called _ordinary object pointers_, or _oop_s for short.
-There are two kind of oops: object pointers to other objects and immediate objects.
+There are two kinds of oops: object pointers to other objects and immediate objects.
 Pointers work as normal pointers in low-level languages.
 Immediate objects are objects encoded in invalid object pointers using a technique called tagged pointers that takes advantage of pointer alignment.
 
@@ -175,9 +179,9 @@ References point to the object base header.
 
 ### Immediate Objects
 
-The object representation presented so far imposes a non-negligible overhead on small objects, because of the space take by its header.
+The object representation presented so far imposes a non-negligible overhead on small objects, because of the space taken by its header.
 This problem becomes more visible with types that tend to have a large number of instances.
-Integers, for example, are in theory infinite, and are used very often by even the simplest programs to drive the execution of loops.
+Integers, for example, are in theory infinite and are used very often by even the simplest programs to drive the execution of loops.
 Representing integer objects as heap-allocated objects very fast becomes a bottleneck in an application.
 Instead, Pharo uses a common optimization called tagged pointers to represent integers and other common simple-valued immutable objects of the like.
 
@@ -191,8 +195,8 @@ Note that since an object header is always 8 bytes long, this means that the fir
 Further, since all data slots are a word long, each subsequent data slot is also aligned too.
 
 To guarantee that objects always are aligned to the 8-byte boundary, the allocator inserts a padding at the end of an object filling it up to the next 8-byte boundary.
-This happens in two cases: byte objects in general and potentially all objects in 32 bits architectures.
-Byte objects may contain a number of slots that does not entirely fill a data slot, as shown in section *@sec:formats@*, thus requiring padding to fill a data slot.
+This happens in two cases: byte objects in general and potentially all objects in 32-bit architectures.
+Byte objects may contain a number of slots that does not entirely fill a data slot, as shown in Section *@sec:formats@*, thus requiring padding to fill a data slot.
 Moreover, data slots in 32-bit architectures are 4 bytes long, and thus an odd number of data slots requires 4-bytes of padding.
 Figure *@fig:objectLayout@* shows an example of how an object with 1 header and 3 slots in laid out both in 32-bits and 64-bits architectures.
 - in 64-bit architectures, the object occupies 4 words, for a total of 32 bytes. 1 base header of 8 bytes, 3 slots of 1 word each. The next free address \(32 on the Figure\) is aligned and thus an object can start there.
@@ -230,8 +234,7 @@ In 32 bits floats are not represented as immediate objects, integers present a 1
 #### Immediate Characters and Integers in 64-bits
 
 In 64 bits, all immediate objects are represented as 61 bits of value and 3 bits of tag.
-In Pharo, Immediate integers are instances of the class `SmallInteger`, and immediate characters are instances  of the class `Character`.
-`SmallInteger` immediate objects range is between \[-2^60,2^60-1\] and are represented in two's complement.
+In Pharo, immediate integers are instances of the class `SmallInteger`, and immediate characters are instances of the class `Character`. `SmallInteger` immediate objects range is between \[-2^60,2^60-1\] and are represented in two's complement.
 For example, the binary value `2r1010001` represents the untagged value `2r1010` which has the decimal value `10`.
 
 ```caption=On 64 bits, SmallInteger are encoded on 61 bits.
@@ -247,8 +250,8 @@ This is, so far, enough to represent all Unicode codepoints: the maximum valid c
 
 #### 32-bit Immediate Integers and Variable Tags
 
-In 32 bits architectures using 3 bits of tag would leave 29 bits left to represent integers.
-Instead of choosing this fixed tag representation, the 32 bit VM uses variable tagging.
+In 32-bit architectures using 3 bits of tag would leave 29 bits left to represent integers.
+Instead of choosing this fixed tag representation, the 32-bit VM uses variable tagging.
 That is, different values use a different number of bits for tagging.
 Thus, tagging is carefully designed to avoid conflicts and ambiguities.
 
@@ -267,23 +270,23 @@ In 64-bit architectures, the Pharo VM represents floats as immediate objects wit
 The tagged value is an IEEE-754 64-bit double-precision floating-point number accommodated in 61 bits.
 However, to accommodate the 64 bits into 61 bits, immediate floats give up 3 bits in the exponent offset, storing only 8 out of 11 bits of exponent.
 The VM verifies that only immediate floats that do not lose information in this format are encoded as immediates.
-For floats that do not satisfy this constraint, floats use a boxed representation as explained in *@sec:boxing@*.
+For floats that do not satisfy this constraint, floats use a boxed representation as explained in Section *@sec:boxing@*.
 
 ![64 bits `SmallFloat` immediate.](figures/64bitsFloatImmediate.pdf width=100&label=fig:64bitsfloatimm)
 
 Figure *@fig:64bitsfloatimm@* shows the structure of a `SmallFloat`.
-The sign bit is moved the the lowest bit of the tagged value, and the highest 3 bits of the exponent are lost.
+The sign bit is moved to the lowest bit of the tagged value, and the highest 3 bits of the exponent are lost.
 
 #### Boxed Native Objects
 @sec:boxing
 
-Numbers that cannot be encoded as immediates need to either gracefully fail or implement a fallback mechanism.
+Numbers that cannot be encoded as _immediates_ need to either gracefully fail or implement a fallback mechanism.
 After arithmetics, if a number does not fit in the 61 bits of a tagged pointer the runtime creates a boxed object with the result.
 Boxed numbers are byte objects that contain the native number encoded in their byte slots.
 
 Boxed numbers in Pharo include large integers (instances of `LargePositiveInteger` and `LargeNegativeInteger`) and boxed floats (instances of `BoxedFloat64`).
 Large integers implement variable-sized integers and represent arbitrary large integers as a string of bytes.
-Boxed floats are instead of fixed size: they represent IEEE-754 double precision floating-point numbers, and store 8 bytes the corresponding float.
+Boxed floats are instead of fixed size: they represent IEEE-754 double-precision floating-point numbers, and store 8 bytes the corresponding float.
 
 ### Object Header
 @sec:header
@@ -294,7 +297,7 @@ This section explains the overall design of the object header and each of its fi
 
 #### Base Object Header
 
-The base object header contains meta-data that the Virtual Machine uses for several purposes such as decoding an object contents, maintain garbage collection state, or even do runtime type checks.
+The base object header contains meta-data that the Virtual Machine uses for several purposes such as decoding an object contents, maintaining garbage collection state, or even doing runtime type checks.
 Regardless of the architecture, the base header is 64 bits length, which means it is 2 words in 32 bits and 1 word in 64 bits as shown in Figure *@fig:objectheader@*.
 
 ![Base Object Header.](figures/ObjectHeader.pdf width=100&label=fig:objectheader)
@@ -302,19 +305,18 @@ Regardless of the architecture, the base header is 64 bits length, which means i
 This header is composed of several fields, marked with different colors in the figure.
 From the most significant to the least significant bits, the fields are as follows:
 
-- **Object size.** This field contains the number of data slots in the object, padding included. For example, the object size of a byte array of 14 byte slots is 2 data slots. Padding is computed from the **object format** field below.  Objects with more than 254 slots are considered large, are given 255 as object size and an overflow header as explained in *@sec:large_objects@*.
-- **Object hash.** This field contains 22 bits representing the identity hash of the object.
-- **Object format.** This field contains an enumerated value that identifies the format of the object as described previously in *@sec:formats@*. The exact values of this field are explained in *@sec:format_encoding@*.
-- **Class index.** This field contains the index at which the object's class is found in the class table.
-- **Miscellaneous.** The remaining 7 bits illustrated with a green `X` are reserved for different reasons:
-
-    - 1 bit is reserved for immutability.
-    - 1 bit is reserved to mark the object as pinned. Basically, a pinned object is an object that cannot be moved in memory by the GC.
-    - 3 bits are reserved for the GC: isGray \(for tri-color marking\), isRemembered \(for the remembered table from old space to young space\) and isMarked \(for the GC mark phasis\).
-    - 2 bits are free.
+- **Object size (s).** This field contains the number of data slots in the object, padding included. For example, the object size of a byte array of 14 byte slots is 2 data slots. Padding is computed from the **object format** field below.  Objects with more than 254 slots are considered large, are given 255 as object size and an overflow header as explained in Section *@sec:large_objects@*.
+- **Object hash (h).** This field contains 22 bits representing the identity hash of the object.
+- **Object format. (o)** This field contains an enumerated value that identifies the format of the object as described previously in Section *@sec:formats@*. The exact values of this field are explained in Section *@sec:format_encoding@*.
+- **Class index (c).** This field contains the index at which the object's class is found in the class table.
+- **Miscellaneous (x).** The remaining 7 bits illustrated with a green `X` are reserved for different reasons:
+  - 1 bit is reserved for immutability.
+  - 1 bit is reserved to mark the object as pinned. Basically, a pinned object is an object that cannot be moved in memory by the GC.
+  - 3 bits are reserved for the GC: isGray (for tri-color marking), isRemembered (for the remembered table from old space to young space) and isMarked (for the GC mark phasis).
+  - 2 bits are free.
 
 Notice that the fields of the header are not all contiguous: miscellaneous bits are interleaved in between them.
-The header has been designed so commonly-accessed field are aligned to a byte or 2-byte boundary.
+The header has been designed so commonly-accessed fields are aligned to a byte or 2-byte boundary.
 This design largely simplifies the decoding of the header, which boils down to a `load` and a `bit-and` instruction sequence.
 This simplifies the JIT compiler and generates better-quality machine code.
 
@@ -327,11 +329,11 @@ For this purpose, large objects contain an extra header, namely the overflow hea
 
 !!note The address of an object is always the one of its base header regardless if it has an extra header or not.
 
-The overflow header is 8 bytes long and contains the object size, allow for very large objects with sizes of up to 2^64 words, which is largely sufficient.
+The overflow header is 8 bytes long and contains the object size. It allows for very large objects with sizes of up to 2^64 words, which is largely sufficient.
 When an object has an overflow header, the object size field in the base header is marked with the value 255.
-The following pseudo-code shows how to obtain the number of data slots of an object.
+Listing *@list:numSlots@* pseudo-code shows how to obtain the number of data slots of an object.
 
-```caption=Extracting the number of data slots in an object
+```caption=Extracting the number of data slots in an object&label=list:numSlots
 numSlotsOf: objOop
 	numSlots := self baseNumSlotsOf: objOop.
 	^numSlots = 255
@@ -343,15 +345,15 @@ numSlotsOf: objOop
 #### Class References and Class Table
 
 Each object includes a reference to its class in its header.
-However, for space reasons an object does not store the absolute address.
+However, for space reason, an object does not store the absolute address.
 An arbitrary address requires an entire word, which would add a non-negligible memory overhead.
 Instead, classes are stored in a table, and objects store the index of the class in the class table.
-The only exception to this are immediate objects that do not contain a header: the object tag is used as its class index.
+The only exception to this is immediate objects that do not contain a header: the object tag is used as its class index.
 
 Since programs are expected to have a low number of classes, class indexes are limited to 22 bits.
 22 bits of class index support a maximum of 4 million of classes, which will be largely sufficient for most applications for a long time.
 
-The class table is organized in 4096 pages of 1024 elements.
+The class table is organized into 4096 pages of 1024 elements.
 The 12 most significant bits in the class index indicate the page index. The 10 least significant bits in the class index indicate the index of the class within the page.
 
 Each class stores its own index as its hash.
@@ -361,13 +363,12 @@ This allows the VM to get the index of a class without iterating the entire clas
 @sec:format_encoding
 
 The object format field contains 5 bits that are used to identify the object's format explained in Section *@sec:layout@*.
-The object format duplicates 
 An object's format is encoded as a 5-bit integer:
 
 - `0`: 0 sized object _e.g.,_ `nil`, `true`, `false`
 - `1`: fixed size object _e.g.,_ `Point`
-- `2`: variable sized object with no instance variables _e.g.,_ `Array`
-- `3`: variable sized object with instance variables _e.g.,_ `Context`
+- `2`: variable-sized object with no instance variables _e.g.,_ `Array`
+- `3`: variable-sized object with instance variables _e.g.,_ `Context`
 - `4`: weak variable sized object with instance variables  _e.g.,_ `WeakArray`
 - `5`: ephemeron object
 - `7`: forwarder object
@@ -382,30 +383,30 @@ From the list above notice that zero-sized objects, instances of classes that de
 Variable objects with instance variables are marked separately from those without instance variables.
 
 Special attention needs to be given to byte objects, where format `9` identifies byte objects with 64-bit slots, formats `10` and `11` identify byte objects with 32-bit slots, and so on. 
-All byte objects having slots smaller than a word encode their padding in the format: the first format in each category (`10`, `12`, `16`, `24`) are used for objects that require no padding.
-Substracting the format to the base format returns the number of padding bytes.
+All byte objects having slots smaller than a word encode their padding in the format: the first format in each category (`10`, `12`, `16`, `24`) is used for objects that require no padding.
+Subtracting the format to the base format returns the number of padding bytes.
 For example, a byte array with format 21 has 21-16 = 5 bytes of padding.
 
-The object format and its padding is necessary to compute the number of actual slots in the object.
-For example, given a byte array with format 21 and slot size 10, we can compute its size as: 10 data slots * 8 bytes - 5 padding bytes = 75 bytes.
+The object format and its padding are necessary to compute the number of actual slots in the object.
+For example, given a byte array with format 21 and slot size 10, we can compute its size as 10 data slots * 8 bytes - 5 padding bytes = 75 bytes.
 
 CompiledMethods are similar to byte arrays in terms of padding.
 However, they use a different format so the runtime can differentiate them from normal byte arrays.
 
 ### Conclusion
 
-In this chapter we explored how Pharo objects are represented in memory using the Spur memory model supporting both 32 and 64 bits.
-From a user perspective, objects have a set of fixed and variables slots.
+In this chapter, we explored how Pharo objects are represented in memory using the Spur memory model supporting both 32 and 64 bits.
+From a user perspective, objects have a set of fixed and variable slots.
 Slots contain references to objects or plain byte data.
 
 Under the hood, most objects are allocated in the heap and possess a header with meta-data.
 Object slots are stored in word-large data slots, and padding is inserted so that all objects are aligned to the 8-byte boundary.
-We exploit object alignment to implement integers, floats and characters as tagged pointers.
+We exploit object alignment to implement integers, floats, and characters as tagged pointers.
 Tagged pointers use the least significant bits of a pointer to encode a type, and the most significant bits to encode a value.
 Thus, tagged pointers help us represent objects without the overhead of a memory header.
 
 ### References
-
+@sec:references
 
 - Spur [http://www.mirandabanda.org/cogblog/2013/09/05/a-spur-gear-for-cog/](http://www.mirandabanda.org/cogblog/2013/09/05/a-spur-gear-for-cog/)
 - [https://clementbera.wordpress.com/category/spur/](https://clementbera.wordpress.com/category/spur/)
