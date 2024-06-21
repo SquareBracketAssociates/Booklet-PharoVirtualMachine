@@ -79,29 +79,3 @@ Otherwise, if each procedure leaves the registers and the stack in different sta
 
 %### How Calling Conventions Change per Platform
 
-
-### Calling convention in the VM
-
-The interpreter and the JIT share the same calling conventions. The receiver and arguments are pushed on the stack. The instruction pointer is also pushed to the stack after the arguments. 
-
-Figure *@stackGrowing@* shows that the stack is growing down from high addresses to low addresses.
-This convention is important and has an impact of many aspect such as object allocation and different logic in garbage collector implementation.
-
-![Stack growing down.](figures/StackGrowingDown.pdf width=30&label=stackGrowing)
-
-
-Figure *@beforesend@* shows that the before doing a call, the receiver and arguments are pushed to the stack.
-
-![Receiver and arguments are pushed to the stack.](figures/BeforeSend.pdf width=80&label=beforesend)
-
-Figure *@aftersend@* shows that the instruction pointer (IP) is also pushed to the stack. This way it is possible to find which instruction is the next one to execute on return. Notice also that the interpreter and the VM are __caller-saved__. It means that this is the caller responsibility to store information that should be recovered on return of the called function.
-
-![Caller saved: the IP is also pushed to make sure that the caller can know the next instruction on return.](figures/AfterSend.pdf width=80&label=aftersend)
-
-Figure *@generalArguments@* shows that the framepointer is used to compute 
-- method argument. Since the arguments are pushed on the stack before the new frame is allocated, a method argument is always computed as an addition to the framepointer (`arg1 = FP + arg1offset`).
-- method. The method (with its metadata) is located at a fix offset from the frame pointer. Hence `method= FP- method offset`.
-
-
-![arg1 = FP + offset and method = FP - method offset.](figures/GeneralArgument.pdf width=100&label=generalArguments)
-
