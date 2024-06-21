@@ -18,7 +18,7 @@ The work is supported by I-Site ERC-Generator Multi project 2018-2022. We gratef
 This work is also supported by the Action Exploratoire Alamvic led by G. Polito and S. Ducasse.
 
 <!inputFile|path=Chapters/2-ObjectStructure/objectStructure.md!>
-<!inputFile|path=Chapters/3-MethodsAndBytecode/basicsOnExecution.md!>
+<!inputFile|path=Chapters/3-MethodsAndBytecode/methodsbytecode.md!>
 <!inputFile|path=Chapters/CallingConventions/CallingConventions.md!>
 <!inputFile|path=Chapters/GarbageCollector/memoryStructure.md!>
 <!inputFile|path=Chapters/GarbageCollector/newSpace.md!>
