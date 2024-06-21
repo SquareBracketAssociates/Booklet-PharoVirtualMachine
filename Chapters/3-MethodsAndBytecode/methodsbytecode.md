@@ -1,356 +1,172 @@
 ## Methods, Bytecode and Primitives
 
 
-This chapter explains the basics of Pharo execution.
-The unit of execution of Pharo is a method.
-Methods execute one after the other, and _call_ each other by means of message send.
-Each method is made of a list of literals or constants, a list of instructions called bytecodes, and optionally a primitive operation.
-
+This chapter explains the basics of Pharo execution: methods and how they are internally represented.
+Methods execute one after the other, and _call_ each other by means of message send operations.
 Methods execute under the hood using a stack machine.
 A stack holds the current calls and their values.
-Bytecode instructions and primitives manipulates this stack with push and pop operations.
+Bytecode instructions and primitives manipulate this stack with push and pop operations.
 
-In this chapter we explain in detail how methods are modelled using the sista bytecode set.
+In this chapter we explain in detail how methods are modelled using the sista bytecode set{!citation|ref=Bera14a!}.
 We explain how bytecode and primitive instructions are executed using a conceptual stack.
-The actual interpreter and the call stack are introduced in a later chapter.
-
-### Reminder
-
-Imagine the method `Rectangle>>center` defined as follows
-
-```
-Rectangle >> width
-	"Answer the width of the receiver."
-	^ corner x - origin x
-```
-
-
-A programmer does not interact directly with the compiler. When a new source method is added to a class \(`Rectangle` in this example\), the system asks the compiler for an instance of `CompiledMethod` containing the bytecode translation of the source method. 
-The class provides the compiler with some necessary information not given in the source method, including the names of the receiver's instance variables and the dictionaries containing accessible shared variables \(global, class, and pool variables\). 
-The compiler translates the source text into a `CompiledMethod` and the class stores the method in its message dictionary. 
-
-### Bytecodes by example
-
-
-Source methods are translated by the compiler into sequences of instructions for a stack-oriented interpreter. 
-The instructions are numbers called bytecodes. For example, the bytecodes corresponding to the source method shown above are: 1, 126, 0, 126, 97, and 92.
-
-```
-(Rectangle >> #width) bytecode
->>> #[1 126 0 126 97 92]
-```
-
-
-
-Pharo supports a simple description of the bytecode using the message `symbolicBytecodes`.
-
-```
-(Rectangle >> #width) symbolicBytecodes  
-	25 <01> pushRcvr: 1 
-	26 <7E> send: x 
-	27 <00> pushRcvr: 0 
-	28 <7E> send: x 
-	29 <61> send: - 
-	30 <5C> returnTop
-```
-
-
-
-A bytecode's value gives us little indication of its meaning to the interpreter. 
-In this chapter we follow the convention of the Blue Book and accompany lists of bytecodes with comments about their functions. 
-
-
-We wrap in parentheses any part of a bytecode's comment that depends on the context of the method in which it appears. 
-The unparenthesized part of the comment describes its general function. 
-For example, the bytecode 0 always instructs the interpreter to push the value of the receiver's first instance variable on to its stack.
-The fact that the variable is named `origin` depends on the fact that this method is used by the class `Rectangle`, so `origin` is parenthesized. 
-The commented form of the bytecodes for Rectangle center is shown below: 
-
-
-Rectangle >> #width
-- <01> pushRcvr: 1 - push the value of the receiver's second instance variable \(corner\) onto the stack
-- <7E> send: x - send the unary message x
-- <00> pushRcvr: 0 - push the value of the receiver's first instance variable \(origin\) onto the stack
-- <7E> send: x  - send the unary message x
-- <61> send: -  - send the binary message -
-- <5C> returnTop - return the object on top of the stack as the value of the message \(width\) 
-
-
-
-#### About the stack.
-
-The stack mentioned in some of the bytecodes is used for several purposes:
-- In method `width`, it is used to hold the receiver, arguments, and results of the two messages that are sent. 
-- The stack is also used as the source of the result returned from the `width` method. 
-
-
-
-
-### A store bytecode
-
-
-Another example of the bytecodes compiled from a source method illustrates the use of a store bytecode.
-Let us define the method `extent:` as follows:
-
-```
-Rectangle >> extent: aPoint
-	corner := origin + aPoint
-```
-
-
-The message `extent:` changes the receiver's `width` and `height` to be equal to the `x` and `y` coordinates of the argument \(`a Point`\). 
-The receiver's upper left corner \(`origin`\) is kept the same and the lower right corner \(`corner`\) is moved.
-
-```
-(Rectangle >> #extent:) bytecode 
->>> #[0 64 96 201 88]
-```
-
-
-
-Rectangle >> #extent: 
-- <00> pushRcvr: 0 - push the value of the receiver's first instance variable \(origin\) onto the stack 
-- <40> pushTemp: 0 - push the argument \(aPoint\) onto the stack 
-- <60> send: `+` - send a binary message + 
-- <C9> popIntoRcvr: 1 - pop the top object off of the stack and store it in the receiver's second instance variable \(`corner`\) 
-- 29 <58> returnSelf - return the receiver as the value of the message \(`extent:`\) 
-
-
-
-
-
+The bytecode interpreter and the call stack are introduced in a following chapter.
 
 ### Compiled Methods
 
+Pharo users write methods in Pharo syntax.
+However, Pharo source code is just text and is not executable.
+Before executing those methods, a bytecode compiler processes the source code and translates it to an executable form by performing a sequence of transformations until it generates a `CompiledMethod` instance.
+A parsing step translates the source code into a tree data structure called an _abstract syntax tree_, a name resolution step attaches semantic to identifiers, a lowering step creates a control flow graph representation, and finally a code generation step produces the `CompiledMethod` object containing the code and meta-data required for execution.
 
-The compiler creates an instance of `CompiledMethod` to hold the bytecode translation of a source method. In addition to the bytecodes themselves, a `CompiledMethod` contains a set of objects called its _literal frame_.
-The literal frame contains any objects that could not be referred to directly by bytecodes. 
+#### Intermezzo: Variables in Pharo
 
-All of the objects in the methods `Rectangle>>#extent:` and `Rectangle>>#width` were referred to directly by bytecodes, so the `CompiledMethod` of these methods do not need literal frames. 
+To understand how Pharo code works, it is useful to do a quick reminder on how do variables work.
+In this chapter we will deal with the low-level representation of variables (how read/writes are implemented).
+For a more complete overview on variables and their usage, please refer yourselves to Pharo by Example{!citation|ref=Duca17a!}.
 
-As an example of a `CompiledMethod` with a literal frame, consider the method `Rectangle>>#squishedWithin:`. 
-The `squishedWithin:` message changes the receiver fits within `aRectangle` by reducing its size, not by changing its origin.
+Pharo supports three main kind of variables.
+Each kind of variable is stored differently in memory and has different lifetime and behavior _i.e.,_ they are allocated and deallocated at different moments in time.
 
+**Temporary variables and parameters:** A method has a list of formal parameters and a list of manually declared temporary variables.
+Temporary variables and parameters are only accessible within the method that defines them and live during the entire method's execution.
+In other words, they are allocated when a method execution starts and deallocated when a method returns.
+Each method invocation has its own set of temporary variables and parameters, property allowing recursion and concurrency (understanding why is left as an exercise for the reader).
+
+Temporary variables and parameters have each a unique 0-based index per method.
+Moreover, they share the same index namespace, meaning that no two temporaries or parameters can have the same index.
+For example, assuming a method with `N` parameters and `M` temporary variables, its parameters are indexed from 0 to `N`, and its temporary variables are indexed from `N+1` to `N+M`.
+
+**Instance variables:** Instance variables are variables declared in a class, and allocated on each of its instances.
+That is, each instance has its own set (or copy) of the instance variables declared in its class, and can directly access only its own instance variables.
+Instance variables live as long as its containing object.
+Instance variables are allocated as part of an object slots, occupying a reference slot, and are deallocated as soon as an object is garbage collected.
+
+Instance variables have also a unique 0-base index per ascending hierarchy, because an instance contains all the instance variables declared in its class and all its superclasses.
+For example, given the class `Class` declaring `N` instance variables and having a superclass `Super` declaring `M` instance variables, the variables declared in `Super` have indexes from 0 to `M`, the variables declared in `Class` have indexes from `M+1` to `M+N`.
+
+**Literal variables:** Literal variables are variables declared either as _Class Variables_, _Shared Variables_ or _Global Variables_.
+These variables have a larger visibility than the two other kind of variables.
+Class variables are visible by all classes and instances of a hierarchy.
+Shared variables work like class variables but can be imported in different hierarchies.
+Global variables are globally visible.
+Literal variables live as long as the program, or a developer decides to explicitly undeclare them.
+
+Literal variables do not have an index: they are represented as an association (a key-value object) and stored in dictionaries.
+Methods using literal variables store the corresponding associations in their literal frame, as we will see next.
+
+#### Literals and the Literal Frame
+
+Pharo code includes all sort of literal values that need to be known and accessed at runtime.
+For example, the code below shows a method using integers, arrays and strings.
+
+```caption=Source code with several literals
+MyClass >> exampleMethod
+    self someComputation > 1
+		ifTrue: [ ^ #() ]
+		ifFalse: [ self error: 'Unexpected!' ]
 ```
-Rectangle >> squishedWithin: aRectangle
-	"Return an adjustment of the receiver that fits within aRectangle by reducing its size, not by changing its origin."
 
-	^ origin corner: (corner min: aRectangle bottomRight)
+In Pharo, literal values are stored each in different a reference slot in a method.
+The collection of reference slots in a method is called the _literal frame_.
+Remember from the object representation chapter, that `CompiledMethod` instances are variable objects that contain a variable reference part and a variable byte indexable part.
+
+Commonly, the literal frame contains references to numbers, characters, strings, arrays and symbols used in a method.
+In addition, when referencing globals (and thus classes), class variables and shared variables, the literal frame references their corresponding associations.
+Finally, the literal frame references also runtime meta-data such as flags or message selectors required to perform message-sends.
+
+It is worth noticing that the literal frame poses no actual limitation to what type of object it references.
+Such capability is exploited in rare cases when a method's behavior cannot be expressed in Pharo syntax.
+This is for eample the case of foreign function interface methods that are compiled by a separate compiler and stores foreign function meta-data as literals.
+
+#### Method Header
+
+All methods contain at least one literal named the _method header_, referencing an immediate integer representing a mask of flags.
+
+- **Encoder:** a bit indicating if the method uses an alternate bytecode set.
+- **Primitive:** a bit indicating if the method has a primitive operation or not.
+- **Number of parameters:** 4 bits representing the number of parameters of the method.
+- **Number of temporaries:** 6 bits representing the number of temporary variables declared in the method.
+- **Number of literals:** 15 bits representing the number of literals contained in the method.
+- **Frame size:** 1 bit representing if the method will require small or large frame sizes.
+
+The encoder and primitive flags will be covered later in this chapter.
+The frame size will be explored in the context reification chapter.
+
+#### Method Trailer
+
+Following the method literals, a `CompiledMethod` instance contains a byte-indexable variable part, containing bytecode instructions.
+However, it is of common usage in Pharo to make this byte-indexable part slightly larger to contain trailing meta-data after a method's bytecode.
+Such meta-data is called the _method trailer_.
+
+The method trailer can be arbitrarily long, encoding binary data such as integers or encoded text.
+Pharo usually uses the trailer to encode the offset of the method source code in a file.
+It has, however, also been used to encode a method source code in utf8 encoding, or zipped.
+
+### Stack Bytecode and the Sista Bytecode Set Overview
+
+Pharo encodes bytecode instructions using the Sista bytecode set{!citation|ref=Bera14a!}.
+The Sista bytecode set defines a set of stack instructions with instructions that are one, two or three bytes long.
+Instructions fall into five main categories: pushes, stores, sends, returns, and jumps.
+
+This section gives a general description of each bytecode category.
+Later we present the different optimizations, the bytecode extensions and the detailed bytecode set.
+
+#### A Stack Machine
+
+Pharo bytecode works by manipulating a stack, as opposed to registers.
+Typically, an operation accesss its operands from the stack, operates on them, and places the result back on the stack.
+We will call this stack the value stack or operand stack, to differentiate it from the call stack that will be studied in a later chapter.
+
+For example, the following code shows the tree stack instructions required to evaluate the expression `2+7`.
+First, two push instructions push the values 2 and 7 to the stack.
+Second, the `+` instruction pops the two top values in the stack, operates on them producing the number 9, and finally pushes that value to the stack.
+
+```caption=Pseudo-bytecode performing 2+7
+push 2
+push 7
++
 ```
 
+#### Push Instructions
 
+Push instructions are a family of instructions that read a value and add it to the top of the value stack.
+Different push instructions are:
 
-```
-(Rectangle >> #squishedWithin:) bytecode 
->>> #[0 1 64 128 145 146 92]
-```
+- push the current method receiver (`self`)
+- push an instance variable of the receiver
+- push a temporary/parameter
+- push a literal
+- push the value of a literal variable
+- push the top of the stack, duplicating the stack top
 
+#### Store Instructions
 
+Store instructions are a family of instructions that write the value on the top of the stack to a variable.
+Different store instructions are:
 
-The message selectors \(`bottomRight`, `min:`, `corner:`\)  are not in the set that can be directly referenced by bytecodes.
-These selectors are included in the `CompiledMethod`'s literal frame and the send bytecodes refer to the selectors by their position in the literal frame. 
-We show the compiledMethod's literal frame after its bytecodes.
- 
-`Rectangle>>#squishedWithin:`
-- <00> pushRcvr: 0 - push the value of the receiver's first instance variable \(`origin`\) onto the stack 
-- <01> pushRcvr: 1 - push the value of the receiver's second instance variable \(`corner`\) onto the stack 
-- <40> pushTemp: 0 - push the argument \(`aRectangle`\) 
-- <80> send: bottomRight - send a unary message with the selector in the literal frame location \(`bottomRight`\) 
-- <91> send: min: - send a binary message with the selector in the literal frame location \(`min:`\) 
-- <92> send: corner: - send a keyword message with the selector in the literal frame location \(`corner:`\) 
-- <5C> returnTop - return the object on top of the stack as the value of the message
+- store into an instance variables of the receiver
+- store into a temporary variable
+- store into a literal variable
 
-Literal frame
-- 1 `#bottomRight` 
-- 2 `#min:`
-- 3 `#corner:`
+#### Control Flow Instructions -- Send and Return
 
+Send instructions are a family of instructions that perform a message send, activating a new method on the call stack.
+Send instructions are annotated with the selector and number of arguments, and will conceptually work as follow:
+- pop receiver and arguments from the value stack
+- lookup the method to execute using the receiver and message selector
+- execute the looked-up method
+- push the result to the top of the stack
+
+Conversely to send instructions, return instructions are a family of instructions that return control to the caller method, providing the return value to be pushed to the caller's value stack.
+
+#### Control Flow Instructions -- Jumps
+
+Control flow instructions are a family of instructions that change the sequential order in which instructions naturally execute.
+Different jump instructions are:
+- conditional jumps pop the top of the value stack and transfer the control flow to the target instruction if the value is either `true` or `false`
+- unconditional jumps transfer the control flow to the target instruction regardless of the values on the value stack
 	
-The categories of objects that can be referred to directly by bytecodes are:
-- the receiver and arguments of the message
-- the values of the receiver's instance variables
-- the values of any temporary variables required by the method
-- special constants \(true, false, nil, -1, 0, 1, and 2\)
-- special message selectors
-
-
-```
-BytecodeEncoder specialSelectors	
->>> #(#+ #- #< #> #'<=' #'>=' #= #'~=' #* #/ #'\\' #@ #bitShift: #'//' #bitAnd: #bitOr: #at: #at:put: #size #next #nextPut: #atEnd #'==' nil "class" 
-#'~~' #value #value: #do: #new #new: #x #y)
-```
-
-
-
- Any objects referred to in a CompiledMethod's bytecodes that do not fall into one of the categories above must appear in its literal frame. The objects ordinarily contained in a literal frame are
-- shared variables \(global, class, and pool\)
-- most literal constants \(numbers, characters, strings, arrays, and symbols\)
-- most message selectors \(those that are not special\)
-
-Objects of these three types may be intermixed in the literal frame. 
-
-
-% % we could add the following as in the blue book
-% Two types of object that were referred to above, temporary variables and shared variables, have not been used in the example methods. The following example method for Rectangle merge: uses both types. The merge: message is used to find a Rectangle that includes the areas in both the receiver and the argument.
-% merge: aRectangle
-% | minPoint maxPoint |
-% minPoint := origin min: aRectangle origin.
-% maxPoint := corner max: aRectangle corner.
-% ^Rectangle origin: minPoint corner: maxPoint
-% When a CompiledMethod uses temporary variables (maxPoint and minPoint in this example), the number required is specified in %the first line of its printed form. When a CompiledMethod uses a shared variable (Rectangle in this example) an instance of Association is included in its literal frame. All CompiledMethods that refer to a particular shared variable's name include the same Association in their literal frames. 
- 
-% Rectangle merge: requires 2 temporary variables
-% 0	push the value of the receiver's first instance variable (origin) onto the stack
-% 16	push the contents of the first temporary frame location (the argument aRectangle) onto the stack 
-% 209	send a unary message with the selector in the second literal frame location (origin) 
-% 224	send the single argument message with the selector in the first literal frame location (min:) 
-% 105	pop the top object off of the stack and stare in the second temporary frame location (minPoint) 
-% 1	push the value of the receiver's second instance variable (corner) onto the stack 
-% 16	push the contents of the first temporary frame location (the argument aRectangle) onto the stack 
-% 211	send a unary message with the selector in the fourth literal frame location (corner) 
-% 226	send a single argument message with the selector in the third literal frame location (max:)
-% 106	pop the top object off of the stack and store it in the third temporary frame location (maxPoint)
-% 69	push the value of the shared variable in the sixth literal frame location (Rectangle) onto the stack 
-% 17	push the contents of the second temporary frame location (minPoint) onto the stack 
-% 18	push the contents of the third temporary frame location (maxPoint) onto the stack 
-% 244	send the two argument message with the selector in the fifth literal frame location (origin:corner:) 
-% 124	return the object on top of the stack as the value of the message (merge:) 
-% literal frame 
-% #min:  
-% #origin  
-% #max:  
-% #corner  
-% #origin:corner:  
-% Association: #Rectangle -> Rectangle  
-
-
-### The bytecodes
-
-
-The interpreter understands  bytecode instructions that fall into five categories: pushes, stores, sends, returns, and jumps. This section gives a general description of each type of bytecode without going into detail about which bytecode represents which instruction. 
-
-Some of the bytecodes take extensions. An extension is one or two bytes following the bytecode that further specify the instruction. An extension is not an instruction on its own, it is only a part of an instruction.
-
-#### Push Bytecodes.  
-
- A push bytecode indicates the source of an object to be added to the top of the interpreter's stack. The sources include
-
-- the receiver of the message that invoked the CompiledMethod
-- the instance variables of the receiver
-- the temporary frame \(the arguments of the message and the temporary variables\)
-- the literal frame of the CompiledMethod
-- the top of the stack \(i.e., this bytecode duplicates the top of stack\)
-
-
-Examples of most of the types of push bytecode have been included in the examples.
-The bytecode that duplicates the top of the stack is used to implement cascaded messages. 
-
-Two different types of push bytecode use the literal frame as their source.
-One is used to push literal constants and the other to push the value of shared variables.
-Literal constants are stored directly in the literal frame, but the values of shared variables are stored in an Association that is pointed to by the literal frame. 
-
-
-% The following example method uses one shared variable and one literal constant.
-% incrementIndex
-% ^Index := Index + 4
-
-% ExampleClass incrementIndex
-% 64	push the value of the shared variable in the first literal frame location (Index) onto the stack
-% 33	push the constant in the second literal frame location (4) onto the stack
-% 176	send a binary message with the selector +
-% 129,192	store the object on top of the stack in the shared variable in the first literal frame location (Index)
-% 124	return the object on top of the stack as the value of the message (incrementIndex)
-% literal frame 
-% Association: #Index -> 260 
-
-#### Store Bytecodes.
-
-
-The bytecodes compiled from an assignment expression end with a store bytecode. The bytecodes before the store bytecode compute the new value of a variable and leave it on top of the stack. A store bytecode indicates the variable whose value should be changed. The variables that can be changed are
-- the instance variables of the receiver
-- temporary variables
-- shared variables
-
-
-Some of the store bytecodes remove the object to be stored from the stack, and others leave the object on top of the stack, after storing it.
-
-
-#### Send Bytecodes.
-
-A send bytecode specifies the selector of a message to be sent and how many arguments it should have. The receiver and arguments of the message are taken off the interpreter's stack, the receiver from below the arguments. By the time the bytecode following the send is executed, the message's result will have replaced its receiver and arguments on the top of the stack. The details of sending messages and returning results is the subject of the next sections of this chapter. A set of 32 send bytecodes refer directly to the special selectors listed earlier. The other send bytecodes refer to their selectors in the literal frame.
-
-#### Return Bytecodes.
-
-When a return bytecode is encountered, the CompiledMethod in which it was found has been completely executed. Therefore a value is returned for the message that invoked that CompiledMethod. The value is usually found on top of the stack. Four special return bytecodes return the message receiver \(self\), true, false, and nil.
-
-#### Jump Bytecodes.
-
-
-Ordinarily, the interpreter executes the bytecodes sequentially in the order they appear in a CompiledMethod. The jump bytecodes indicate that the next bytecode to execute is not the one following the jump. There are two varieties of jump, unconditional and conditional. The unconditional jumps transfer control whenever they are encountered. The conditional jumps will only transfer control if the top of the stack is a specified value. Some of the conditional jumps transfer if the top object on the stack is true and others if it is false. The jump bytecodes are used to implement efficient control structures. 
-
-
-The control structures that are so optimized by the compiler are conditional selection messages to Booleans \(`ifTrue:`, `ifFalse:`, and `ifTrue:ifFalse:`\), some of the logical operation messages to Booleans \(`and:` and `or:`\), and the conditional repetition messages to blocks \(`whileTrue:` and `whileFalse:`\). The jump bytecodes indicate the next bytecode to be executed relative to the position of the jump. In other words, they tell the interpreter how many bytecodes to skip. 
-
-% The following method for Rectangle includesPoint: uses a conditional jump.
-% includesPoint: aPoint
-% origin <= aPoint
-% ifTrue: [^aPoint < corner]
-% ifFalse: [^false]
-% Rectangle includesPoint:	
-% 0	push the value of the receiver's first instance variable (origin) onto the stack
-% 16	push the contents of the first temporary frame location (the argument aPoint) onto the stack 
-% 180	send a binary message with the selector <=
-% 155	jump ahead 4 bytecodes if the object on top of the stack is false
-% 16	push the contents of the first temporary frame location (the argument aPoint) onto the stack 
-% 1	push the value of the receiver's second instance variable (corner) onto the stack 
-% 178	send a binary message with the selector <
-% 124	return the object on top of the stack as the value of the message ( includesPoint:) 
-% 122	return false as the value of the message (includesPoint:) 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### Handling blocks: inlined ones
-
-
-```
-Rectangle >> containsPoint: aPoint 
-	"Answer whether aPoint is within the receiver."
-	^origin <= aPoint and: [aPoint < corner]
-```
-
-
-- <00> pushRcvr: 0 
-- <40> pushTemp: 0 
-- <64> send: <= 
-- <C3> jumpFalse: 41 
-- <40> pushTemp: 0 
-- <01> pushRcvr: 1 
-- <62> send: < 
-- <B0> jumpTo: 42 
-- 41 <4E> pushConstant: false 
-- 42 <5C> returnTop\)"
-
-
-
-### Blocks
-
-
-Context should have a receiver because executing `[ self foo ] value` should execute foo on self and not the block
-
-
-
-### Primitive Methods?
+### Primitive Methods
 
 
 The interpreter's actions after finding a compiled method depend on whether or not the compiled method indicates that a primitive method may be able to respond to the message. If no primitive method is indicated, a new method context is created and made active as described in previous sections. If a primitive method is indicated in the compiled method, the interpreter may be able to respond to the message without actually executing the bytecodes. For example, one of the primitive methods is associated with the `+` message to instances of `SmallInteger`.
@@ -367,3 +183,31 @@ SmallInteger >> + addend
 - <40> pushTemp: 0 - push the first argument
 - <EB 01> superSend: `+` - send a message via super
 - <5C> returnTop  - return the object on top of the stack as the value of the message
+	
+
+### Optimising for Common Bytecode
+
+- push inst var 1 as a single bytecode
+- super instructions (store and pop)
+
+### Optimising for Common Messages
+
+
+	
+The categories of objects that can be referred to directly by bytecodes are:
+- the receiver and arguments of the message
+- the values of the receiver's instance variables
+- the values of any temporary variables required by the method
+- special constants \(true, false, nil, -1, 0, 1, and 2\)
+- special message selectors
+
+
+```
+BytecodeEncoder specialSelectors	
+>>> #(#+ #- #< #> #'<=' #'>=' #= #'~=' #* #/ #'\\' #@ #bitShift: #'//' #bitAnd: #bitOr: #at: #at:put: #size #next #nextPut: #atEnd #'==' nil "class" 
+#'~~' #value #value: #do: #new #new: #x #y)
+```
+
+### Bytecode Extensions
+
+Some of the bytecodes take extensions. An extension is one or two bytes following the bytecode that further specify the instruction. An extension is not an instruction on its own, it is only a part of an instruction.
