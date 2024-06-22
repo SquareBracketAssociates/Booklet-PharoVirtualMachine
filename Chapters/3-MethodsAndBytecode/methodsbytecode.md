@@ -168,29 +168,48 @@ Different jump instructions are:
 	
 ### Primitive Methods
 
+Some operations such as integer arithmetics or bitwise manipulation cannot be expressed by means of message sends and methods.
+Pharo express such operations through primitives: low-level functions implementing essential or optimized operations.
 
-The interpreter's actions after finding a compiled method depend on whether or not the compiled method indicates that a primitive method may be able to respond to the message. If no primitive method is indicated, a new method context is created and made active as described in previous sections. If a primitive method is indicated in the compiled method, the interpreter may be able to respond to the message without actually executing the bytecodes. For example, one of the primitive methods is associated with the `+` message to instances of `SmallInteger`.
+Primitives are exposed to Pharo through primitive _methods_.
+A primitive method is a bytecode method that has a reference to a primitive function.
+For example, the method `SmallInteger>>#+` defining the addition of immediate integers is marked to as primitive number 1.
 
-```
+```caption=The SmallInteger addition method is a primitive method
 SmallInteger >> + addend
 	<primitive: 1>
 	^super + addend
 ```
 
+Primitives are implemented as stack operations having only access to the value stack.
+When a primitive function is executed, the value stack contains the method arguments.
 
-- <F8 01 00> callPrimitive: 1 
-- <4C> self - push the receiver on the stack
-- <40> pushTemp: 0 - push the first argument
-- <EB 01> superSend: `+` - send a message via super
-- <5C> returnTop  - return the object on top of the stack as the value of the message
-	
+A key difference between primitive functions and bytecode instructions is that primitives _can fail_.
+When a primitive method is executed, it executes first the primitive function.
+If the primitive function succeeds, the primitive method returns the result of the primitive function.
+If the primitive funciton fails, the primitive method executes _falls back_ to the method's bytecode.
+For example, in the case above, if the primitive 1 fails, the statement `^ super + addend` will get executed.
 
-### Optimising for Common Bytecode
+**Design Note: fast vs slow paths.** The failure mechanism of primitives is generally used to separate fast paths from slow paths.
+For example, integer addition has a very compact and fast implementation if we assume that both operands are immediate integers.
+However, Pharo by design needs to support the arithmetics between different types such as immediate integers, boxed large integers, floats, fractions, scaled decimals.
+In this scenario, a primitive is used to cover the fast and common case: adding up two immediate integers.
+The primitive performs a runtime type check: it verifies that both operands are immediate integers.
+If the check succeeds, the primitive performs its operation and returns without executing the fallback bytecode.
+This first execution path is the _fast path_.
+If the check fails, the primitive fails and the method's fallback bytecode implements the slower type conversion for the other type combinations.
+
+
+### Bytecode Encoding
+
+### Bytecode Optimization
+
+#### Optimising for Common Bytecodes
 
 - push inst var 1 as a single bytecode
 - super instructions (store and pop)
 
-### Optimising for Common Messages
+#### Optimising for Common Messages
 
 
 	
@@ -208,6 +227,8 @@ BytecodeEncoder specialSelectors
 #'~~' #value #value: #do: #new #new: #x #y)
 ```
 
-### Bytecode Extensions
+### The Sista Bytecode
+
+#### Bytecode Extensions
 
 Some of the bytecodes take extensions. An extension is one or two bytes following the bytecode that further specify the instruction. An extension is not an instruction on its own, it is only a part of an instruction.
