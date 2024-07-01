@@ -345,7 +345,7 @@ IRBytecodeGenerator >> sendStatic: aMethod
 ```
 
 
-We finally emit the new bytecode. 
+We finally emit the new bytecode.
 
 ```
 EncoderForSistaV1 >> genSendStatic: methodLiteralOffset
@@ -355,29 +355,19 @@ EncoderForSistaV1 >> genSendStatic: methodLiteralOffset
 		nextPut: methodLiteralOffset
 ```
 
-
-
 ```
-IRMethod >> generate: trailer
+Integer >> staticPlus 
 
-	| irTranslator |
-   irTranslator := IRTranslator context: compilationContext trailer: trailer.
-	irTranslator
-		visitNode: self;
-		pragmas: pragmas.
-	compiledMethod := irTranslator compiledMethod.
-	compiledMethod literals doWithIndex: [ :e :index |
-		(e isKindOf: StaticRecursiveMethodPlaceHolder)
-			ifTrue: [ compiledMethod literalAt: index put: compiledMethod ] ].
-	self sourceNode
-		ifNotNil: [
-			compiledMethod classBinding: self sourceNode methodClass binding.
-			compiledMethod selector: self sourceNode selector ]
-		ifNil: [
-			compiledMethod classBinding: UndefinedObject binding.
-			compiledMethod selector: #UndefinedMethod ].
-	^ compiledMethod
-```	
+	<opalBytecodeMethod>
+
+	^ IRBuilder buildIR: [ :builder |
+		  builder
+			  pushReceiver;
+			  pushLiteral: 1;
+			  sendStatic: (SmallInteger >> #'+');
+			  returnTop ]
+```
+
 
 
 
@@ -422,7 +412,27 @@ Integer >> staticBoundRecursiveFactorial
 
 
 
+```
+IRMethod >> generate: trailer
 
+	| irTranslator |
+   irTranslator := IRTranslator context: compilationContext trailer: trailer.
+	irTranslator
+		visitNode: self;
+		pragmas: pragmas.
+	compiledMethod := irTranslator compiledMethod.
+	compiledMethod literals doWithIndex: [ :e :index |
+		(e isKindOf: StaticRecursiveMethodPlaceHolder)
+			ifTrue: [ compiledMethod literalAt: index put: compiledMethod ] ].
+	self sourceNode
+		ifNotNil: [
+			compiledMethod classBinding: self sourceNode methodClass binding.
+			compiledMethod selector: self sourceNode selector ]
+		ifNil: [
+			compiledMethod classBinding: UndefinedObject binding.
+			compiledMethod selector: #UndefinedMethod ].
+	^ compiledMethod
+```	
 
 
 
@@ -480,3 +490,8 @@ StackInterpreter >> sendStaticLiteralMethodBytecode
 ```
 
 https://github.com/evref-inria/pharo-vm/pull/2/files
+
+
+### Limits and conclusion
+
+There is clearly some more effort to obtain a full working solution. For example, managing the code changes and recompilation of the methods.
