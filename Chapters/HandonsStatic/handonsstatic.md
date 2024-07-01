@@ -195,8 +195,189 @@ MyXP new exampleIRBuilder
 > 2
 ``` 
 
+Here is the definition of `factorial`, we call it `lateBoundFactorial` since we will define alternate versions using static message sends later.
+
+```
+Integer >> lateBoundFactorial
+
+	<opalBytecodeMethod>
+
+	^ IRBuilder buildIR: [ :builder |
+		  builder
+			  pushReceiver;
+			  pushLiteral: 1;
+			  send: #'<=';
+			  jumpAheadTo: #gogogo if: false;
+
+			  "Base case"
+			  pushLiteral: 1;
+			  returnTop;
+
+			  "Recursive case"
+			  jumpAheadTarget: #gogogo;
+			  pushReceiver;
+			  pushReceiver;
+			  pushLiteral: 1;
+			  send: #-;
+			  send: #lateBoundFactorial;
+			  send: #*;
+			  returnTop ]
+```
+
 Notice that here this is the default method passing message semantics. 
 
+To support static calls, we will define a new IR instruction in addition to the bytecode to be able to define static sends. 
+
+### Extending the IRBuilder
+
+We extend the builder with the new message `sendStatic:`. 
+
+
+```
+IRBuilder >> sendStatic: aMethod
+	^ self add: (IRSendStatic sendStatic: aMethod )
+```
+
+We define a new instruction subclass of `IRInstruction`.
+This instruction will refer to the invoked method.
+
+```
+IRInstruction << #IRSendStatic
+	slots: { #calledMethod };
+	tag: 'IR-Nodes';
+	package: 'OpalCompiler-Core'
+```
+
+```
+IRSendStatic >> calledMethod
+	^ calledMethod
+```
+
+```
+IRSendStatic >> calledMethod: aCompiledMethod
+	calledMethod := aCompiledMethod
+```
+
+We define the corresponding methods to support the interaction with the Visitors who are responsible for
+compilation.
+
+```
+IRSendStatic >> accept: visitor
+
+	visitor visitStaticSend: self
+```
+
+```
+Visitor >> visitStaticSend: anIRStaticSend
+
+	self subclassResponsibility
+```
+
+```
+IRPrinter >> visitStaticSend: send
+
+ 	stream nextPutAll: 'staticSend: '.
+	send calledMethod selector printOn: stream.
+```			
+
+
+### Study the Translator
+
+Before we extend the code translator to generate the adequate bytecode,
+let us get inspiration from the method `visitSend:`.
+
+We see that `visitSend:` is basically `gen send: send selector`.
+
+```
+IRTranslator >> visitSend: send
+
+	send superOf
+		ifNil: [ gen send: send selector ]
+		ifNotNil: [ :behavior |  gen send: send selector toSuperOf: behavior ]
+```
+
+The `send:` method of the `IRBytecodeGenerator` uses the selector to send adequate information to the bytecode encoder. 
+
+```
+IRBytecodeGenerator >> send: selector
+	| nArgs |
+	nArgs := selector numArgs.
+	stack pop: nArgs.
+	...
+	encoder genSend: (self literalIndexOf: selector) numArgs: nArgs
+```
+
+The method `send:` is basically a send to `genSend:numArgs:`.
+
+```
+EncoderForSistaV1 >> genSend: selectorLiteralIndex numArgs: nArgs
+
+	...
+	(selectorLiteralIndex < 16 and: [nArgs < 3]) ifTrue:
+	 	["128-143	1000 iiii			Send Literal Selector #iiii With 0 Argument
+		  144-159	1001 iiii			Send Literal Selector #iiii With 1 Arguments
+		  160-175	1010 iiii			Send Literal Selector #iiii With 2 Arguments"
+		 stream nextPut: 128 + (nArgs * 16) + selectorLiteralIndex.
+		 ^ self].
+	...
+
+```
+
+### Translator extension
+
+We extend the translator by adding the following `visitStaticSend:`
+
+```
+IRTranslator >> visitStaticSend: anIRStaticSend
+
+	gen sendStatic: anIRStaticSend calledMethod
+```
+
+We define the method `sendStatic:`as follows: 
+
+```
+IRBytecodeGenerator >> sendStatic: aMethod
+
+	| nArgs |
+	nArgs := aMethod numArgs.
+	stack pop: nArgs.
+	encoder genSendStatic: (self literalIndexOf: aMethod)
+```
+
+
+We finally emit the new bytecode. 
+
+```
+EncoderForSistaV1 >> genSendStatic: methodLiteralOffset
+
+	stream
+		nextPut: 246;
+		nextPut: methodLiteralOffset
+```
+
+
+
+```
+IRMethod >> generate: trailer
+
+	| irTranslator |
+   irTranslator := IRTranslator context: compilationContext trailer: trailer.
+	irTranslator
+		visitNode: self;
+		pragmas: pragmas.
+	compiledMethod := irTranslator compiledMethod.
+	compiledMethod literals doWithIndex: [ :e :index |
+		(e isKindOf: StaticRecursiveMethodPlaceHolder)
+			ifTrue: [ compiledMethod literalAt: index put: compiledMethod ] ].
+	self sourceNode
+		ifNotNil: [
+			compiledMethod classBinding: self sourceNode methodClass binding.
+			compiledMethod selector: self sourceNode selector ]
+		ifNil: [
+			compiledMethod classBinding: UndefinedObject binding.
+			compiledMethod selector: #UndefinedMethod ].
+	^ compiledMethod
+```	
 
 
 
@@ -204,6 +385,39 @@ Notice that here this is the default method passing message semantics.
 
 
 
+
+
+
+### The case of recursion
+
+Since we are compiling a recursive method (factorial), we need a way so that the literal frame of this method refers to the compiled method itself.
+
+```
+Integer >> staticBoundRecursiveFactorial
+
+	<opalBytecodeMethod>
+	1halt.
+	^ IRBuilder buildIR: [ :builder |
+		  builder
+			  pushReceiver;
+			  pushLiteral: 1;
+			  send: #'<=';
+			  jumpAheadTo: #gogogo if: false;
+
+			  "Base case"
+			  pushLiteral: 1;
+			  returnTop;
+
+			  "Recursive case"
+			  jumpAheadTarget: #gogogo;
+			  pushReceiver;
+			  pushReceiver;
+			  pushLiteral: 1;
+			  send: #-;
+			  sendStatic: (StaticRecursiveMethodPlaceHolder new selector: #staticBoundRecursiveFactorial);
+			  send: #*;
+			  returnTop ]
+```
 
 
 
