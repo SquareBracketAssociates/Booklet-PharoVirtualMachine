@@ -69,7 +69,7 @@ For example, 128 means that the selector is located in the first place of the li
 The interpreter method associated to bytecode 128 is `sendLiteralSelector0ArgsBytecode`
 
 ```
-sendLiteralSelector0ArgsBytecode
+StackInterpreter >> sendLiteralSelector0ArgsBytecode
 	"Can use any of the first 16 literals for the selector."
 	
 	| rcvr |
@@ -89,7 +89,7 @@ What we see is that
 
 
 ```
-commonSendOrdinary
+StackInterpreter >> commonSendOrdinary
 	"Send a message, starting lookup with the receiver's class."
 	"Assume: messageSelector and argumentCount have been set, and that 
 	the receiver and arguments have been pushed onto the stack,"
@@ -103,6 +103,99 @@ commonSendOrdinary
 	self fetchNextBytecode
 ```
 
+Once the method is found, it is executed by `executeNewMethod: false`.
+The argument means that the method should not be compiled by the JIT compiler. 
+Then the interpreter fetches the next bytecode to be executed.
+
+### A first version of sendStaticLiteralMethod
+
+The bytecode 246 is a two byte bytecode. 
+Let us start to define a new method `sendStaticLiteralMethodBytecode` that defines the behavior of the static send. Since we want to avoid performing a method lookup we decide that the compiled method
+the send will execute should be stored in the method literal frame.
+
+
+```
+StackInterpreter >> sendStaticLiteralMethodBytecode
+	"two bytecodes
+		opecode 
+		literal offset "
+	| methodLiteralOffset |
+	methodLiteralOffset:= self fetchByte.
+	newMethod := self literal: methodLiteralOffset.
+	self executeNewMethod: true. "could be compiled"
+	self fetchNextBytecode
+```
+
+This is a first version because the interpreter may use the values of other global variable such as the argument count. We will refine this definition later. 
+
+Now we declare that the bytecode 246 is defined by `sendStaticLiteralMethod`
+
+```
+...
+		(243		extStoreReceiverVariableBytecode)
+		(244		extStoreLiteralVariableBytecode)
+		(245		longStoreTemporaryVariableBytecode)
+
+		(246 		sendStaticLiteralMethodBytecode)
+		(247		unknownBytecode)
+
+		"3 byte bytecodes"
+		(248		callPrimitiveBytecode)
+		(249		extPushFullClosureBytecode)
+...		
+```
+
+### Compiling the VM
+
+Let us check that our additions do not break the VM build.
+For now we only compile the VM interpreter without the JIT compiler. 
+
+Go to the iceberg folder in the pharo-local folder. 
+```
+cmake -S iceberg/pharo-vm -B build -DFLAVOUR=StackVM -DPHARO_DEPENDENCIES_PREFER_DOWNLOAD_BINARIES=TRUE
+cmake --build build --target=install
+```
+
+We can now launch the resulting VM 
+```
+
+./build/build/dist/Pharo.app/Contents/MacOS/Pharo ../YourImage.image --interactive
+```
+
+@guille I got 
+```
+./build/build/dist/Pharo.app/Contents/MacOS/Pharo ../P11-VMSTATIC.image --interactive  [9:20:25]
+Cannot locate any of #('libSDL2.dylib' 'libSDL2-2.0.0.dylib'). Please check if it installed on your system
+```
+
+
+### Getting a compiled method
+
+In this hands on, we focus on the virtual machine logic therefore we do not want to modify the syntax of Pharo. Still we need a way to get compiled methods with the new bytecode. 
+
+The Pharo compiler supports a bytecode builder, using the pragma `opalBytecodeMethod` 
+we can create the body of a method has the compiler would do. 
+
+For example the following method `exampleIRBuilder` just returns 2.
+
+```
+MyXP >> exampleIRBuilder 
+
+	<opalBytecodeMethod>
+		^ IRBuilder buildIR: [:builder | 
+			builder 
+				pushLiteral: 2;
+				returnTop ]
+```
+
+Now we can just execute the method. 
+
+```
+MyXP new exampleIRBuilder
+> 2
+``` 
+
+Notice that here this is the default method passing message semantics. 
 
 
 
@@ -120,3 +213,56 @@ commonSendOrdinary
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Better sendStaticLiteralMethodBytecode
+
+```
+StackInterpreter >> sendStaticLiteralMethodBytecode
+
+	"2 Byte Bytecode
+		1st Byte: opcode
+		2nd Byte: literal offset of the method"
+
+	| methodLiteralOffset primitiveIndex |
+	methodLiteralOffset := self fetchByte.
+	newMethod := self literal: methodLiteralOffset.
+
+	"argumentCount is used by primitives to
+	   - check how to access the stack and
+	   - know how many elements to pop,
+	and generally to check that the stack gets balanced after execution"
+	argumentCount := self argumentCountOf: newMethod.
+
+	"primitiveFunctionPointer needs to be loaded for each method interpreted.
+	executeNewMethod: assumes that this is set during lookup
+	Thus, if we don't set it, the value will be the one of the last method/primitive called"
+	primitiveIndex := self primitiveIndexOf: newMethod.
+	primitiveFunctionPointer := self functionPointerFor: primitiveIndex inClass: nil.
+
+	self executeNewMethod: true.
+	self fetchNextBytecode
+```
+
+https://github.com/evref-inria/pharo-vm/pull/2/files
