@@ -420,15 +420,12 @@ Integer >> staticPlus
 
 
 
-
-
-
-
-
-
 ### The case of recursion
 
-Since we are compiling a recursive method (factorial), we need a way so that the literal frame of this method refers to the compiled method itself.
+Since we are compiling a recursive method (factorial), we need a way so that the literal frame of this method refers to the compiled method itself. 
+
+For this as a temporarily solution we will introduce a placeholder that later we will patch. 
+Here is a definition of factorial where the recursive call is static. 
 
 ```
 Integer >> staticBoundRecursiveFactorial
@@ -457,8 +454,27 @@ Integer >> staticBoundRecursiveFactorial
 			  returnTop ]
 ```
 
+We have to define the class `StaticRecursiveMethodPlaceHolder`.
+
+```
+Object << #StaticRecursiveMethodPlaceHolder
+	slots: {#selector};
+	...
+```
+
+```
+StaticRecursiveMethodPlaceHolder >> numArgs 
+
+	^ selector numArgs
+```
+
+```
+StaticRecursiveMethodPlaceHolder >> selector: aString
+	selector := aString
+```
 
 
+Now we patch the `generate:` method to substitute the placeholder by the compiled method.
 
 ```
 IRMethod >> generate: trailer
@@ -553,7 +569,105 @@ StackInterpreter >> sendStaticLiteralMethodBytecode
 
 https://github.com/evref-inria/pharo-vm/pull/2/files
 
+### Bench
+
+Here are the three different versions of factorial that we can now benchmark.
+
+```
+Integer >> lateBoundRecursiveFactorial
+
+	<opalBytecodeMethod>
+	^ IRBuilder buildIR: [ :builder |
+		  builder
+			  pushReceiver;
+			  pushLiteral: 1;
+			  send: #'<=';
+			  jumpAheadTo: #gogogo if: false;
+
+			  "Base case"
+			  pushLiteral: 1;
+			  returnTop;
+
+			  "Recursive case"
+			  jumpAheadTarget: #gogogo;
+			  pushReceiver;
+			  pushReceiver;
+			  pushLiteral: 1;
+			  send: #-;
+			  send: #lateBoundRecursiveFactorial;
+			  send: #*;
+			  returnTop ]
+```
+
+```
+Integer >> staticBoundRecursiveFactorial
+
+	<opalBytecodeMethod>
+	1halt.
+	^ IRBuilder buildIR: [ :builder |
+		  builder
+			  pushReceiver;
+			  pushLiteral: 1;
+			  send: #'<=';
+			  jumpAheadTo: #gogogo if: false;
+
+			  "Base case"
+			  pushLiteral: 1;
+			  returnTop;
+
+			  "Recursive case"
+			  jumpAheadTarget: #gogogo;
+			  pushReceiver;
+			  pushReceiver;
+			  pushLiteral: 1;
+			  send: #-;
+			  sendStatic: (StaticRecursiveMethodPlaceHolder new selector: #staticBoundRecursiveFactorial);
+			  send: #*;
+			  returnTop ]
+```
+
+```
+Integer >> staticBoundRecursiveFactorialHardcore
+
+	<opalBytecodeMethod>
+	^ IRBuilder buildIR: [ :builder |
+		  builder
+			  pushReceiver;
+			  pushLiteral: 1;
+			  sendStatic: (SmallInteger >> #'<=');
+			  jumpAheadTo: #gogogo if: false;
+
+			  "Base case"
+			  pushLiteral: 1;
+			  returnTop;
+
+			  "Recursive case"
+			  jumpAheadTarget: #gogogo;
+			  pushReceiver;
+			  pushReceiver;
+			  pushLiteral: 1;
+			  sendStatic: (SmallInteger >> #'-');
+			  sendStatic: (StaticRecursiveMethodPlaceHolder new selector: #staticBoundRecursiveFactorial);
+			  sendStatic: (SmallInteger >> #'*');
+			  returnTop ]
+```
+
+Need more discussions
+
+```
+[17 lateBoundRecursiveFactorial.] bench. "'2774597.961 per second'"
+[17 staticBoundRecursiveFactorial.] bench.  "'3693598.280 per second'"
+[17 staticBoundRecursiveFactorialHardcore.] bench. "'2170939.636 per second'"
+```
+Note that the staticBoundRecursiveFactorialHardcore is slower because the primitives *, -, +  are extremely optimized by the VM and do not result in message sends.
+
 
 ### Limits and conclusion
 
 There is clearly some more effort to obtain a full working solution. For example, managing the code changes and recompilation of the methods.
+
+This tutorial misses
+- syntax support
+- JIT support
+- invalidation if the called method changes
+- indirect recursion support
