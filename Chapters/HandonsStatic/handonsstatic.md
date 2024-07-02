@@ -489,6 +489,20 @@ IRMethod >> generate: trailer
 
 ### Better sendStaticLiteralMethodBytecode
 
+The first definition of `sendStaticLiteralMethodBytecode` was brittle. 
+Indeed the interpreter has some invariants and use about global variables that we did not
+reset correctly. 
+
+This is the case for `argumentCount`. It is used by primitives to
+check how to access the stack and know how many elements to pop, and generally to check that the stack gets balanced after execution.
+
+The second case is `primitiveIndex` and `primitiveFunctionPointer`.
+`primitieIndex` should be loaded for each interpreted method.
+The function `executeNewMethod:` assumes that this index is set during lookup.
+Thus, if we don't set it, the value will be the one of the last method/primitive called leading to strange bugs.
+
+Here is the new version of the static send bycode logic. 
+
 ```
 StackInterpreter >> sendStaticLiteralMethodBytecode
 
