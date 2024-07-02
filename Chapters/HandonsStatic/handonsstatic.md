@@ -233,6 +233,27 @@ Notice that here this is the default method passing message semantics.
 
 To support static calls, we will define a new IR instruction in addition to the bytecode to be able to define static sends. 
 
+### Fixing some Pharo logic
+
+Before continuing we should fix the method `refersToLiteral:` because it can loop 
+if if literal frame contains a compiled method and this is what we want to do for our solution.
+
+
+```
+CompiledCode >> refersToLiteral: aLiteral [
+	"Answer true if any literal in this method is literal,
+	even if embedded in array structure."
+
+	1 to: self numLiterals - self literalsToSkip do: [ :index | "exclude selector or additional method state (penultimate slot)
+		and methodClass or outerCode (last slot)"
+		(self literalAt: index) == self ifFalse: [
+			((self literalAt: index) refersToLiteral: aLiteral) ifTrue: [
+				^ true ] ] ].
+
+	^ false
+]
+```
+
 ### Extending the IRBuilder
 
 We extend the builder with the new message `sendStatic:`. 
