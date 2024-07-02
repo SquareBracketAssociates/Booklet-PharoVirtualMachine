@@ -147,27 +147,32 @@ Now we declare that the bytecode 246 is defined by `sendStaticLiteralMethod`
 
 ### Compiling the VM
 
-Let us check that our additions do not break the VM build.
-For now we only compile the VM interpreter without the JIT compiler. 
 
-Go to the iceberg folder in the pharo-local folder. 
+Let us check that our additions do not break the VM build - so far we nearly do anything that could but this way you can practice.
+Note that we only compile the VM interpreter without the JIT compiler. 
+
+- First save your code, the build will take the current branch has input. 
+
+- Go to the iceberg folder in the pharo-local folder and execute the following. Here we asked to grab the binaries of external projects to make the compilation faster. 
+
 ```
 cmake -S iceberg/pharo-vm -B build -DFLAVOUR=StackVM -DPHARO_DEPENDENCIES_PREFER_DOWNLOAD_BINARIES=TRUE
+```
+
+Then we compile the Vm and the result will be in the build folder. 
+
+```
 cmake --build build --target=install
 ```
 
-We can now launch the resulting VM 
+We can now launch the resulting VM to execute your image as follows: 
 ```
 
 ./build/build/dist/Pharo.app/Contents/MacOS/Pharo ../YourImage.image --interactive
 ```
 
-@guille I got 
-```
-./build/build/dist/Pharo.app/Contents/MacOS/Pharo ../P11-VMSTATIC.image --interactive  [9:20:25]
-Cannot locate any of #('libSDL2.dylib' 'libSDL2-2.0.0.dylib'). Please check if it installed on your system
-```
-
+Note that you will have to rebuild the VM in the following. 
+Before recompiling to not forget to save your code and remember that the build is taking the current branch as input.
 
 ### Getting a compiled method
 
@@ -258,6 +263,12 @@ IRSendStatic >> calledMethod: aCompiledMethod
 	calledMethod := aCompiledMethod
 ```
 
+We also define a class method 
+
+```
+IRSendStatic class >> 
+```
+
 We define the corresponding methods to support the interaction with the Visitors who are responsible for
 compilation.
 
@@ -325,6 +336,12 @@ EncoderForSistaV1 >> genSend: selectorLiteralIndex numArgs: nArgs
 
 ### Translator extension
 
+We make sure that the IRFix visitor does not raise an error by defining the method `visitStaticSend:` doing nothing.
+
+```
+IRFix >> visitStaticSend: anIRStaticSend
+```
+
 We extend the translator by adding the following `visitStaticSend:`
 
 ```
@@ -345,7 +362,8 @@ IRBytecodeGenerator >> sendStatic: aMethod
 ```
 
 
-We finally emit the new bytecode.
+We finally emit the new bytecode: it basically emits the bytecode 246 followed by the literal frame offset in which the compiled method is stored. 
+A better version should do a bit of validation. 
 
 ```
 EncoderForSistaV1 >> genSendStatic: methodLiteralOffset
@@ -354,6 +372,11 @@ EncoderForSistaV1 >> genSendStatic: methodLiteralOffset
 		nextPut: 246;
 		nextPut: methodLiteralOffset
 ```
+
+### Testing
+
+Now we define a simple method using a static send. This method adds one to the receiver. 
+
 
 ```
 Integer >> staticPlus 
@@ -368,6 +391,10 @@ Integer >> staticPlus
 			  returnTop ]
 ```
 
+```
+1 staticPlus
+> 2
+```
 
 
 

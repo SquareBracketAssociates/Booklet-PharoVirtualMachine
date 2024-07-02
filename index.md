@@ -26,3 +26,5 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 <!inputFile|path=Chapters/GarbageCollector/freeList.md!>
 <!inputFile|path=Chapters/GarbageCollector/ephemerons.md!>
 <!inputFile|path=Chapters/JIT/stackStructure.md!>
+
+<!inputFile|path=Chapters/HandonsStatic/handonsstatic.md!>
