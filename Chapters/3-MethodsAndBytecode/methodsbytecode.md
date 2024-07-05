@@ -82,7 +82,7 @@ This is for eample the case of foreign function interface methods that are compi
 
 All methods contain at least one literal named the _method header_, referencing an immediate integer representing a mask of flags.
 
-- **Encoder:** a bit indicating if the method uses an alternate bytecode set.
+- **Encoder:** a bit indicating if the method uses the default bytecode set or not.
 - **Primitive:** a bit indicating if the method has a primitive operation or not.
 - **Number of parameters:** 4 bits representing the number of parameters of the method.
 - **Number of temporaries:** 6 bits representing the number of temporary variables declared in the method.
