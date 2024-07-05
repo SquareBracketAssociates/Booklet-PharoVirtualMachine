@@ -77,17 +77,16 @@ For example, the bit string 00000101 represents the number 5 in binary, and its 
 While we usually represent bytes from left-to-right (most-to-least significant), this is only the case with some architectures.
 The order in which individual bytes of a word are stored in memory is again a trait of the computer architecture: the endianness.
 An architecture is said to be little-endian if data bytes are stored from the least significant to the most significant, and big-endian otherwise.
-(SD: why this is "stored from least to most?" because 08 is store in 0 in the following)
 Understanding endianness is important when reading and writing values smaller than a word.
 
 Nowadays, the most popular architectures out there are little-endian.
-This means that a 64-bit word with the value `16r0102030405060708` is stored backward.
-Let's imagine that the word spans from address 0 to 7.
-- The lowest address -0- contains the least significant byte -16r08-.
-- The highest address -7- contains the most significant byte -16r01- (see Fig. *@fig:LittleEndian@*).
-If we wanted to read the bytes in most-to-least significance order, then we need to iterate it backward: from 7 to 0.
+This means that a 64-bit word with the value `16rFEDCBA987654321` is stored backward.
+Let's imagine that the word is stored at address a.
+- The lowest address -a- contains the least significant byte -16r21-.
+- The highest address -a+7- contains the most significant byte -16r0F- (see Fig. *@fig:LittleEndian@*).
+If we wanted to read the bytes in most-to-least significance order, then we need to iterate it backward: from a+7 to a.
 
-![16r0102030405060708 in LittleEndian: least significant bit stored in lowest address.](figures/LittleEndian.pdf width=20&label=fig:LittleEndian)
+![16rFEDCBA987654321 in 64-bits Little and Big-Endian.](figures/LittleBigEndian.drawio.pdf width=95&label=fig:LittleEndian)
 
 ### Object Layout
 
@@ -95,7 +94,7 @@ Pharo programs are made of objects which are, for the most part, allocated in me
 We call these objects _heap-allocated_ because they reside in a memory region managed by the VM called the _heap_, that we will explore in later chapters.
 
 #### Object Formats
-@sec:layout 
+@sec:layout
 @sec:formats
 
 Pharo objects contain _slots_ that store the object's data.
@@ -112,7 +111,7 @@ The following table summarizes the most common types of objects and their variat
 **Fixed and variable slots.** The number of slots in an object is either fixed, variable or a combination of both.
 Fixed slots are those decided statically. For example, an instance of class `Point` declaring variables `x` and `y` has two fixed slots.
 Variable slots are those determined at allocation time. The simplest example of variable slots are arrays, whose number of slots is specified as argument of the method `new:`.
-Some objects may contain a combination of fixed and variable slots, as it is the case of the instances of `Context`. 
+Some objects may contain a combination of fixed and variable slots, as it is the case of the instances of `Context`.
 
 **Slot type.** Slots contain either object references or plain data bytes.
 Object references are pointers that reference other objects forming a graph, further explained in *@sec:references@*.
@@ -382,7 +381,7 @@ An object's format is encoded as a 5-bit integer:
 From the list above notice that zero-sized objects, instances of classes that define no instance variables, have their own format identifier.
 Variable objects with instance variables are marked separately from those without instance variables.
 
-Special attention needs to be given to byte objects, where format `9` identifies byte objects with 64-bit slots, formats `10` and `11` identify byte objects with 32-bit slots, and so on. 
+Special attention needs to be given to byte objects, where format `9` identifies byte objects with 64-bit slots, formats `10` and `11` identify byte objects with 32-bit slots, and so on.
 All byte objects having slots smaller than a word encode their padding in the format: the first format in each category (`10`, `12`, `16`, `24`) is used for objects that require no padding.
 Subtracting the format to the base format returns the number of padding bytes.
 For example, a byte array with format 21 has 21-16 = 5 bytes of padding.
