@@ -200,32 +200,108 @@ This first execution path is the _fast path_.
 If the check fails, the primitive fails and the method's fallback bytecode implements the slower type conversion for the other type combinations.
 
 
-### Bytecode Encoding
+### Bytecode Encoding and Optimizations
 
-### Bytecode Optimization
+The instructions of a method are encoded as bytes, that need to be decoded to either interpret them, JIT compile them or decompile them.
+Each instruction is made of an **opcode**, or operation identifier, followed by zero or more arguments.
+For example, the instruction `push instance variable 42` is encoded with bytes `#[226 42]`, where 226 is the opcode identifying the  `push instance variable`, and the second byte (42) is the index of the instance variable to read.
 
-#### Optimising for Common Bytecodes
+#### Variable-length Bytecode Encoding
 
-- push inst var 1 as a single bytecode
-- super instructions (store and pop)
+Pharo encodes bytecode instructions using a variable-length encoding: instructions are encoded using one, two or three bytes.
+The encoding is designed for compactness and ease of interpretation.
+Commonly used instructions are encoded with less bytes, rarely used instructions use more bytes.
 
-#### Optimising for Common Messages
+The variable-length bytecode design has two consequences:
+1. **Compact representation of bytecode methods.** Using shorter bytecode sequences for common instructions works as a compression mechanism. This allows the virtual machine to fetch less bytes during interpretation, and to use less space to encode methods.
+2. **Ambiguity during decoding.** Bytecode in a method needs to be decoded for reasons such as debugging or decompilation. However, decoding cannot start from any arbitrary point in a variable-length encoding. Consider a two-byte bytecode. If we start decoding bytecode instructions from the second byte, the decoder will interpret this byte as the first byte of an instruction. In the best case, the decoder will eventually fail. In the worst case, the decoder succeeds and returns a wrong decoding.
 
+In the following section we will go into how such optimizations take place concretely in the Pharo's bytecode set.
 
-	
-The categories of objects that can be referred to directly by bytecodes are:
-- the receiver and arguments of the message
-- the values of the receiver's instance variables
-- the values of any temporary variables required by the method
-- special constants \(true, false, nil, -1, 0, 1, and 2\)
-- special message selectors
+#### Optimising for Common Bytecode Instructions
 
+As we said before, the variable-length bytecode encoding allows for shorter bytecode sequences for common instructions.
+For example, we can take the most common bytecode from the Pharo12 release (build 1521) using the script that follows.
+The script takes all the compiled code (methods and blocks), decodes all their instructions and groups them by their bytes.
+
+```smalltalk
+((CompiledCode allSubInstances flatCollect: [ :e | e symbolicBytecodes ])
+	groupedBy: [ :symBytecode | symBytecode bytes ])
+		associations
+			sorted: [ :a :b | a value size > b value size  ]
+```
+
+From that list, the 5 most common bytecode are:
+
+| Instruction | Count |
+| --- | --- |
+| Pop | 209537 |
+| Push self | 201567 |
+| Push first temp/arg | 163965 |
+| Send message in 1st literal | 77767 |
+| Method return | 77090 |
+
+We see in this list that the first three are largely more numerous than the two last.
+This tendency continues in the entire list of bytecode following an exponential decay.
+The first fifty instructions happen tenths of thousands of times, while the vast majority appear less than a thousand.
+
+This observation is enough motivation to optimize such *very common* cases.
+Indeed, amongst the 255 most common instructions, 183 are already encoded as a 1 byte instruction.
+
+#### Encoding of Single-byte instructions
+
+Instructions such as `pop` or `push self` are single instructions that do not need any parameter.
+The encoding of these instructions is straight forward: they are given a single byte.
+For example, `pop` is encoded as 216, while `push self` is encoded as 76.
+
+There are however other common instructions that have parameters.
+This is the case, for example, of the `push instance variable` bytecode that is parameterized with the index of the reference slot in the receiver (the instance variable) to push.
+To encode this instruction as a single byte, the index is encoded within the instruction.
+That is, the bytecode `push instance variable at 1` is encoded as 0, the bytecode `push instance variable at 2` is encoded as 1.
+
+Single-byte parametrized bytecode instructions are organized in ranges, often of a size that is a power of 2.
+For example, 1-byte `push instance variable` instruction is organized in a range of 16 instructions (2^4).
+1-byte `push instance variable` instructions are encoded with bytes from 0 to 15, parameterized with indexes from 1 to 16 respectively.
+
+An alternative way of seeing this encoding is to see that an instruction opcode is not the byte on itself but the most significant bits of the byte. If we consider again the range of bytecodes `push instance variable`, the most significant nibble remains always zero regardless of the bytecode, while the lowest part always changes following the index to push.
+
+```smalltalk
+"The most significant nibble is always 0 for this range of bytecode"
+0 to: 15 do: [ :e | self assert: ((e >> 4) bitAnd: 16rF) = 0 ].
+"The least significant nibble is always the index to push"
+0 to: 15 do: [ :e | self assert: (e bitAnd: 16rF) = e ]
+```
+
+#### Optimising for Common Bytecode Sequences
+
+Besides common instructions, another useful observation is that many instructions are usually combined together.
+Consider for example the statement `^ self`, which is commonly used to perform an early exit from a method, and inserted at the end of every method that does not have an explicit return.
+A naïve translation of `^self` could use the following sequence of instructions.
 
 ```
-BytecodeEncoder specialSelectors	
->>> #(#+ #- #< #> #'<=' #'>=' #= #'~=' #* #/ #'\\' #@ #bitShift: #'//' #bitAnd: #bitOr: #at: #at:put: #size #next #nextPut: #atEnd #'==' nil "class" 
-#'~~' #value #value: #do: #new #new: #x #y)
+push self
+return top
 ```
+
+Using two instructions requires -- at least -- two bytes, and forces the interpreter to pay twice the cost of instruction fetch/decode.
+Pharo optimizes such common sequences using a single (often also single-byte) instruction to do the entire operation, often called (static) super instructions in the literature {!citation|ref=Pium98a!}.
+
+#### Optimising for Common Messages and Literals
+
+Another source of overhead happens on the over-reliance on literals.
+In Pharo, each method has its own literal frame: literals and constants are not shared between methods, causing a potential redundancy and memory inefficiency.
+
+One way to minimize such overhead is to design special instructions for well-known constants.
+Constants such as `nil`, `true`, `false` need to be known by the VM for several tasks such as initializing instance variables, or interpret conditional jumps.
+The VM benefits from this knowledge to provide specialized instructions such as `push true` that do not fetch the `true` object from the method literal frame but from the pool of constants known from the VM.
+
+In the same venue, immediate objects can be crafted by the VM on the fly, avoiding the storage in the literal frame.
+Instructions such as `push 0`, encoded as 80, represent the usage of constants that appear often, for example, in loops.
+When executing those instructions, the VM create an immediate object by tagging a well-known value.
+
+Finally, another variation of this optimization happens on common message sends *e.g.,* arithmetic and comparisons selectors.
+These selectors happen so often, that instead of storing the selector in the method's literal frame, they are stored in a global table of selectors called `special selectors`.
+The Pharo bytecode set defines `send special selector` instructions.
 
 ### The Sista Bytecode
 
