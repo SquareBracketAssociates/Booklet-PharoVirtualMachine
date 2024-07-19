@@ -372,6 +372,10 @@ extA 2
 extJumpIfFalse 3
 ```
 
+#### Directed super sends
+
+???
+
 #### Sista Bytecode Overview
 
 | Bytes | Description | Arguments |
@@ -422,3 +426,7 @@ extJumpIfFalse 3
 | 237 | Unconditionally jump to offset `x` | x = byte1 + (extB << 8) |
 | 238 | Jump to offset `x` if stack top is `true` | x = byte1 + (extB << 8) |
 | 239 | Jump to offset `x` if stack top is `false` | x = byte1 + (extB << 8) |
+
+### Conclusion
+
+Something here!
