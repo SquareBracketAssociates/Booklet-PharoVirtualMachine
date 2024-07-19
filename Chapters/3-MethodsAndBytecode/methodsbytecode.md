@@ -102,7 +102,7 @@ The method trailer can be arbitrarily long, encoding binary data such as integer
 Pharo usually uses the trailer to encode the offset of the method source code in a file.
 It has, however, also been used to encode a method source code in utf8 encoding, or zipped.
 
-### Stack Bytecode and the Sista Bytecode Set Overview
+### Stack Bytecode
 
 Pharo encodes bytecode instructions using the Sista bytecode set{!citation|ref=Bera14a!}.
 The Sista bytecode set defines a set of stack instructions with instructions that are one, two or three bytes long.
@@ -303,8 +303,122 @@ Finally, another variation of this optimization happens on common message sends 
 These selectors happen so often, that instead of storing the selector in the method's literal frame, they are stored in a global table of selectors called `special selectors`.
 The Pharo bytecode set defines `send special selector` instructions.
 
-### The Sista Bytecode
+### The Sista Bytecode Set
 
-#### Bytecode Extensions
+Pharo uses a bytecode set named Sista {!citation|ref=Bera14a!}.
+The Sista bytecode set is a stack-based bytecode using common optimization as described before, including support for prefix instructions, and designed to be extensible with unsafe instructions.
 
-Some of the bytecodes take extensions. An extension is one or two bytes following the bytecode that further specify the instruction. An extension is not an instruction on its own, it is only a part of an instruction.
+This section explains some particularities of the bytecode set and finishes with a table showing the bytecodes, their encoding and summarizing their optimizations.
+
+#### Bytecode Extension Prefixes
+
+Some bytecode instructions are limited by the encoding: for example, 2-byte instructions usually use one byte as opcode and one byte as argument, limiting the argument to a maximum of 255 values.
+For example, the code that follows illustrates the code of the `long jump if false`, that jumps to a given target bytecode if a false is found in the stack. This 2-byte bytecode uses the second bytecode as a relative offset from the current bytecode.
+Such a restriction can be too limiting for some applications. In the case of our example, this forbids us from having jumps longer than 255 bytes.
+
+```smalltalk
+extJumpIfFalse
+	| byte offset |
+
+	byte := self fetchByte.
+	offset := byte.
+	self jumplfFalseBy: offset
+```
+
+To solve this issue, the sista bytecode includes two prefix instructions: `extension A` and `extension B`.
+Prefix instructions prefix normal instructions and work as meta-data for the following instruction: the semantics of a prefix depends on each instruction. Also, instructions that use an instruction *consume it*, zeroing its value for subsequent instructions.
+The actual implementation of the `long jump if false` bytecode adds uses the value of it's prefix (if any) to reach further jump offsets.
+
+```smalltalk
+extJumpIfFalse
+	byte := self fetchByte.
+	offset := byte + (extB << 8).
+	numExtB := extB := extA := 0.
+	self jumplfFalseBy: offset
+```
+
+The example that follows show two bytecode sequences, where the first jumps forward by 255 bytes while the second one jumps forward by 256 bytes.
+The first sequence does not require any extensions, while the second one uses an extension.
+Notice that the `long jump if false` computes it's offset as `byte + (extB << 8)`.
+Thus, to compute an offset of 256, we should have an extension of value `1`, and a jump argument of value `0`.
+
+```smalltalk
+"Jump forward 255 bytes"
+extJumpIfFalse 255
+
+"Jump forward 256 bytes"
+extA 1
+extJumpIfFalse 0
+```
+
+In the case before, the prefix allows jumps to reach jump targets up to `65535` (`255 + (255 << 8)`).
+To support larger values, prefixes can be composed: an instruction can have many prefixes that cummulate.
+Following is the definition of the  `extension A` bytecode, which takes the previous value of the extension A, shifts it 8 bits to the left and adds it to the given value.
+
+```smalltalk
+extABytecode
+	extA := (extA bitShift: 8) + self fetchByte.
+	self fetchNextBytecode
+```
+
+Extensions are composed by adding many prefixes to a given instruction.
+For example, the following example shows a jump with two extensions of 1 and 2, to a jump with argument 3.
+This computes the jump offset of 66051 with the formula `(((1 << 8) + 2) << 8 + 3)`.
+
+````
+"Jump forward 66051 bytes"
+extA 1
+extA 2
+extJumpIfFalse 3
+```
+
+#### Sista Bytecode Overview
+
+| Bytes | Description | Arguments |
+| --- | --- | --- |
+| 0-15 | Push receiver's instance variable at offset `x` | x = byte0 |
+| 16-31 | Push literal variable value at offset `x` | x = byte0 && 0x1F |
+| 32-63 | Push literal constant at offset `x` | x = byte0 && 0x1F|
+| 64-75 | Push temporary variable at offset `x` | x = byte0 &&0xF |
+| 76 | Push receiver | - |
+| 77 | Push `true` | - |
+| 78 | Push `false` | - |
+| 79 | Push `nil` | - |
+| 80 | Push `0` | - |
+| 81 | Push `1` | - |
+| 82 | Push `thisContext` or `thisProcess` | Push `thisProcess` if extB = `0` 	 |
+| 83 | Duplicate stack top | - |
+| 84-87 | Unused | - |
+| 88 | Return receiver from method | - |
+| 89 | Return `true` from method | - |
+| 90 | Return `false` from method | - |
+| 91 | Return `nil` from method | - |
+| 92 | Return top of the stack from method | - |
+| 93 | Return `nil` from block | - |
+| 94 | Return top of the stack from block | - |
+| 95 | Nop | - |
+| 96-127 | Special sends | - |
+| 128-143 | Send 0 argument message with selector at literal offset `x` | x = byte0 && 0xF |
+| 144-159 | Send 1 argument message with selector at literal offset `x` | x = byte0 && 0xF |
+| 160-175 | Send 2 argument message with selector at literal offset `x` | x = byte0 && 0xF |
+| 176-183 | Unconditionally jump to offset `x` | x = 0x7 |
+| 184-191 | Coditionally jump to offset `x` if stack top = `true` | x = byte0 && 0x7 |
+| 192-199 | Coditionally jump to offset `x` if stack top = `false` | x = byte0 && 0x7 |
+| 200-207 | Pop from stack and store popped value in the receiver's instance offset at offset `x` | x = byte0 && 0x7 |
+| 208-215 | Pop from stack and store popped value in temporary variable at offset `x` | x = byte0 && 0x7 |
+| 216 | Pop from stack | - |
+| 217-223 | Unused | - |
+| 224-225 | Extension A and Extension B by `x` | x = byte1 |
+| 226 | Push receiver's instance variable at offset `x` | x = byte1 + extB << 8 |
+| 227 | Push literal variable value at offset `x` | x = byte1 + extB << 8 |
+| 228 | Push literal constant at offset `x` | x = byte1 + extB << 8|
+| 229 | Push temporary variable at offset `x` | x = byte1 + extB << 8 |
+| 230 | FFI Call | - |
+| 231 | Push an array with the top `x` elements in the stack. Pop the arguments if `pop` = `true` | x = byte1 && 127, pop = byte1 > 127 |
+| 232 | Push Integer `x` | x = byte1 + extB << 8 |
+| 233 | Push Character with code point `x` | x = byte1 + extB << 8 |
+| 234 | Send `x` argument message with selector at literal offset `y` | x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5 |
+| 235 | Super send `x` arguments with selector at literal offset `y`, directed if `directed` = `true` | x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5, directed = extB > 64 |
+| 237 | Unconditionally jump to offset `x` | x = byte1 + (extB << 8) |
+| 238 | Jump to offset `x` if stack top is `true` | x = byte1 + (extB << 8) |
+| 239 | Jump to offset `x` if stack top is `false` | x = byte1 + (extB << 8) |
