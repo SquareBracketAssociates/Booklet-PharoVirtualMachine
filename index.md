@@ -19,6 +19,7 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 
 <!inputFile|path=Chapters/2-ObjectStructure/objectStructure.md!>
 <!inputFile|path=Chapters/3-MethodsAndBytecode/methodsbytecode.md!>
+<!inputFile|path=Chapters/4-Interpreter/theInterpreter.md!>
 <!inputFile|path=Chapters/CallingConventions/CallingConventions.md!>
 <!inputFile|path=Chapters/GarbageCollector/memoryStructure.md!>
 <!inputFile|path=Chapters/GarbageCollector/newSpace.md!>

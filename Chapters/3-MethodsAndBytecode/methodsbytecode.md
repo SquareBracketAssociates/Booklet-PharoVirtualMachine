@@ -27,6 +27,13 @@ For a more complete overview on variables and their usage, please refer yourselv
 Pharo supports three main kind of variables.
 Each kind of variable is stored differently in memory and has different lifetime and behavior _i.e.,_ they are allocated and deallocated at different moments in time.
 
+**`self` and `super`:** `self` and `super` are so called _pseudo-variables_, _i.e.,_ syntactically looking variables but defined by the compiler and with special semantics. Differently from normal variables, `self` and `super` cannot be manually assigned. Both `self` and `super` are defined automatically by the compiler, and bound when a method starts executing. Both these pseudo-variables have as value the current message receiver: the object that received the message that led to the current method execution.
+
+The key difference between `self` and `super` is how they change the method lookup semantics in a message-send.
+Messages to `self` (_e.g.,_ `self foo`) perform a traditional method lookup starting from the receiver.
+Messages to `super` (_e.g.,_ `super foo`) start the method lookup algorithm from the current method's superclass.
+We will review the method lookup semantics when looking at the interpreter implementation in the following chapters.
+
 **Temporary variables and parameters:** A method has a list of formal parameters and a list of manually declared temporary variables.
 Temporary variables and parameters are only accessible within the method that defines them and live during the entire method's execution.
 In other words, they are allocated when a method execution starts and deallocated when a method returns.
@@ -148,7 +155,17 @@ Different store instructions are:
 - store into a temporary variable
 - store into a literal variable
 
-#### Control Flow Instructions -- Send and Return
+
+#### Control Flow Instructions: Jumps
+
+Control flow instructions are a family of instructions that change the sequential order in which instructions naturally execute.
+In lots of programming languages, such instructions represent conditionals, loops, case statements.
+In Pharo all these boil down to jump instructions, a.k.a., gotos.
+Different jump instructions are:
+- conditional jumps pop the top of the value stack and transfer the control flow to the target instruction if the value is either `true` or `false`
+- unconditional jumps transfer the control flow to the target instruction regardless of the values on the value stack
+
+#### Send and Return Instructions
 
 Send instructions are a family of instructions that perform a message send, activating a new method on the call stack.
 Send instructions are annotated with the selector and number of arguments, and will conceptually work as follow:
@@ -159,12 +176,6 @@ Send instructions are annotated with the selector and number of arguments, and w
 
 Conversely to send instructions, return instructions are a family of instructions that return control to the caller method, providing the return value to be pushed to the caller's value stack.
 
-#### Control Flow Instructions -- Jumps
-
-Control flow instructions are a family of instructions that change the sequential order in which instructions naturally execute.
-Different jump instructions are:
-- conditional jumps pop the top of the value stack and transfer the control flow to the target instruction if the value is either `true` or `false`
-- unconditional jumps transfer the control flow to the target instruction regardless of the values on the value stack
 	
 ### Primitive Methods
 
@@ -245,7 +256,7 @@ We see in this list that the first three are largely more numerous than the two 
 This tendency continues in the entire list of bytecode following an exponential decay.
 The first fifty instructions happen tenths of thousands of times, while the vast majority appear less than a thousand.
 
-This observation is enough motivation to optimize such *very common* cases.
+This observation is enough motivation to optimize such _very common_ cases.
 Indeed, amongst the 255 most common instructions, 183 are already encoded as a 1 byte instruction.
 
 #### Encoding of Single-byte instructions
@@ -299,7 +310,7 @@ In the same venue, immediate objects can be crafted by the VM on the fly, avoidi
 Instructions such as `push 0`, encoded as 80, represent the usage of constants that appear often, for example, in loops.
 When executing those instructions, the VM create an immediate object by tagging a well-known value.
 
-Finally, another variation of this optimization happens on common message sends *e.g.,* arithmetic and comparisons selectors.
+Finally, another variation of this optimization happens on common message sends _e.g.,_ arithmetic and comparisons selectors.
 These selectors happen so often, that instead of storing the selector in the method's literal frame, they are stored in a global table of selectors called `special selectors`.
 The Pharo bytecode set defines `send special selector` instructions.
 
@@ -326,7 +337,7 @@ extJumpIfFalse
 ```
 
 To solve this issue, the sista bytecode includes two prefix instructions: `extension A` and `extension B`.
-Prefix instructions prefix normal instructions and work as meta-data for the following instruction: the semantics of a prefix depends on each instruction. Also, instructions that use an instruction *consume it*, zeroing its value for subsequent instructions.
+Prefix instructions prefix normal instructions and work as meta-data for the following instruction: the semantics of a prefix depends on each instruction. Also, instructions that use an instruction _consume it_, zeroing its value for subsequent instructions.
 The actual implementation of the `long jump if false` bytecode adds uses the value of it's prefix (if any) to reach further jump offsets.
 
 ```smalltalk
@@ -372,11 +383,43 @@ extA 2
 extJumpIfFalse 3
 ```
 
-#### Directed super sends
+#### Super sends
 
-???
+`super` sends deserve a special section for their own, specially because the Sista Bytecode set introduced _directed_ super sends in addition to the traditional ones.
+When using the `super` keyword in Pharo, a message send is issued starting the method-lookup from the superclass of the current method's class instead of the receiver's class.
+This means that to perform a super-send lookup, we need to access the current method's superclass, which should be encoded in the method or bytecode in some way.
+Pharo's bytecode set allows for encoding such information in two ways:
 
-#### Sista Bytecode Overview
+- **Per-method encoded super sends:** Traditionally, each Pharo method contain as last literal a reference to it's class binding. When performing a normal super send, the algorithm fetches this last literal, then it's superclass, and starts the lookup algorithm from there.
+- **Per-call-site encoded super sends:** _Directed super sends_ allow to specify as a stack argument the class from where to start the lookup. Directed super sends allow to specify different lookup classes per call-site, by pushing the lookup-class as the last element on the stack. Although initially meant for super sends, this bytecode can be used to control message sends per-call-site at the expense of larger bytecode and literal frames.
+
+```smalltalk
+"This will lookup #some:message: starting from ClassToLookupFrom, using the receiver and argument found in the stack"
+push receiver
+push arg0
+push ClassToLookupFrom
+directed-send #some:message:
+```
+
+### Sista Bytecode Design Overview
+
+It is not the goal of this book to give a formal definition of the bytecode, or to establish a standard carved in stone.
+Instead, this section describes how the optimizations described above are used in the context of Pharo's bytecode, to understand the design space and how it is concretized.
+
+The Sista bytecode defines a variable byte encoding using many of the encoding optimizations described above.
+Not all bytes in those ranges are used, which allows potential extensions in the future.
+Most of the single-byte bytecode, if not all, are optimized versions of more general instructions found in the range 224-255.
+
+- Bytecodes 0-223 are single-byte bytecode
+- Bytecodes 224-247 are two-byte bytecode
+- Bytecodes 248-255 are three-byte bytecode
+
+In this section, we will refer to `byte0` as the first byte of a instruction, `byte1` as the second byte (if exists) and `byte2` as the third byte (if exists).
+
+#### Sista Optimized Bytecode
+
+The range 0-75 encodes four diferent families of very common instructions: push receiver instance variable, push literal variable, push literal constant and push temporary variable.
+Each family has many versions specialized for one particular argument, encoded as part of the instruction.
 
 | Bytes | Description | Arguments |
 | --- | --- | --- |
@@ -384,15 +427,17 @@ extJumpIfFalse 3
 | 16-31 | Push literal variable value at offset `x` | x = byte0 && 0x1F |
 | 32-63 | Push literal constant at offset `x` | x = byte0 && 0x1F|
 | 64-75 | Push temporary variable at offset `x` | x = byte0 &&0xF |
+
+The range 76-94 encodes push and return instructions with well-known constants, reducing the size of the literal frame.
+
+| Bytes | Description | Arguments |
+| --- | --- | --- |
 | 76 | Push receiver | - |
 | 77 | Push `true` | - |
 | 78 | Push `false` | - |
 | 79 | Push `nil` | - |
 | 80 | Push `0` | - |
 | 81 | Push `1` | - |
-| 82 | Push `thisContext` or `thisProcess` | Push `thisProcess` if extB = `0` 	 |
-| 83 | Duplicate stack top | - |
-| 84-87 | Unused | - |
 | 88 | Return receiver from method | - |
 | 89 | Return `true` from method | - |
 | 90 | Return `false` from method | - |
@@ -400,33 +445,97 @@ extJumpIfFalse 3
 | 92 | Return top of the stack from method | - |
 | 93 | Return `nil` from block | - |
 | 94 | Return top of the stack from block | - |
-| 95 | Nop | - |
+
+The range 96-127 encodes special sends: sends whose selector and number of arguments is well-known to the VM.
+Such sends include common selectors such as arithmetics (_e.g.,_ `#+`, `#*`) or comparisons  (_e.g.,_ `#>`, `#==`).
+This advantages of this encoding are two-fold.
+First, it makes methods smaller as it requires less space in the literal frame
+Second, the mapping allows the VM to make semantic optimizations.
+For example, knowing that a particular send is an addition `#+` allows the VM to avoid message sends and generate specific code for it.
+
+| Bytes | Description | Arguments |
+| --- | --- | --- |
 | 96-127 | Special sends | - |
+
+The range 128-175 encodes message sends with 0-2 arguments, which tend to be very common in Pharo code.
+The selector's offset is encoded as part of the first byte.
+
+| Bytes | Description | Arguments |
+| --- | --- | --- |
 | 128-143 | Send 0 argument message with selector at literal offset `x` | x = byte0 && 0xF |
 | 144-159 | Send 1 argument message with selector at literal offset `x` | x = byte0 && 0xF |
 | 160-175 | Send 2 argument message with selector at literal offset `x` | x = byte0 && 0xF |
+
+The range 176-199 encodes short jump instructions both conditional and unconditional.
+The jump offset is encoded as part of the first byte.
+Short unconditional jumps can only be forward jumps.
+Backjumps (and thus loops) need to be encoded with the longer version (237)
+
+| Bytes | Description | Arguments |
 | 176-183 | Unconditionally jump to offset `x` | x = 0x7 |
 | 184-191 | Coditionally jump to offset `x` if stack top = `true` | x = byte0 && 0x7 |
 | 192-199 | Coditionally jump to offset `x` if stack top = `false` | x = byte0 && 0x7 |
+
+The range 200-215 encodes _store and pop_ super instructions, which are very common when using single-statement assignments.
+
+| Bytes | Description | Arguments |
 | 200-207 | Pop from stack and store popped value in the receiver's instance offset at offset `x` | x = byte0 && 0x7 |
 | 208-215 | Pop from stack and store popped value in temporary variable at offset `x` | x = byte0 && 0x7 |
-| 216 | Pop from stack | - |
-| 217-223 | Unused | - |
-| 224-225 | Extension A and Extension B by `x` | x = byte1 |
-| 226 | Push receiver's instance variable at offset `x` | x = byte1 + extB << 8 |
-| 227 | Push literal variable value at offset `x` | x = byte1 + extB << 8 |
-| 228 | Push literal constant at offset `x` | x = byte1 + extB << 8|
-| 229 | Push temporary variable at offset `x` | x = byte1 + extB << 8 |
-| 230 | FFI Call | - |
-| 231 | Push an array with the top `x` elements in the stack. Pop the arguments if `pop` = `true` | x = byte1 && 127, pop = byte1 > 127 |
-| 232 | Push Integer `x` | x = byte1 + extB << 8 |
-| 233 | Push Character with code point `x` | x = byte1 + extB << 8 |
-| 234 | Send `x` argument message with selector at literal offset `y` | x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5 |
-| 235 | Super send `x` arguments with selector at literal offset `y`, directed if `directed` = `true` | x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5, directed = extB > 64 |
-| 237 | Unconditionally jump to offset `x` | x = byte1 + (extB << 8) |
-| 238 | Jump to offset `x` if stack top is `true` | x = byte1 + (extB << 8) |
-| 239 | Jump to offset `x` if stack top is `false` | x = byte1 + (extB << 8) |
+
+#### General forms
+
+Instructions that cannot be encoded in the previous ranges -- _e.g.,_ push instance variable number 20 -- can be encoded with a more general form.
+General forms can go beyond the limits of byte argument using extensions as described before.
+The following table illustrates such general forms.
+
+| Bytes | Description | Arguments |
+| 226 | Push receiver's instance variable at offset `x` |
+|     | x = byte1 + extB << 8 |
+| 227 | Push literal variable value at offset `x` |
+|     | x = byte1 + extB << 8 |
+| 228 | Push literal constant at offset `x` |
+|     | x = byte1 + extB << 8|
+| 229 | Push temporary variable at offset `x` |
+|     | x = byte1 + extB << 8 |
+| 232 | Push Integer `x` |
+|     | x = byte1 + extB << 8 |
+| 233 | Push Character with code point `x` |
+|     | x = byte1 + extB << 8 |
+| 234 | Send `x` argument message with selector at literal offset `y` |
+|     | x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5
+| 235 | Super send `x` arguments with selector at literal offset `y`, directed if `directed` = `true` |
+|     |x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5, directed = extB > 64 |
+| 237 | Unconditionally jump to offset `x` |
+|     | x = byte1 + (extB << 8) |
+| 238 | Jump to offset `x` if stack top is `true` |
+|     | x = byte1 + (extB << 8) |
+| 239 | Jump to offset `x` if stack top is `false`|
+|     | x = byte1 + (extB << 8) |
+
+#### Other instructions
+
+Finally some instructions that are rare enough do not have this distinction between the general and the optimized case.
+Some of the most notable instructions are:
+
+- **231 - Push array:** boxes the top `x` elements in the stack into an array, and pushes the array to the stack. Depending on the second byte, this bytecode may pop the `x` elements from the stack or not.
+- **249 - Push closure:** Creates a closure object that captures the surrounding lexical context.
+- **82 - Push pseudo-variable:** Pushes either `thisContext` if `extB = 0`, `thisProcess` if `extB = 1`, undefined otherwise.
 
 ### Conclusion
 
-Something here!
+In this chapter we studied how the Pharo virtual machine represents code.
+The Pharo VM defines a stack machine: computation is expressed by manipulating a stack with push and pop operations.
+Code is organized in methods. Methods contain at most one primitive, a sequence of bytecode instructions and a list of literal values.
+
+We explored many optimizations that can be done at the level of bytecode encoding.
+Encoding optimizations help make methods shorter by having smaller bytecode sequences and less method literals.
+
+In the following chapters we will study the implementation of the Pharo interpreter and several of its portable optimizations.
+In later chapters we will study low-level optimizations of the interpreter thanks to the Slang framework that applies indirect threading, inlinings, and variable autolocalization.
+
+### References
+
+Cite The blue book
+Cite the sista paper
+Cite Piumarta's super instructions
+Cite crafting interpreters
