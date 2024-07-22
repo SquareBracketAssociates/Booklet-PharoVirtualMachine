@@ -289,7 +289,7 @@ Besides common instructions, another useful observation is that many instruction
 Consider for example the statement `^ self`, which is commonly used to perform an early exit from a method, and inserted at the end of every method that does not have an explicit return.
 A naïve translation of `^self` could use the following sequence of instructions.
 
-```caption=A common bytecode sequence: ^ self
+```caption=A common bytecode sequence for returning self
 push self
 return top
 ```
