@@ -1,4 +1,4 @@
-### The Interpreter
+## The Interpreter
 
 
 The virtual machine contains one interpreter and a compiler \(that compiles to assembly code\). Here we talk about the interpreter. It executes the bytecode instructions found in CompiledMethods. The interpreter uses five pieces of information refered hereafter as the state of the interpreter and repeatedly performs a three-step cycle.
