@@ -289,7 +289,7 @@ Besides common instructions, another useful observation is that many instruction
 Consider for example the statement `^ self`, which is commonly used to perform an early exit from a method, and inserted at the end of every method that does not have an explicit return.
 A naïve translation of `^self` could use the following sequence of instructions.
 
-```caption=A common bytecode sequence: `^ self`
+```caption=A common bytecode sequence: ^ self
 push self
 return top
 ```
@@ -327,7 +327,7 @@ Some bytecode instructions are limited by the encoding: for example, 2-byte inst
 For example, the code that follows illustrates the code of the `long jump if false`, that jumps to a given target bytecode if a false is found in the stack. This 2-byte bytecode uses the second bytecode as a relative offset from the current bytecode.
 Such a restriction can be too limiting for some applications. In the case of our example, this forbids us from having jumps longer than 255 bytes.
 
-```caption=Sketching the jump if `false`
+```caption=Sketching the jump if false
 extJumpIfFalse
 	| byte offset |
 
@@ -340,7 +340,7 @@ To solve this issue, the sista bytecode includes two prefix instructions: `exten
 Prefix instructions prefix normal instructions and work as meta-data for the following instruction: the semantics of a prefix depends on each instruction. Also, instructions that use an instruction _consume it_, zeroing its value for subsequent instructions.
 The actual implementation of the `long jump if false` bytecode adds uses the value of it's prefix (if any) to reach further jump offsets.
 
-```caption=Sketching the jump if `false` with extensions
+```caption=Sketching the jump if false with extensions
 extJumpIfFalse
 	byte := self fetchByte.
 	offset := byte + (extB << 8).
