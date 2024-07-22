@@ -235,7 +235,7 @@ As we said before, the variable-length bytecode encoding allows for shorter byte
 For example, we can take the most common bytecode from the Pharo12 release (build 1521) using the script that follows.
 The script takes all the compiled code (methods and blocks), decodes all their instructions and groups them by their bytes.
 
-```smalltalk
+```caption=Obtaining the most common bytecode instructions
 ((CompiledCode allSubInstances flatCollect: [ :e | e symbolicBytecodes ])
 	groupedBy: [ :symBytecode | symBytecode bytes ])
 		associations
@@ -276,7 +276,7 @@ For example, 1-byte `push instance variable` instruction is organized in a range
 
 An alternative way of seeing this encoding is to see that an instruction opcode is not the byte on itself but the most significant bits of the byte. If we consider again the range of bytecodes `push instance variable`, the most significant nibble remains always zero regardless of the bytecode, while the lowest part always changes following the index to push.
 
-```smalltalk
+```caption=Understanding encoding and nibbles
 "The most significant nibble is always 0 for this range of bytecode"
 0 to: 15 do: [ :e | self assert: ((e >> 4) bitAnd: 16rF) = 0 ].
 "The least significant nibble is always the index to push"
@@ -289,7 +289,7 @@ Besides common instructions, another useful observation is that many instruction
 Consider for example the statement `^ self`, which is commonly used to perform an early exit from a method, and inserted at the end of every method that does not have an explicit return.
 A naïve translation of `^self` could use the following sequence of instructions.
 
-```
+```caption=A common bytecode sequence: `^ self`
 push self
 return top
 ```
@@ -327,7 +327,7 @@ Some bytecode instructions are limited by the encoding: for example, 2-byte inst
 For example, the code that follows illustrates the code of the `long jump if false`, that jumps to a given target bytecode if a false is found in the stack. This 2-byte bytecode uses the second bytecode as a relative offset from the current bytecode.
 Such a restriction can be too limiting for some applications. In the case of our example, this forbids us from having jumps longer than 255 bytes.
 
-```smalltalk
+```caption=Sketching the jump if `false`
 extJumpIfFalse
 	| byte offset |
 
@@ -340,7 +340,7 @@ To solve this issue, the sista bytecode includes two prefix instructions: `exten
 Prefix instructions prefix normal instructions and work as meta-data for the following instruction: the semantics of a prefix depends on each instruction. Also, instructions that use an instruction _consume it_, zeroing its value for subsequent instructions.
 The actual implementation of the `long jump if false` bytecode adds uses the value of it's prefix (if any) to reach further jump offsets.
 
-```smalltalk
+```caption=Sketching the jump if `false` with extensions
 extJumpIfFalse
 	byte := self fetchByte.
 	offset := byte + (extB << 8).
@@ -353,7 +353,7 @@ The first sequence does not require any extensions, while the second one uses an
 Notice that the `long jump if false` computes it's offset as `byte + (extB << 8)`.
 Thus, to compute an offset of 256, we should have an extension of value `1`, and a jump argument of value `0`.
 
-```smalltalk
+```caption=Jumping more than 255 bytes
 "Jump forward 255 bytes"
 extJumpIfFalse 255
 
@@ -366,7 +366,7 @@ In the case before, the prefix allows jumps to reach jump targets up to `65535` 
 To support larger values, prefixes can be composed: an instruction can have many prefixes that cummulate.
 Following is the definition of the  `extension A` bytecode, which takes the previous value of the extension A, shifts it 8 bits to the left and adds it to the given value.
 
-```smalltalk
+```caption=The extension implementation
 extABytecode
 	extA := (extA bitShift: 8) + self fetchByte.
 	self fetchNextBytecode
@@ -376,7 +376,7 @@ Extensions are composed by adding many prefixes to a given instruction.
 For example, the following example shows a jump with two extensions of 1 and 2, to a jump with argument 3.
 This computes the jump offset of 66051 with the formula `(((1 << 8) + 2) << 8 + 3)`.
 
-````
+````caption=Combining extensions to jump above 65535 bytes
 "Jump forward 66051 bytes"
 extA 1
 extA 2
@@ -393,7 +393,7 @@ Pharo's bytecode set allows for encoding such information in two ways:
 - **Per-method encoded super sends:** Traditionally, each Pharo method contain as last literal a reference to it's class binding. When performing a normal super send, the algorithm fetches this last literal, then it's superclass, and starts the lookup algorithm from there.
 - **Per-call-site encoded super sends:** _Directed super sends_ allow to specify as a stack argument the class from where to start the lookup. Directed super sends allow to specify different lookup classes per call-site, by pushing the lookup-class as the last element on the stack. Although initially meant for super sends, this bytecode can be used to control message sends per-call-site at the expense of larger bytecode and literal frames.
 
-```smalltalk
+```caption=A directed send bytecode sequence
 "This will lookup #some:message: starting from ClassToLookupFrom, using the receiver and argument found in the stack"
 push receiver
 push arg0
@@ -505,7 +505,7 @@ The following tables illustrates such general forms.
 | 234 | Send `x` argument message with selector at literal offset `y` |
 |     | `x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5` |
 | 235 | Super send `x` arguments with selector at literal offset `y`
-|     | `x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5`` |
+|     | `x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5` |
 |     | Directed if `extB > 64` |
 | 237 | Unconditionally jump to offset `x` |
 |     | `x = byte1 + (extB << 8)` |
