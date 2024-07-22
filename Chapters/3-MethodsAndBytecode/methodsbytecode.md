@@ -462,9 +462,9 @@ The selector's offset is encoded as part of the first byte.
 
 | Bytes | Description | Arguments |
 | --- | --- | --- |
-| 128-143 | Send 0 argument message with selector at literal offset `x` | x = byte0 && 0xF |
-| 144-159 | Send 1 argument message with selector at literal offset `x` | x = byte0 && 0xF |
-| 160-175 | Send 2 argument message with selector at literal offset `x` | x = byte0 && 0xF |
+| 128-143 | Send 0 argument message, selector at literal `x` | x = byte0 && 0xF |
+| 144-159 | Send 1 argument message, selector at literal `x` | x = byte0 && 0xF |
+| 160-175 | Send 2 argument message, selector at literal `x` | x = byte0 && 0xF |
 
 The range 176-199 encodes short jump instructions both conditional and unconditional.
 The jump offset is encoded as part of the first byte.
@@ -472,13 +472,15 @@ Short unconditional jumps can only be forward jumps.
 Backjumps (and thus loops) need to be encoded with the longer version (237)
 
 | Bytes | Description | Arguments |
-| 176-183 | Unconditionally jump to offset `x` | x = 0x7 |
-| 184-191 | Coditionally jump to offset `x` if stack top = `true` | x = byte0 && 0x7 |
-| 192-199 | Coditionally jump to offset `x` if stack top = `false` | x = byte0 && 0x7 |
+| --- | --- | --- |
+| 176-183 | Unconditional jump to offset `x` | x = 0x7 |
+| 184-191 | Coditional jump to offset `x` if top = `true` | x = byte0 && 0x7 |
+| 192-199 | Coditional jump to offset `x` if top = `false` | x = byte0 && 0x7 |
 
 The range 200-215 encodes _store and pop_ super instructions, which are very common when using single-statement assignments.
 
 | Bytes | Description | Arguments |
+| --- | --- | --- |
 | 200-207 | Pop from stack and store popped value in the receiver's instance offset at offset `x` | x = byte0 && 0x7 |
 | 208-215 | Pop from stack and store popped value in temporary variable at offset `x` | x = byte0 && 0x7 |
 
@@ -488,7 +490,8 @@ Instructions that cannot be encoded in the previous ranges -- _e.g.,_ push insta
 General forms can go beyond the limits of byte argument using extensions as described before.
 The following table illustrates such general forms.
 
-| Bytes | Description | Arguments |
+| Bytes | Description |
+| --- | --- |
 | 226 | Push receiver's instance variable at offset `x` |
 |     | x = byte1 + extB << 8 |
 | 227 | Push literal variable value at offset `x` |
@@ -503,8 +506,9 @@ The following table illustrates such general forms.
 |     | x = byte1 + extB << 8 |
 | 234 | Send `x` argument message with selector at literal offset `y` |
 |     | x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5
-| 235 | Super send `x` arguments with selector at literal offset `y`, directed if `directed` = `true` |
-|     |x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5, directed = extB > 64 |
+| 235 | Super send `x` arguments with selector at literal offset `y`
+|     | x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5 |
+|     | Directed if `extB > 64` |
 | 237 | Unconditionally jump to offset `x` |
 |     | x = byte1 + (extB << 8) |
 | 238 | Jump to offset `x` if stack top is `true` |
