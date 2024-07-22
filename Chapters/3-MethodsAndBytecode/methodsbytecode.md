@@ -481,40 +481,38 @@ The range 200-215 encodes _store and pop_ super instructions, which are very com
 
 | Bytes | Description | Arguments |
 | --- | --- | --- |
-| 200-207 | Pop from stack and store popped value in the receiver's instance offset at offset `x` | x = byte0 && 0x7 |
-| 208-215 | Pop from stack and store popped value in temporary variable at offset `x` | x = byte0 && 0x7 |
+| 200-207 | Pop and store into receiver's variable `x` | x = byte0 && 0x7 |
+| 208-215 | Pop and store into temporary at `x` | x = byte0 && 0x7 |
 
 #### General forms
 
 Instructions that cannot be encoded in the previous ranges -- _e.g.,_ push instance variable number 20 -- can be encoded with a more general form.
 General forms can go beyond the limits of byte argument using extensions as described before.
-The following table illustrates such general forms.
+The following tables illustrates such general forms.
 
 | Bytes | Description |
 | --- | --- |
 | 226 | Push receiver's instance variable at offset `x` |
-|     | x = byte1 + extB << 8 |
 | 227 | Push literal variable value at offset `x` |
-|     | x = byte1 + extB << 8 |
 | 228 | Push literal constant at offset `x` |
-|     | x = byte1 + extB << 8|
 | 229 | Push temporary variable at offset `x` |
-|     | x = byte1 + extB << 8 |
 | 232 | Push Integer `x` |
-|     | x = byte1 + extB << 8 |
 | 233 | Push Character with code point `x` |
 |     | x = byte1 + extB << 8 |
+
+| Bytes | Description |
+| --- | --- |
 | 234 | Send `x` argument message with selector at literal offset `y` |
-|     | x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5
+|     | `x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5` |
 | 235 | Super send `x` arguments with selector at literal offset `y`
-|     | x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5 |
+|     | `x = byte1 && 0x7 + extB << 3, y = byte1 >> 3 + extA << 5`` |
 |     | Directed if `extB > 64` |
 | 237 | Unconditionally jump to offset `x` |
-|     | x = byte1 + (extB << 8) |
+|     | `x = byte1 + (extB << 8)` |
 | 238 | Jump to offset `x` if stack top is `true` |
-|     | x = byte1 + (extB << 8) |
+|     | `x = byte1 + (extB << 8)` |
 | 239 | Jump to offset `x` if stack top is `false`|
-|     | x = byte1 + (extB << 8) |
+|     | `x = byte1 + (extB << 8)` |
 
 #### Other instructions
 
@@ -539,7 +537,7 @@ In later chapters we will study low-level optimizations of the interpreter thank
 
 ### References
 
-Cite The blue book
-Cite the sista paper
-Cite Piumarta's super instructions
-Cite crafting interpreters
+- Cite The blue book
+- Cite the sista paper
+- Cite Piumarta's super instructions
+- Cite crafting interpreters
