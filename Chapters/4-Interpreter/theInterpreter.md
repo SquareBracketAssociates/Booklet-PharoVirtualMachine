@@ -6,7 +6,7 @@ They play a very important role in a multi-tiered architecture: optimized execut
 Thus, the Pharo interpreter implements the entire semantics of Pharo: all bytecodes and primitives.
 This makes it a good target to study and understand how Pharo works.
 
-This chapter visits the interpreter from a high-level point of view, explaining along the way some basics of how interpreters work.
+This chapter visits the interpreter from a high-level point of view, using code excerpts and explaining along the way some basics of how interpreters work.
 This includes how the interpreter manages its execution state and the call stack, how it dispatches instructions, some illustrative instructions and some of its platform independent optimizations: instruction lookahead and static type predictions.
 The chapter on Slang VM generation presents machine dependent optimizations such as interpreter threading and autolocalization.
 
@@ -16,157 +16,125 @@ Sending a message requires looking up methods up in the receiver class hierarchy
 One simple way to cope with such costs are global lookup caches.
 
 
-### Interpreter Overview
+### A Bytecode Interpreter
 
-#### Interpreter State
+Pharo's execution engine is based on the execution of bytecode instructions.
+Bytecode instructions are organized as a list of instructions, where one instruction is executed after the other.
+For each instruction, an interpreter typically follows two main steps: fetching the next instruction and dispatching to the code implementing the instruction.
+Typically, interpreters are implemented using a `while` and a `switch` statement.
+The `while` statement executes indefinitely (or until the program exits).
+The `switch` statement contains a case per instruction and dispatches to the corresponding code depending on the read instruction.
+The following code illustrates a simple interpreter written a the C programming language.
 
-- The CompiledMethod whose bytecodes are being executed.
-- The location of the next bytecode to be executed in that CompiledMethod. This is the interpreter's _instruction pointer_.
-- The receiver and arguments of the message that invoked the CompiledMethod.
-- Any temporary variables needed by the CompiledMethod.
-- A stack.
+```caption=Sketching an interpreter in C
+void interpret(){
+	while(true){
+		int instruction = fetchNextInstruction();
+		switch(instruction){
+			case INSTRUCTION_1:
+			   ...
+			   break;
+			case INSTRUCTION_2:
+			   ...
+			   break;
+			...
+		}
+	}
+}
+```
 
+#### Table dispatch
 
-The execution of most bytecodes involves the interpreter's stack. Push bytecodes tell where to find objects to add to the stack. Store bytecodes tell where to put objects found on the stack. Send bytecodes remove the receiver and arguments of messages from the stack. When the result of a message is computed, it is pushed onto the stack.
+Pharo's bytecode interpreter is not written as a case statement as shown before.
+Instead, it uses a table dispatch mechanism, where a table, namely the _bytecode table_ associates an instruction with the code to execute for that instruction.
+The bytecode table is an array ranging from 0 to 255, thus covering the entire bytecode set, and containing unary selectors.
+Instructions are dispatched by looking up the selector for an instruction, then using the selector to send a message to the interpreter using `#perform:`.
 
-#### Instruction Dispatch
+```caption=Pharo interpreter uses a table dispatch with symbols
+Interpreter >> interpret
+	...
+	self fetchNextBytecode.
+	[ true ] whileTrue: [
+		self dispatchOn: currentBytecode in: BytecodeTable
+	].
+	...
 
-- Fetch the bytecode from the CompiledMethod indicated by the instruction pointer.
-- Increment the instruction pointer.
-- Perform the function specified by the bytecode.
+Interpreter >> dispatchOn: anInteger in: selectorArray
 
+	self perform: (selectorArray at: (anInteger + 1)).
+````
 
-As an example of the interpreter's function, we will trace its execution of the CompiledMethod  `Rectangle>>#width`.
-The state of the interpreter will be displayed after each of its cycles.
-The instruction pointer will be indicated by an arrow pointing at the next bytecode in the CompiledMethod to be executed. 
- 
-- **==>** <01> pushRcvr: 1 - push the value of the receiver's second instance variable \(corner\) onto the stack
+#### Instruction Fetching and the Instruction Pointer
 
+Mimicking how the CPU handles its own program counter, the Pharo interpreter manages its instruction stream using a variable called `ìnstructionPointer`, which is a pointer to the current instruction in the method under execution.
+Using the instruction pointer, the interpreter fetches instructions one-by-one sequentially from a method's bytecode list.
 
+```caption=Low-level stack operations in the interpreter
+Interpreter >> fetchNextBytecode
+	^objectMemory byteAt: (instructionPointer := instructionPointer + 1)
+```
 
-The receiver, arguments, temporary variables, and objects on the stack will be shown as normally printed. 
-For example, if a message is sent to a Rectangle, the receiver will be shown as:
+The instruction pointer is not only manipulated to fetch instructions.
+Later in this chapter we will see how bytecode instructions manipulate it to implement control flow operations: jumps, message sends and returns.
+Moreover, later chapters will show the role of the instruction pointer to implement green-thread based concurrency.
 
-- **Receiver:**	50@50 corner: 200@200 
+**Each bytecode instruction fetches the next instruction.** We will observe in the methods defining bytecodes that, differently from the interpreter C sketch at the beginning of the chapter, each instruction is responsible for fetching its next instruction. This implementation detail duplicates the instruction fetching code around the interpreter, while simplifying its translation to a threaded interpreter as it will be explained in the Slang chapter.
 
+#### Pushing and Popping, the Stack and the Stack Pointer
 
+The execution of Pharo code is supported mainly by a stack supporting operations such as push, pop and indexed access from the top.
+The stack is a contiguous region of memory of fixed size organized in slots of one word each.
+The _base_ of the stack is where the stack begins, where its oldest elements are stored.
+Conversely, the _top_ of the stack is where the most recently pushed element is stored.
+The stack is manipulated through a variable called `stackPointer`, which is a pointer to the top of the stack.
 
-At the start of execution, the stack is empty and the instruction pointer indicates the first bytecode in the CompiledMethod. This CompiledMethod does not require temporaries and the invoking message did not have arguments, so these two categories are also empty. 
+**The stack grows down:** in Pharo, as in many other language implementations, the stack base is in a higher address than the stack top.
+Pushing a value to the stack moves the stack pointer towards lower addresses. Popping moves it towards higher addresses.
 
-#### Step 1.
+Using the `stackPointer` variable the interpreter implements the following methods:
 
-The interpreter is in an initial state. It points to the next instructions to be executed. It knows the receiver of the method to be executed.
+```caption=Low-level stack operations in the interpreter
+Interpreter >> stackValue: offset
+	^memory readWordAt: stackPointer + (offset*objectMemory wordSize)
 
-Rectangle >> #width
-- **==>** <01> pushRcvr: 1 - push the value of the receiver's second instance variable \(corner\) onto the stack
-- <7E> send: x - send the unaay message  x
-- <00> pushRcvr: 0 - push the value of the receiver's first instance variable \(origin\) onto the stack
-- <7E> send: x  - send the unary message x
-- <61> send: -  - send the binary message -
-- <5C> returnTop - return the object on top of the stack as the value of the message \(width\) 
-- **Receiver:** 50@50  corner: 200@200
-- **Arguments:**
-- **Temporary Variables:**
-- **Stack:**
+Interpreter >> stackTop
+	^ self stackValue: 0
 
+Interpreter >> push: object
+	memory readWordAt: (sp := stackPointer - objectMemory wordSize) put: object.
+	stackPointer := sp
 
-#### Step 2.
+Interpreter >> pop: nItems
+	stackPointer := stackPointer + (nItems*objectMemory wordSize).
+	^nil
 
-Following one cycle of the interpreter,  the value of the receiver's second instance variable has been copied onto the stack and the instruction pointer has been advanced.
+Interpreter >> popStack
+	| top |
+	top := self stackTop.
+	self pop: 1.
+	^top
+```
 
-Rectangle >> #width
-- <01> pushRcvr: 1 - push the value of the receiver's second instance variable \(corner\) onto the stack
-- **==>** <7E> send: x - send the unray message with the selector x
-- <00> pushRcvr: 0 - push the value of the receiver's first instance variable \(origin\) onto the stack
-- <7E> send: x  - send the unary message with the selector x
-- <61> send: -  - send the binary message with the selector -
-- <5C> returnTop - return the object on top of the stack as the value of the message \(width\) 
-- **Receiver:** 50@50 corner: 200@200
-- **Arguments:**
-- **Temporary Variables:**
-- **Stack:** 200@200
+Given these basic operations, we can already understand several simple instructions such pushing well-known constants, popping from the stack, or duplicate top.
 
+```caption=Bytecode implementing simple push and pop instructions
+Interpreter >> pushConstantFalseBytecode
+	self fetchNextBytecode.
+	self push: objectMemory falseObject.
 
+Interpreter >> popStackBytecode
+	self fetchNextBytecode.
+	self pop: 1.
 
-#### Step 3.
+Interpreter >> duplicateTopBytecode
+	self fetchNextBytecode.
+	self push: self stackTop
+```
 
-The interpreter encounters a send bytecode. 
-It removes one object from the stack and uses it as the receiver of a message with selector `x`. 
-Sending a message will not be described in detail here. 
-Sending messages will be described in later sections.
-For the moment, it is only necessary to know that eventually the result of the `x` message will be pushed onto the stack. 
+### The Call Stack
 
-Rectangle >> #width
-- <01> pushRcvr: 1 - push the value of the receiver's second instance variable \(corner\) onto the stack
-- <7E> send: x - send the unray message with the selector x
-- **==>** <00> pushRcvr: 0 - push the value of the receiver's first instance variable \(origin\) onto the stack
-- <7E> send: x  - send the unary message with the selector x
-- <61> send: -  - send the binary message with the selector -
-- <5C> returnTop - return the object on top of the stack as the value of the message \(width\) 
-- **Receiver:** 50@50 corner: 200@200
-- **Arguments:**
-- **Temporary Variables:**
-- **Stack:** 200
-
-
-#### Step 4.
-
-In this cycle, the value of the first receiver's first instance variables \(origin\) onto the stack
-
-Rectangle >> #width
-- <01> pushRcvr: 1 - push the value of the receiver's second instance variable \(corner\) onto the stack
-- <7E> send: x - send the unray message with the selector x
-- <00> pushRcvr: 0 - push the value of the receiver's first instance variable \(origin\) onto the stack
-- **==>** <7E> send: x  - send the unary message with the selector x
-- <61> send: -  - send the binary message with the selector -
-- <5C> returnTop - return the object on top of the stack as the value of the message \(width\) 
-- **Receiver:** 50@50  corner: 200@200
-- **Arguments:**
-- **Temporary Variables:**
-- **Stack:** 200
-- **Stack:** 50@50 
-
-
-
-#### Step 5.
-
-In this cycle, the message x is sent: it removes one object from the stack and uses it as the receiver of a message with selector `x` and push back the result on the stack.
-
-Rectangle >> #width
-- <01> pushRcvr: 1 - push the value of the receiver's second instance variable \(corner\) onto the stack
-- <7E> send: x - send the unray message with the selector x
-- <00> pushRcvr: 0 - push the value of the receiver's first instance variable \(origin\) onto the stack
-- <7E> send: x  - send the unary message with the selector x
-- **==>** <61> send: -  - send the binary message with the selector -
-- <5C> returnTop - return the object on top of the stack as the value of the message \(width\) 
-- **Receiver:** 50@50  corner: 200@200
-- **Arguments:**
-- **Temporary Variables:**
-- **Stack:** 200
-- **Stack:** 50
-
-
-#### Step 6.
-
-The final bytecode returns a result to the width message. The result is found on the stack \(150\). It is clear by this point that a return bytecode must involve pushing the result onto another stack. 
-The details of returning a value to a message will be described after the description of sending a message.
-
-
-Rectangle >> #width
-- <01> pushRcvr: 1 - push the value of the receiver's second instance variable \(corner\) onto the stack
-- <7E> send: x - send the unray message with the selector x
-- <00> pushRcvr: 0 - push the value of the receiver's first instance variable \(origin\) onto the stack
-- <7E> send: x  - send the unary message with the selector x
-- <61> send: -  - send the binary message with the selector -
-- **==>** <5C> returnTop - return the object on top of the stack as the value of the message \(width\) 
-- **Receiver:** 50@50  corner: 200@200
-- **Arguments:**
-- **Temporary Variables:**
-- **Stack:** 150
 
 ### Interpreting Message sends
-
-#### The Call Stack
 
 #### Calling Convention
 
@@ -194,8 +162,9 @@ Figure *@generalArguments@* shows that the framepointer is used to compute
 ![arg1 = FP + offset and method = FP - method offset.](figures/GeneralArgument.pdf width=100&label=generalArguments)
 
 
-
 #### Method lookup
+
+#### Method Activation
 
 ### Interpreter optimizations
 
