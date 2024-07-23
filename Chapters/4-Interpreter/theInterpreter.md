@@ -3,7 +3,9 @@
 
 The virtual machine contains one interpreter and a compiler \(that compiles to assembly code\). Here we talk about the interpreter. It executes the bytecode instructions found in CompiledMethods. The interpreter uses five pieces of information refered hereafter as the state of the interpreter and repeatedly performs a three-step cycle.
 
-#### The State of the Interpreter.
+### Interpreter Overview
+
+#### Interpreter State
 
 - The CompiledMethod whose bytecodes are being executed.
 - The location of the next bytecode to be executed in that CompiledMethod. This is the interpreter's _instruction pointer_.
@@ -14,7 +16,7 @@ The virtual machine contains one interpreter and a compiler \(that compiles to a
 
 The execution of most bytecodes involves the interpreter's stack. Push bytecodes tell where to find objects to add to the stack. Store bytecodes tell where to put objects found on the stack. Send bytecodes remove the receiver and arguments of messages from the stack. When the result of a message is computed, it is pushed onto the stack.
 
-#### The Cycle of the Interpreter. 
+#### Instruction Dispatch
 
 - Fetch the bytecode from the CompiledMethod indicated by the instruction pointer.
 - Increment the instruction pointer.
@@ -149,9 +151,11 @@ Rectangle >> #width
 - **Temporary Variables:**
 - **Stack:** 150
 
+### Supporting Message sends
 
+#### The Call Stack
 
-### Calling convention in the VM
+#### Calling Convention
 
 The interpreter and the JIT share the same calling conventions. The receiver and arguments are pushed on the stack. The instruction pointer is also pushed to the stack after the arguments. 
 
@@ -175,4 +179,20 @@ Figure *@generalArguments@* shows that the framepointer is used to compute
 
 
 ![arg1 = FP + offset and method = FP - method offset.](figures/GeneralArgument.pdf width=100&label=generalArguments)
+
+
+
+#### Method lookup
+
+### Interpreter optimizations
+
+#### Where does the interpreter time go?
+
+#### Global Lookup Cache
+
+#### Static Type Predictions
+
+#### Instruction Lookakeads
+
+#### The Cycle of the Interpreter
 
