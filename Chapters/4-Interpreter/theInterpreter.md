@@ -133,6 +133,79 @@ Interpreter >> duplicateTopBytecode
 
 ### The Call Stack
 
+Many bytecode instructions require accessing data that belongs to a particular method execution: the receiver, arguments, temporaries or the current method to obtain its literals. Such information is stored in the stack.
+
+The stack is split in regions called _stack frames_, or frames for short.
+The frames in the stack form a chain of frames, usually referred to as the _call stack_.
+In the top of the stack there is the top stack frame representing the current method execution.
+
+#### Stack Frame Structure
+
+Each stack frame represents the execution of a method and has three main parts.
+First, a fixed set of fields containing execution meta-data.
+Second, one slot for each temporary variable in the method, initialized to `nil`.
+Finally, a variable part containing the value stack where Pharo objects get pushed and popped when executing bytecode instructions.
+The fixed fields in a frame are the following:
+- **The caller's frame start:** a pointer used to indicate where does the caller's frame start in the stack. Used to reconstruct the call stack.
+- **The executing method:** used to extract literals and other method meta-data.
+- **The reified context object:** this field references the `Context` object associated with the frame, or `nil` if absent. This field will be explained in detail in the chapter about debugging support.
+- **Flags:** Only available in interpreter frames (as opposed to compiled code frames). It contains a bit mask with the number of arguments, a flag indicating if the context object is set, and a flag indicating if the frame is a method or a closure execution.
+- **Receiver:** The message receiver _i.e.,_ the object referenced by `self` in the current method execution.
+
+The frame on the top of the stack is said to be _active_.
+The active frame is delimited by the variables `stackPointer` at its top and `framePointer` at its base.
+While the `stackPointer` will move with each push/pop instruction, the `framePointer` points to the base of the current frame in the stack and does not change during a method execution.
+Moreover, the `instructionPointer` is a pointer within the bounds of the method of the active frame.
+
+All frames other than the active one are said to be _suspended_.
+Suspended frames need the values of their `framePointer`, `stackPointer` and `instructionPointer` to be stored so _e.g.,_ the stack can be traversed by the garbage collector and control can return to those frames after a return instruction.
+A frame is suspended by pushing its instruction pointer to the stack before creating a new frame, and pushing its frame pointer as the first element of the next frame. Storing on each frame the frame pointer of the preceding frame transforms the stack in a linked lists of frames.
+Thus, the stack can be reconstructed by iterating from the top frame up to its caller's frame start until the end of the stack.
+Notice that the stack pointer needs not to be stored: a suspended frame's stack pointer is the slot that precedes its suspended instruction pointer, which is found relative to its following frame.
+
+#### Setting up Stack Frames
+
+The code that follows illustrates how a new frame is created.
+First the current frame is suspended by pushing the instruction pointer and frame pointer.
+Once pushed, the `framePointer` can be overridden to mark the start of a new frame at the position of `stackPointer`.
+Then the method, `nil` for context, flags, receiver and temps are pushed.
+
+```caption=Setting up a frame
+Interpreter >> setUpFrameForMethod: aMethod receiver: rcvr
+
+	| methodHeader numArgs numTemps rcvr |
+	methodHeader := objectMemory methodHeaderOf: aMethod.
+	numTemps := self temporaryCountOfMethodHeader: methodHeader.
+	numArgs := self argumentCountOfMethodHeader: methodHeader.
+	
+	"Suspend current frame"
+	self push: instructionPointer.
+	self push: framePointer.
+
+	"New frame starts"
+	framePointer := stackPointer.
+	self push: newMethod.
+	self push: objectMemory nilObject. "FxThisContext field"
+	self push: (self
+			 encodeFrameFieldHasContext: false
+			 isBlock: false
+			 numArgs: numArgs).
+	self push: rcvr.
+
+	"Initialize temps to nil"
+	numArgs + 1 to: numTemps do: [ :i |
+		self push: objectMemory nilObject ].
+	...
+```
+
+#### Bytecodes Accessing the Stack Frame
+
+PUSH RECEIVER
+
+PUSH TEMP INSTRUCTIONS
+
+STORETEMP
+
 
 ### Interpreting Message sends
 
