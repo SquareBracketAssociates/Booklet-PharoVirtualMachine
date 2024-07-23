@@ -1,7 +1,20 @@
 ## The Interpreter
 
+At the heart of the Pharo virtual machine there is the interpreter, Pharo's main execution engine.
+Folklore says that interpreters are slow. Truth is they are. But they are also easy to implement and maintain.
+They play a very important role in a multi-tiered architecture: optimized execution engines such as JIT compiler execute usually the commonly-executed code and fast execution paths, falling back to slower layers such as interpreters for the rest of the execution.
+Thus, the Pharo interpreter implements the entire semantics of Pharo: all bytecodes and primitives.
+This makes it a good target to study and understand how Pharo works.
 
-The virtual machine contains one interpreter and a compiler \(that compiles to assembly code\). Here we talk about the interpreter. It executes the bytecode instructions found in CompiledMethods. The interpreter uses five pieces of information refered hereafter as the state of the interpreter and repeatedly performs a three-step cycle.
+This chapter visits the interpreter from a high-level point of view, explaining along the way some basics of how interpreters work.
+This includes how the interpreter manages its execution state and the call stack, how it dispatches instructions, some illustrative instructions and some of its platform independent optimizations: instruction lookahead and static type predictions.
+The chapter on Slang VM generation presents machine dependent optimizations such as interpreter threading and autolocalization.
+
+A section of this chapter is dedicated to message sends: the most important instruction in the Pharo programming language and in many object oriented languages.
+Message-sends, as similar as they may look to statically-bound function calls, must implement late-bound execution.
+Sending a message requires looking up methods up in the receiver class hierarchy, which is one of the most common operations in Pharo, and one of the most complex and expensive too.
+One simple way to cope with such costs are global lookup caches.
+
 
 ### Interpreter Overview
 
@@ -151,7 +164,7 @@ Rectangle >> #width
 - **Temporary Variables:**
 - **Stack:** 150
 
-### Supporting Message sends
+### Interpreting Message sends
 
 #### The Call Stack
 
@@ -193,6 +206,4 @@ Figure *@generalArguments@* shows that the framepointer is used to compute
 #### Static Type Predictions
 
 #### Instruction Lookakeads
-
-#### The Cycle of the Interpreter
 
