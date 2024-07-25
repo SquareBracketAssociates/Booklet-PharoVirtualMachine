@@ -321,6 +321,42 @@ The Sista bytecode set is a stack-based bytecode using common optimization as de
 
 This section explains some particularities of the bytecode set and finishes with a table showing the bytecodes, their encoding and summarizing their optimizations.
 
+#### Bytecode and Variable Indexes are 0-based, Primitives 1-based
+
+While the Pharo programming language designs its indexed accesses with 1-base offsets, this is not the case of the underlying implementation.
+Actually, it is only the primitives that start with a 1-based index.
+In contrast:
+
+- bytecode instructions are encoded in a 0-based fashion, making the value `0` a valid encoded instruction.
+- all variables, temporaries and instance, use 0-based indexing. Thus, the bytecode to read the first instance variable is `push instance variable 0`. Similarly, the bytecode to read the first temporary variable is `push temporary variable 0`.
+
+
+#### Temporary Variables vs Arguments
+
+The Sista bytecode set inherits, mostly for historical reasons, several traits from previous the bytecode design.
+One particularly interesting trait is that method arguments are modelled as the first (read-only) temporary variables in a method.
+For example, while the method that follows has syntactically one argument and one temporary variable, the underlying implementation will have two temporary variables, from which the first is an argument.
+
+```caption=Arguments are the first temporaries in a method.
+MyClass >> methodWithOneArgAndOneTemp: arg
+
+	| temp |
+	...
+
+(MyClass >> #methodWithOneArgAndOneTemp: ) numArgs. "1"
+(MyClass >> #methodWithOneArgAndOneTemp: ) numTemps. "2"
+```
+
+This decision impacts the bytecode design in different ways.
+
+1. First, to get the real number of temporaries in a method we need to substract the number of arguments from it.
+
+```caption=Obtaining the real number of temporaries from a method.
+realNumberOfTemporaries := aMethod numTemps - aMethod numArgs
+```
+
+2. We need to know the arguments of a method to index its temporaries. For example, reading the nth real temporary variable in a method, we need to read the temporary at offset `numArgs + nth - 1`~(remember that we need to substract 1 because variable indexes are 0-based).
+
 #### Bytecode Extension Prefixes
 
 Some bytecode instructions are limited by the encoding: for example, 2-byte instructions usually use one byte as opcode and one byte as argument, limiting the argument to a maximum of 255 values.

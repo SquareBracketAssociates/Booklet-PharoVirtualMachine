@@ -163,6 +163,10 @@ A frame is suspended by pushing its instruction pointer to the stack before crea
 Thus, the stack can be reconstructed by iterating from the top frame up to its caller's frame start until the end of the stack.
 Notice that the stack pointer needs not to be stored: a suspended frame's stack pointer is the slot that precedes its suspended instruction pointer, which is found relative to its following frame.
 
+#### Stack Frame Flags
+
+EXPLAIN THE FLAGS and ENCODING
+
 #### Setting up Stack Frames
 
 The code that follows illustrates how a new frame is created.
@@ -200,12 +204,67 @@ Interpreter >> setUpFrameForMethod: aMethod receiver: rcvr
 
 #### Bytecodes Accessing the Stack Frame
 
-PUSH RECEIVER
+Given the structure of a stack, we can see that the all the fields in the fixed part of a frame can be found relative to the start of a frame, which for the first frame is the `framePointer`.
+This includes in particular the receiver and the temporary variables.
+Thus, the bytecode that access these values are defined to read/write at an offset from the frame pointer.
 
-PUSH TEMP INSTRUCTIONS
+The code that follows shows the bytecode that pushes `self` to the stack:
 
-STORETEMP
+```caption=The push receiver bytecode reads the receiver relative from the framePointer
+Interpreter >> receiver
+	^memory readWordAt: framePointer + FoxReceiver
 
+Interpreter >> pushReceiverBytecode
+	self fetchNextBytecode.
+	self push: self receiver.
+```
+
+Moreover, to read/write the nth real temporary variable we need to read/write the nth _above_ the fixed fields of the frame.
+The code below shows the bytecode that stores the top of the stack into a temporary variable and pops.
+This bytecode uses the `itemporary:in:put:` method that is used to write into a method's temporary.
+A similar method, `itemporary:in:` exists to read temporary variables.
+
+Remember that the bytecode set is designed so arguments are treated as temporaries.
+The code below shows that there are two execution paths: one for arguments, one for temporaries.
+The interpreter decides if the asked offset is for a temporary of an argument by comparing it to the number of arguments.
+The number of arguments is obtained from the fields flag.
+In this section we focus on the path for temporaries.
+We will explain the path for arguments in the next section.
+
+The interpreter indexes temporary variables using as base the field that follows the receiver field,
+and as offset the offset of the temporary without taking arguments into account.
+In these two lines we see clearly that the stack grows down: to get the field _after_ we need to subtract from its position.
+Moreover, since all accesses are written as direct memory addresses, all offsets are computed in bytes, thus multiplying by the number of bytes in a word `objectMemory wordSize`.
+
+
+```caption=Storing
+Interpreter >> iframeNumArgs: theFP
+	^memory readByteAt: theFP + FoxFrameFlags + 1
+
+Interpreter >> iframeReceiverLocation: theFP
+	^theFP + FoxReceiver
+
+Interpreter >> itemporary: offset in: theFP put: valueOop
+	| frameNumArgs |
+	
+	^ offset < (frameNumArgs := self iframeNumArgs: theFP)
+		  ifTrue: [ "Write an argument" ... ]
+		  ifFalse: [
+			  memory
+				  writeWordAt:
+					  (self iframeReceiverLocation: theFP) - objectMemory wordSize
+					  + (frameNumArgs - offset * objectMemory wordSize)
+				  put: valueOop ]
+	
+
+Interpreter >> storeAndPopTemporaryVariableBytecode
+	self fetchNextBytecode.
+	self
+		itemporary: (currentBytecode bitAnd: 7)
+		in: framePointer
+		put: self stackTop.
+	self pop: 1
+```
 
 ### Interpreting Message sends
 
