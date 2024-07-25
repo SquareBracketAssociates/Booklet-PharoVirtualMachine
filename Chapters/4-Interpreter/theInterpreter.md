@@ -152,6 +152,25 @@ The fixed fields in a frame are the following:
 - **Flags:** Only available in interpreter frames (as opposed to compiled code frames). It contains a bit mask with the number of arguments, a flag indicating if the context object is set, and a flag indicating if the frame is a method or a closure execution.
 - **Receiver:** The message receiver _i.e.,_ the object referenced by `self` in the current method execution.
 
+```caption=The structure of a stack frame and the interpreter pointers
+framePointer----------->+---------------------+
+stackPointer--------.   | callerFramePointer--+---> null (bottom of stack)
+instructionPointer-. |  | method--------------+--.
+                    ||  | context             |   \
+                    ||  | flags               |    '-->.--------------.
+                    ||  | receiver            |        |object header |
+                    ||  | temp var 0          |        |~~~~~~~~~~~~~~|
+                    ||  | stack value 1       |        |literal 0     |
+                    |`->| stack value 0       |        |...           |
+                    |   +---------------------+        |literal n     |
+                    |                                  |~~~~~~~~~~~~~~|
+                    |                                  |bytecode 1    |
+                    `--------------------------------->|bytecode 2    |
+                                                       |...           |
+                                                       |bytecode n    |
+                                                       '--------------'
+```
+
 The frame on the top of the stack is said to be _active_.
 The active frame is delimited by the variables `stackPointer` at its top and `framePointer` at its base.
 While the `stackPointer` will move with each push/pop instruction, the `framePointer` points to the base of the current frame in the stack and does not change during a method execution.
@@ -163,9 +182,61 @@ A frame is suspended by pushing its instruction pointer to the stack before crea
 Thus, the stack can be reconstructed by iterating from the top frame up to its caller's frame start until the end of the stack.
 Notice that the stack pointer needs not to be stored: a suspended frame's stack pointer is the slot that precedes its suspended instruction pointer, which is found relative to its following frame.
 
+```caption=The call stack as a linked lists of frames in the stack
+              ╭--->+--------------------+
+              |   | callerFramePointer--+---> null (bottom of stack)
+              |   | method              |
+              |   | context             |
+              |   | flags               |
+              |   | receiver            |
+              |   | temp var 0          |
+              |   | stack value 1       |
+              |   | stack value 0       |
+              |   | instructionPointer  |
+              |╭-->+--------------------+
+              `+--+-callerFramePointer  |
+               |  | method              |
+               |  | context             |
+               |  | flags               |
+               |  | receiver            |
+               |  | stack value 1       |
+               |  | instructionPointer  |
+framePointer---+-->+--------------------+
+               `--+-callerFramePointer  |
+                  | method              |
+                  | context             |
+                  | flags               |
+                  | receiver            |
+                  | temp var 0          |
+stackPointer----->| temp var 1          |
+                  +---------------------+
+
+```
+
 #### Stack Frame Flags
 
-EXPLAIN THE FLAGS and ENCODING
+Within each interpreter stack frame there is the flags, a bitfield storing interpreter meta-data about the frame.
+The two figures below show the structure of the flags in 64 and 32 bits architectures.
+The stack frame flags store, from lower to higher bits in the bit field:
+- **Method number of arguments:** A 1-byte field _caching_ the number of arguments, to avoid fetching it from the method.
+- **hasContext flag:** A 1-byte field used as a boolean, indicating if the frame has been reified or not.
+- **isBlock flag:** Only available in non-JIT VMs: It's a 1-byte field used as a boolean, indicating if the frame is for a block closure execution or not. In JIT VMs, this flag is available as as a tag in the method pointer.
+- **Number of backjumps performed in this method:** Only available in JIT VMs. It's a 1-byte field used as a counter, indicating how many backjumps where performed by this method execution during interpretation. If this field goes over a threshold, meaning that a long loop is being interpreted, the JIT compiler decides to compile the method and switch to compiled execution.
+
+```caption=Structure of the frame flags in 64 bits
++63-------------------56+55----32+31-----24+23--------16+15------8+7------0+
+| backjumpCount(JIT VM) | unused | isBlock | hasContext | numArgs |00000001|
++-----------------------+--------+---------+------------+---------+--------+
+```
+
+```caption=Structure of the frame flags in 32 bits
+31----------------------------24+23--------16+15------8+7------0+
+| backjumpCount(JIT VM)/isBlock | hasContext | numArgs |00000001|
++-------------------------------+------------+---------+--------+
+```
+
+Notice that the frame flags have a first constant field in the range 0-7 with value 1.
+This value is set to make the bitfield look as a tagged small integer, thus guarding the GC walking the stack from interpreting this value as a pointer.
 
 #### Setting up Stack Frames
 

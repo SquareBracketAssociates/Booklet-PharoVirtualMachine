@@ -1,0 +1,27 @@
+              ╭--->+--------------------+
+              |   | callerFramePointer--+---> null (bottom of stack)
+              |   | method              |
+              |   | context             |
+              |   | flags               |
+              |   | receiver            |
+              |   | temp var 0          |
+              |   | stack value 1       |
+              |   | stack value 0       |
+              |   | instructionPointer  |
+              |╭-->+--------------------+
+              `+--+-callerFramePointer  |
+               |  | method              |
+               |  | context             |
+               |  | flags               |
+               |  | receiver            |
+               |  | stack value 1       |
+               |  | instructionPointer  |
+framePointer---+-->+--------------------+
+               `--+-callerFramePointer  |
+                  | method              |
+                  | context             |
+                  | flags               |
+                  | receiver            |
+                  | temp var 0          |
+stackPointer----->| temp var 1          |
+                  +---------------------+
