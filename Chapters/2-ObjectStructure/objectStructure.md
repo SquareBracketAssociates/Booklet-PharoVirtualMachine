@@ -1,4 +1,4 @@
-## Object Representation and Memory Organization
+## Object Representation and Memory Access
 
 
 Before delving inside the internals of the VM execution, it is important to understand the data it manipulates, in our case, Pharo objects.
@@ -247,6 +247,8 @@ SmallInteger maxVal == (2**60-1)
 Immediate characters encode their Unicode codepoint in the 61 value bits.
 This is, so far, enough to represent all Unicode codepoints: the maximum valid codepoint nowadays is 16r10FFFF, which requires only 21 bits.
 
+SHOW CODE
+
 #### 32-bit Immediate Integers and Variable Tags
 
 In 32-bit architectures using 3 bits of tag would leave 29 bits left to represent integers.
@@ -263,6 +265,8 @@ Figure *@fig:32bitsimm@* illustrates the entire 32-bit tagging schema, with tag 
 - `10` is the tag for immediate characters.
 
 
+SHOW CODE
+
 #### 64-bit Immediate Floats
 
 In 64-bit architectures, the Pharo VM represents floats as immediate objects with the tag `100`.
@@ -275,6 +279,8 @@ For floats that do not satisfy this constraint, floats use a boxed representatio
 
 Figure *@fig:64bitsfloatimm@* shows the structure of a `SmallFloat`.
 The sign bit is moved to the lowest bit of the tagged value, and the highest 3 bits of the exponent are lost.
+
+SHOW CODE
 
 #### Boxed Native Objects
 @sec:boxing
@@ -393,6 +399,23 @@ For example, given a byte array with format 21 and slot size 10, we can compute 
 
 CompiledMethods are similar to byte arrays in terms of padding.
 However, they use a different format so the runtime can differentiate them from normal byte arrays.
+
+### Accessing Memory
+
+#### Well-Known Objects
+
+EXPLAIN HERE
+
+ - hidden roots and the class table
+ - special objects array
+ - nil/true/false
+ 
+#### Accessing Slots
+
+SHOW CODE
+
+- the fetch*
+- the store*
 
 ### Conclusion
 
