@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="128" width="616" viewBox="0 0 616 128" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
 <path d="M 8,16 L 8,48" fill="none" stroke="black"/>
-<path d="M 8,96 L 8,112" fill="none" stroke="black"/>
+<path d="M 8,80 L 8,112" fill="none" stroke="black"/>
 <path d="M 200,16 L 200,48" fill="none" stroke="black"/>
 <path d="M 264,80 L 264,112" fill="none" stroke="black"/>
 <path d="M 272,16 L 272,48" fill="none" stroke="black"/>
@@ -18,7 +18,7 @@
 <path d="M 480,16 L 520,16" fill="none" stroke="black"/>
 <path d="M 552,16 L 592,16" fill="none" stroke="black"/>
 <path d="M 8,48 L 608,48" fill="none" stroke="black"/>
-<path d="M 24,80 L 240,80" fill="none" stroke="black"/>
+<path d="M 32,80 L 240,80" fill="none" stroke="black"/>
 <path d="M 288,80 L 344,80" fill="none" stroke="black"/>
 <path d="M 392,80 L 432,80" fill="none" stroke="black"/>
 <path d="M 464,80 L 504,80" fill="none" stroke="black"/>
@@ -42,7 +42,7 @@
 <text x="404" y="36">hasContext</text>
 <text x="496" y="36">numArgs</text>
 <text x="572" y="36">00000001</text>
-<text x="12" y="84">31</text>
+<text x="20" y="84">31</text>
 <text x="252" y="84">24</text>
 <text x="276" y="84">23</text>
 <text x="356" y="84">16</text>

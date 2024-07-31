@@ -1,4 +1,4 @@
-## Object Representation
+## Object Representation and Memory Organization
 
 
 Before delving inside the internals of the VM execution, it is important to understand the data it manipulates, in our case, Pharo objects.
@@ -357,6 +357,8 @@ The 12 most significant bits in the class index indicate the page index. The 10 
 
 Each class stores its own index as its hash.
 This allows the VM to get the index of a class without iterating the entire class table, and to guarantee a unique identity hash per class.
+
+![Finding a class in the class table using its index.](figures/interpreter_call_stack.pdf?label=interpreter_stack)
 
 #### Encoding of the Object Format Field
 @sec:format_encoding
