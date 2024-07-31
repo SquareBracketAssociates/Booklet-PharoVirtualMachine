@@ -9,7 +9,7 @@
               |   | stack value 0       |
               |   | instructionPointer  |
               |╭-->+--------------------+
-              `+--+-callerFramePointer  |
+              `+--|-callerFramePointer  |
                |  | method              |
                |  | context             |
                |  | flags               |
@@ -17,7 +17,7 @@
                |  | stack value 1       |
                |  | instructionPointer  |
 framePointer---+-->+--------------------+
-               `--+-callerFramePointer  |
+               `--|-callerFramePointer  |
                   | method              |
                   | context             |
                   | flags               |
