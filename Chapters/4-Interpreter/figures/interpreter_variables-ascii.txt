@@ -1,16 +1,16 @@
-framePointer----------->+---------------------+
-stackPointer--------.   | callerFramePointer--+---> null (bottom of stack)
-instructionPointer-. |  | method--------------+--.
-                    ||  | context             |   \
-                    ||  | flags               |    '-->.--------------.
-                    ||  | receiver            |        |object header |
-                    ||  | temp var 0          |        |~~~~~~~~~~~~~~|
-                    ||  | stack value 1       |        |literal 0     |
-                    |`->| stack value 0       |        |...           |
-                    |   +---------------------+        |literal n     |
-                    |                                  |~~~~~~~~~~~~~~|
-                    |                                  |bytecode 1    |
-                    `--------------------------------->|bytecode 2    |
-                                                       |...           |
-                                                       |bytecode n    |
-                                                       '--------------'
+framePointer ----------->+---------------------+
+stackPointer --------.   | callerFramePointer -+---> null (bottom of stack)
+instructionPointer -. |  | method -------------+--.
+                    | |  | context             |   \
+                    | |  | flags               |    '-->.--------------.
+                    | |  | receiver            |        |object header |
+                    | |  | temp var 0          |        |~~~~~~~~~~~~~~|
+                    | |  | stack value 1       |        |literal 0     |
+                    | `->| stack value 0       |        |...           |
+                    |    +---------------------+        |literal n     |
+                    |                                   |~~~~~~~~~~~~~~|
+                    |                                   |bytecode 1    |
+                    `---------------------------------->|bytecode 2    |
+                                                        |...           |
+                                                        |bytecode n    |
+                                                        '--------------'
