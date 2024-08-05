@@ -578,7 +578,10 @@ Now that we have seen in detail how message sends and the call stack work, let u
 - Receiver and arguments remain on the stack, and are accessed relative to the new frame's base
 - Upon return, it's the callee's responsibility to pop the receiver and arguments and to push the return value to the stack
 
+We will slightly revisit this calling convention when introducing just-in-time compilation.
+
 ### Interpreting Primitives
+
 
 ### When the Lookup Fails
 
@@ -594,5 +597,10 @@ Now that we have seen in detail how message sends and the call stack work, let u
 
 #### Static Type Predictions
 
-#### Instruction Lookakeads
+#### Instruction Lookaheads
 
+#### Frameless Methods
+
+### Conclusion
+
+### References

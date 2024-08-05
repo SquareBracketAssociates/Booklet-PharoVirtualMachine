@@ -17,15 +17,25 @@ _Acknowledgements._ This work is supported by Ministry of Higher Education and R
 The work is supported by I-Site ERC-Generator Multi project 2018-2022. We gratefully acknowledge the financial support of the Métropole Européenne de Lille.
 This work is also supported by the Action Exploratoire Alamvic led by G. Polito and S. Ducasse.
 
+# The Basics
+
 <!inputFile|path=Chapters/2-ObjectStructure/objectStructure.md!>
 <!inputFile|path=Chapters/3-MethodsAndBytecode/methodsbytecode.md!>
 <!inputFile|path=Chapters/4-Interpreter/theInterpreter.md!>
-<!inputFile|path=Chapters/CallingConventions/CallingConventions.md!>
+
+# The Memory Manager
+
 <!inputFile|path=Chapters/GarbageCollector/memoryStructure.md!>
 <!inputFile|path=Chapters/GarbageCollector/newSpace.md!>
 <!inputFile|path=Chapters/GarbageCollector/oldSpace.md!>
 <!inputFile|path=Chapters/GarbageCollector/freeList.md!>
 <!inputFile|path=Chapters/GarbageCollector/ephemerons.md!>
+
+# JIT Compilation
+
+<!inputFile|path=Chapters/CallingConventions/CallingConventions.md!>
 <!inputFile|path=Chapters/JIT/stackStructure.md!>
+
+# Exercises
 
 <!inputFile|path=Chapters/HandonsStatic/handonsstatic.md!>
