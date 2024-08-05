@@ -204,8 +204,8 @@ Interpreter >> setUpFrameForMethod: aMethod receiver: rcvr
 
 	"New frame starts"
 	framePointer := stackPointer.
-	self push: newMethod.
-	self push: objectMemory nilObject. "FxThisContext field"
+	self push: aMethod.
+	self push: objectMemory nilObject.
 	self push: (self
 			 encodeFrameFieldHasContext: false
 			 isBlock: false
@@ -506,30 +506,81 @@ Interpreter >> methodClassOf: methodPointer
 
 #### Method Activation
 
-#### The Stack Calling Convention
+Once the method to execute is found, the following step is to activate the method in the stack.
+Activating a method implies creating a stack frame for it and prepare the interpreter to execute the instructions in that method.
+Frames are created by pushing the current instruction pointer, thus suspending the current frame, and then pushing all frame fields, as explained earlier in this chapter.
 
-The interpreter and the JIT share the same calling conventions. The receiver and arguments are pushed on the stack. The instruction pointer is also pushed to the stack after the arguments. 
+```
+Interpreter >> activateNewMethod
+    
+	"set up the stack frame for the method"
+	...
+	
+	"Set the interpreter instruction pointer to the first instruction of the method"
+    instructionPointer := self pointerForOop:
+		                      (self
+			                       initialIPForHeader: methodHeader
+			                       method: newMethod) - 1.
+```
 
-Figure *@stackGrowing@* shows that the stack is growing down from high addresses to low addresses.
-This convention is important and has an impact of many aspect such as object allocation and different logic in garbage collector implementation.
+#### Handling Return instructions
 
-![Stack growing down.](figures/StackGrowingDown.pdf width=30&label=stackGrowing)
+Related to send instructions are return instructions which return the control to the caller method.
+A return instruction has to _undo_ what a send instruction does.
+The current stack frame needs to be destroyed, and the instruction pointer, frame pointer and stack pointer of the caller frame must be restored.
+All of the caller frame's state is accessible relative to the current's frame base.
+Notice that we do not need to clean the stack and moving the stack pointer upwards is enough.
+All values after the stack pointer become unreachable, and will eventually get overwritten on a next message send.
 
+In addition, remember that return instructions have a return value that need to be given to the caller.
+Passing the return value to the caller is made through the stack.
+It's the callee's responsibility to pop the receiver and arguments and push the return value upon return.
 
-Figure *@beforesend@* shows that the before doing a call, the receiver and arguments are pushed to the stack.
+```caption=Returning from a method pops restores the caller's stack frame, pops the message receiver and arguments, and pushes the return value
+Interpreter >> returnTopFromMethod
 
-![Receiver and arguments are pushed to the stack.](figures/BeforeSend.pdf width=80&label=beforesend)
+	self commonReturn: self popStack
 
-Figure *@aftersend@* shows that the instruction pointer (IP) is also pushed to the stack. This way it is possible to find which instruction is the next one to execute on return. Notice also that the interpreter and the VM are __caller-saved__. It means that this is the caller responsibility to store information that should be recovered on return of the called function.
+Interpreter >> commonReturn: value
 
-![Caller saved: the IP is also pushed to make sure that the caller can know the next instruction on return.](figures/AfterSend.pdf width=80&label=aftersend)
+	localReturnValue := value.
+	self commonCallerReturn
 
-Figure *@generalArguments@* shows that the framepointer is used to compute 
-- method argument. Since the arguments are pushed on the stack before the new frame is allocated, a method argument is always computed as an addition to the framepointer (`arg1 = FP + arg1offset`).
-- method. The method (with its metadata) is located at a fix offset from the frame pointer. Hence `method= FP- method offset`.
+Interpreter >> commonCallerReturn
+	| callersFPOrNull |
 
+	callersFPOrNull := self frameCallerFP: framePointer.
 
-![arg1 = FP + offset and method = FP - method offset.](figures/GeneralArgument.pdf width=100&label=generalArguments)
+	instructionPointer := self frameCallerSavedIP: framePointer.
+	stackPointer := framePointer
+	                + (self frameStackedReceiverOffset: framePointer).
+	framePointer := callersFPOrNull.
+
+	self setMethod: (self iframeMethod: framePointer).
+	self fetchNextBytecode.
+	self stackTopPut: localReturnValue
+
+Interpreter >> frameStackedReceiverOffset: theFP
+
+	^self frameStackedReceiverOffsetNumArgs: (self frameNumArgs: theFP)
+```
+
+The following figure shows the stack after a return instruction: the three interpreter variables have been restored destroying the callee frame.
+In the caller's frame, the stack values representing the receiver and arguments have been popped, the return value has been pushed.
+
+![The stack before and after a return instruction.](figures/interpreter_return.pdf?label=return)
+
+#### Calling Convention Summary
+
+Now that we have seen in detail how message sends and the call stack work, let us summarize the calling convention:
+
+- Receiver and arguments are pushed to the stack by the caller before the send instruction
+- Receiver and arguments remain on the stack, and are accessed relative to the new frame's base
+- Upon return, it's the callee's responsibility to pop the receiver and arguments and to push the return value to the stack
+
+### Interpreting Primitives
+
+### When the Lookup Fails
 
 #### Does Not Understand
 
