@@ -1,7 +1,7 @@
               ╭--->+--------------------+
-              |   | callerFramePointer -+---> null (bottom of stack)
-              |   | method              |
-              |   | context             |
+ || The Stack |   | callerFramePointer -+---> null (bottom of stack)
+ || Grows     |   | method              |
+ \/ Down      |   | context             |
               |   | flags               |
               |   | receiver            |
               |   | temp var 0          |

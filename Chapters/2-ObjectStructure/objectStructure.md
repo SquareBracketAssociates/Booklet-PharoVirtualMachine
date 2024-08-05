@@ -230,6 +230,32 @@ In 32-bit architectures, floats are not represented as immediate objects, intege
 ![64-bit immediate objects.](figures/64bitsImmediate.pdf width=100&label=fig:64bitsimm)
 ![32-bit immediate objects.](figures/32bitsImmediate.pdf width=100&label=fig:32bitsimm)
 
+The following code shows how we can tag, untag and verify if a value is taggable.
+The next sections explain the specific designs for integers, characters and floats, for 64 and 32 bits.
+
+```caption=Testing Small integers.
+"Convert native values into objects and vice-versa"
+integerValue := objectMemory integerValueOf: aSmallIntegerObject.
+aSmallIntegerObject := objectMemory integerObjectOf: integerValue.
+
+characterValue := objectMemory characterValueOf: anImmediateCharacterObject.
+anImmediateCharacterObject := objectMemory characterObjectOf: characterValue.
+
+floatValue := objectMemory smallFloatValueOf: anImmediateFloatObject.
+anImmediateFloatObject := objectMemory smallFloatObjectOf: floatValue.
+
+"Check if an OOP is a tagged integer, character or float"
+objectMemory isImmediate: anOop.
+objectMemory isIntegerObject: anOop.
+objectMemory isCharacterObject: anOop.
+objectMemory isImmediateFloat: anOop.
+
+"Check if a native value can be encoded as a tagged value"
+objectMemory isIntegerValue: aValue.
+objectMemory isSmallFloatValue: aValue.
+objectMemory isCharacterValue: aValue.
+```
+
 #### Immediate Characters and Integers in 64 bits
 
 In 64 bits, all immediate objects are represented as 61 bits of value and 3 bits of tag.
@@ -247,8 +273,6 @@ SmallInteger maxVal == (2**60-1)
 Immediate characters encode their Unicode codepoint in the 61 value bits.
 This is, so far, enough to represent all Unicode codepoints: the maximum valid codepoint nowadays is 16r10FFFF, which requires only 21 bits.
 
-SHOW CODE
-
 #### 32-bit Immediate Integers and Variable Tags
 
 In 32-bit architectures using 3 bits of tag would leave 29 bits left to represent integers.
@@ -264,9 +288,6 @@ Figure *@fig:32bitsimm@* illustrates the entire 32-bit tagging schema, with tag 
 - `*1` is the tag for immediate integers.
 - `10` is the tag for immediate characters.
 
-
-SHOW CODE
-
 #### 64-bit Immediate Floats
 
 In 64-bit architectures, the Pharo VM represents floats as immediate objects with the tag `100`.
@@ -279,8 +300,6 @@ For floats that do not satisfy this constraint, floats use a boxed representatio
 
 Figure *@fig:64bitsfloatimm@* shows the structure of a `SmallFloat`.
 The sign bit is moved to the lowest bit of the tagged value, and the highest 3 bits of the exponent are lost.
-
-SHOW CODE
 
 #### Boxed Native Objects
 @sec:boxing
@@ -400,22 +419,9 @@ For example, given a byte array with format 21 and slot size 10, we can compute 
 CompiledMethods are similar to byte arrays in terms of padding.
 However, they use a different format so the runtime can differentiate them from normal byte arrays.
 
-### Accessing Memory
+### Classes
 
-#### Well-Known Objects
-
-EXPLAIN HERE
-
- - hidden roots and the class table
- - special objects array
- - nil/true/false
- 
-#### Accessing Slots
-
-SHOW CODE
-
-- the fetch*
-- the store*
+HERE!
 
 ### Conclusion
 

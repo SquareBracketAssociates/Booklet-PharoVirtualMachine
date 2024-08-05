@@ -1,0 +1,11 @@
+ class
++--------------------+     method 
+| superclass         |     dictionary
+| methodDictionary --|--->+------------+     internal 
+| format             |    | tally      |     array
+| ...                |    | array -----|--->+----------+
++--------------------+    | selector 1 |    | method 1 |
+                          | selector 2 |    | method 2 |
+                          | ...        |    | ...      |
+                          | selector n |    | method n |
+                          +------------+    +----------+
