@@ -37,7 +37,7 @@ Addresses are typically restricted to fit in a word.
 Memory addresses form a sequence ranging from 0 to the highest integer that can be represented in a word.
 For example, on 64-bit processers the maximum address is 2^64, thus it can address 2^64 different bytes.
 Memory cells are said to be contiguous if their addresses are contiguous.
-Note that Figure *@fig:32vs64Architectures@* only shows addresses that are multiple of a word, although each 1-byte cell also has an address.
+Note that Figure *@fig:32vs64Architectures@* only shows addresses that are a multiple of a word, although each 1-byte cell also has an address.
 Representing memory addresses as data is what is commonly referred to as pointers.
 
 Usually, processors also define concepts such as _half-word_ and _double-word_.
@@ -70,7 +70,7 @@ We will see later in this chapter how the Pharo VM exploits alignment to impleme
 We mentioned before that memory cells are ordered.
 Moreover, the individual bits within a single cell are ordered too.
 
-We say that the _most significant_ bit in a byte is the bit that has most value in a byte, and conversely for the _least significant_ bit.
+We say that the _most significant_ bit in a byte is the bit that has the most value in a byte, and conversely for the _least significant_ bit.
 We can define the most and least significant bytes in a word in the same way.
 For example, the bit string 00000101 represents the number 5 in binary, and its least significant bit is represented by the rightest bit with value 1.
 
@@ -115,14 +115,14 @@ Some objects may contain a combination of fixed and variable slots, as it is the
 
 **Slot type.** Slots contain either object references or plain data bytes.
 Object references are pointers that reference other objects forming a graph, further explained in *@sec:references@*.
-Plain data is stored as raw bytes in a slot, typically representing low level data types such as integers or floats.
+Plain data is stored as raw bytes in a slot, typically representing low-level data types such as integers or floats.
 
 **Slot size.** The different slots in an object have a size that limits their contents.
 Reference slots store an address, and thus are a word long.
 Byte slots store a sequence of bytes, and thus element size can be 1, 2, 4 or 8 bytes.
 All fixed slots in an object are of type reference.
 All variable slots in an object are of the same type and are defined by its class.
-For example, instances of the class `ByteArray` have 1-byte slots, and instances of `FloatArray` have 8-byte slots containing IEEE-754 double precision floating point numbers.
+For example, instances of the class `ByteArray` have 1-byte slots, and instances of `FloatArray` have 8-byte slots containing IEEE-754 double-precision floating point numbers.
 
 **Weak and Ephemeron.** Weak and Ephemeron object formats are variations of the types described above, extending them with special semantics for the memory manager.
 Weak objects are objects whose variable slots work as weak references (in contrast with strong references). That is, they don't prevent the garbage collection of the referenced object.
@@ -336,11 +336,11 @@ From the most significant to the least significant bits, the fields are as follo
 - **Miscellaneous (x).** The remaining 7 bits illustrated with a green `X` are reserved for different reasons:
   - 1 bit is reserved for immutability.
   - 1 bit is reserved to mark the object as pinned. Basically, a pinned object is an object that cannot be moved in memory by the GC.
-  - 3 bits are reserved for the GC: isGray (for tri-color marking), isRemembered (for the remembered table from old space to young space) and isMarked (for the GC mark phase).
+  - 3 bits are reserved for the GC: isGray (for tri-color marking), `isRemembered` (for the remembered table from old space to young space) and `isMarked` (for the GC mark phase).
   - 2 bits are not used.
 
 Notice that the fields of the header are not all contiguous: miscellaneous bits are interleaved in between them.
-The header has been designed so commonly-accessed fields are aligned to a byte or 2-byte boundary.
+The header has been designed so that commonly accessed fields are aligned to a byte or 2-byte boundary.
 This design largely simplifies the decoding of the header, which boils down to a `load` and a `bit-and` instruction sequence.
 This simplifies the JIT compiler and generates better-quality machine code.
 
@@ -351,11 +351,16 @@ The object size field is 8 bits long and cannot store values larger than 255.
 It is, however, desirable to have large arrays or strings with thousands of elements.
 For this purpose, large objects contain an extra header, namely the overflow header, preceding the base header _i.e.,_ it is placed contiguous to the base header but in a lower address.
 
+
 !!note The address of an object is always the one of its base header regardless if it has an extra header or not.
 
+
 The overflow header is 8 bytes long and contains the object size. It allows for very large objects with sizes of up to 2^64 words, which is largely sufficient.
+
+SD: Would be nice to have a diagram
+
 When an object has an overflow header, the object size field in the base header is marked with the value 255.
-The pseudo code in Listing *@list:numSlots@* shows how to obtain the number of data slots of an object.
+The pseudocode in Listing *@list:numSlots@* shows how to obtain the number of data slots of an object.
 
 ```caption=Extracting the number of data slots in an object&label=list:numSlots
 numSlotsOf: objOop
@@ -383,7 +388,7 @@ The 12 most significant bits in the class index indicate the page index. The 10 
 Each class stores its own index as its hash.
 This allows the VM to get the index of a class without iterating the entire class table, and to guarantee a unique identity hash per class.
 
-![Finding a class in the class table using its index.](figures/classtable.pdf?label=classtable)
+![Finding a class in the class table using its index.](figures/classtable.pdf label=classtable)
 
 #### Encoding of the Object Format Field
 @sec:format_encoding
