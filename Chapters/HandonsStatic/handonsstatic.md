@@ -287,7 +287,9 @@ IRSendStatic >> calledMethod: aCompiledMethod
 We also define a class method 
 
 ```
-IRSendStatic class >> 
+IRSendStatic class >> sendStatic: aMethod
+
+	^ self new calledMethod: aMethod
 ```
 
 We define the corresponding methods to support the interaction with the Visitors who are responsible for
@@ -647,7 +649,7 @@ Integer >> staticBoundRecursiveFactorialHardcore
 			  pushReceiver;
 			  pushLiteral: 1;
 			  sendStatic: (SmallInteger >> #'-');
-			  sendStatic: (StaticRecursiveMethodPlaceHolder new selector: #staticBoundRecursiveFactorial);
+			  sendStatic: (StaticRecursiveMethodPlaceHolder new selector: #staticBoundRecursiveFactorialHardcore);
 			  sendStatic: (SmallInteger >> #'*');
 			  returnTop ]
 ```
