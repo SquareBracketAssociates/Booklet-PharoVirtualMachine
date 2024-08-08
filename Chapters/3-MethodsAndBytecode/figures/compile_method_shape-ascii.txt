@@ -1,10 +1,12 @@
 
-
-compilemethod  -------->+---------------------+
+compiled method  
+                      \
+                       v
+method header  -------->+---------------------+
                         |'Hello' 
                         |#nextPutAll:
                         |...
-byte code ------->      +---------------------+
+byte code ----------->  +---------------------+
                         |80
                         |put real one here
                         |
