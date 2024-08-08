@@ -68,7 +68,7 @@ Methods using literal variables store the corresponding associations in their li
 Pharo code includes all sort of literal values that need to be known and accessed at runtime.
 For example, Listing *@exampleMethod@* shows a method using integers, arrays, and strings.
 
-```caption=Source code with several literals&label=exampleMethod
+```caption=Source code with several literals&anchor=exampleMethod
 MyClass >> exampleMethod
     self someComputation > 1
 		ifTrue: [ ^ #() ]
@@ -91,7 +91,7 @@ This is for example the case of foreign function interface methods that are comp
 
 A compiled method is structured around a method header, a literal frame, a bytecode sequence and a method trailer as shown in Figure *@methodshape@*.
 
-![.%anchor=methodshape](figures/compile_method_shape.pdf)
+![Structure of a compiled method.%anchor=methodshape&width=60](figures/compile_method_shape.pdf)
 
 #### Method Header
 
@@ -129,20 +129,20 @@ Later we present the different optimizations, the bytecode extensions and the de
 #### A Stack Machine
 
 Pharo bytecode works by manipulating a stack, as opposed to registers.
-Typically, an operation accesss its operands from the stack, operates on them, and places the result back on the stack.
-We will call this stack the value stack or operand stack, to differentiate it from the call stack that will be studied in a later chapter.
+Typically, an operation accesses its operands from the stack, operates on them, and places the result back on the stack.
+We will call this stack the **value or operand** stack, to differentiate it from the call stack that will be studied in a later chapter.
 
-For example, the following code shows the tree stack instructions required to evaluate the expression `2+7`.
-First, two push instructions push the values 2 and 7 to the stack.
-Second, the `+` instruction pops the two top values in the stack, operates on them producing the number 9, and finally pushes that value to the stack.
+For example, Listing *@push27@* shows the tree stack instructions required to evaluate the expression `2+7`.
+First, two push instructions push the values 2 and 7 to the value stack.
+Second, the `+` instruction pops the two top values of the stack, operates on them producing the number 9, and finally pushes that value to the value stack.
 
-```caption=Pseudo-bytecode performing 2+7
+```caption=Pseudo-bytecode performing 2+7.&anchor=push27
 push 2
 push 7
 +
 ```
 
-#### Push Instructions
+#### Push Instructions (to the value stack)
 
 Push instructions are a family of instructions that read a value and add it to the top of the value stack.
 Different push instructions are:
@@ -154,9 +154,9 @@ Different push instructions are:
 - push the value of a literal variable
 - push the top of the stack, duplicating the stack top
 
-#### Store Instructions
+#### Store Instructions (to a variable)
 
-Store instructions are a family of instructions that write the value on the top of the stack to a variable.
+Store instructions are a family of instructions that write the value on the top of the value stack to a variable.
 Different store instructions are:
 
 - store into an instance variables of the receiver
@@ -167,8 +167,8 @@ Different store instructions are:
 #### Control Flow Instructions: Jumps
 
 Control flow instructions are a family of instructions that change the sequential order in which instructions naturally execute.
-In lots of programming languages, such instructions represent conditionals, loops, case statements.
-In Pharo all these boil down to jump instructions, a.k.a., gotos.
+In most programming languages, such instructions represent conditionals, loops, case statements.
+In Pharo, all these boil down to jump instructions, a.k.a., gotos.
 Different jump instructions are:
 - conditional jumps pop the top of the value stack and transfer the control flow to the target instruction if the value is either `true` or `false`
 - unconditional jumps transfer the control flow to the target instruction regardless of the values on the value stack
@@ -176,25 +176,25 @@ Different jump instructions are:
 #### Send and Return Instructions
 
 Send instructions are a family of instructions that perform a message send, activating a new method on the call stack.
-Send instructions are annotated with the selector and number of arguments, and will conceptually work as follow:
+Send instructions need a selector and its number of arguments, and will conceptually work as follows:
 - pop receiver and arguments from the value stack
 - lookup the method to execute using the receiver and message selector
 - execute the looked-up method
 - push the result to the top of the stack
 
-Conversely to send instructions, return instructions are a family of instructions that return control to the caller method, providing the return value to be pushed to the caller's value stack.
+Conversely, to send instructions, return instructions are a family of instructions that return control to the caller method, providing the return value to be pushed to the caller's value stack.
 
 	
 ### Primitive Methods
 
-Some operations such as integer arithmetics or bitwise manipulation cannot be expressed by means of message sends and methods.
-Pharo express such operations through primitives: low-level functions implementing essential or optimized operations.
+Some operations such as integer arithmetics or bitwise manipulations cannot be expressed by means of message sends and methods.
+Pharo expresses such operations through primitives: low-level functions implementing essential or optimized operations.
 
 Primitives are exposed to Pharo through primitive _methods_.
 A primitive method is a bytecode method that has a reference to a primitive function.
-For example, the method `SmallInteger>>#+` defining the addition of immediate integers is marked to as primitive number 1.
+For example in Listing *@plus@*, the method `SmallInteger>>#+` defining the addition of immediate integers is marked to as primitive number 1.
 
-```caption=The SmallInteger addition method is a primitive method
+```caption=The SmallInteger addition method is a primitive method.&anchor=plus
 SmallInteger >> + addend
 	<primitive: 1>
 	^super + addend
@@ -206,7 +206,7 @@ When a primitive function is executed, the value stack contains the method argum
 A key difference between primitive functions and bytecode instructions is that primitives _can fail_.
 When a primitive method is executed, it executes first the primitive function.
 If the primitive function succeeds, the primitive method returns the result of the primitive function.
-If the primitive funciton fails, the primitive method executes _falls back_ to the method's bytecode.
+If the primitive function fails, the primitive method executes _falls back_ to the method's bytecode.
 For example, in the case above, if the primitive 1 fails, the statement `^ super + addend` will get executed.
 
 **Design Note: fast vs slow paths.** The failure mechanism of primitives is generally used to separate fast paths from slow paths.
