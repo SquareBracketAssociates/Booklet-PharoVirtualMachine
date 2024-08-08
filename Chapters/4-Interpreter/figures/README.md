@@ -16,6 +16,11 @@ Converting ascii art to pdf requires two command line tools: `aasvg` and `rsvg-c
 npm install -g aasvg
 sudo apt-get install librsvg2-bin
 ```
+If the previous apt-get does not work
+
+```
+ brew install librsvg
+```
 
 Figure source code is asciiart and named `*-ascii.txt`.
 We then convert them to svg using the following commands.
