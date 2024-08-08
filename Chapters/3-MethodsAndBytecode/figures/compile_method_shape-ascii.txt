@@ -1,0 +1,14 @@
+
+
+compilemethod  -------->+---------------------+
+                        |'Hello' 
+                        |#nextPutAll:
+                        |...
+byte code ------->      +---------------------+
+                        |80
+                        |put real one here
+                        |
+method trailer ---->    +---------------------+
+                        |
+                        |
+method end ---->        +---------------------+

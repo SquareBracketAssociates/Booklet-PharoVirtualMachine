@@ -1,31 +1,33 @@
 ## Methods, Bytecode and Primitives
 
+@@ Stef: I would cut the byte code (section 3.4) in a separate chapter. There is a big difference in information.
+
 
 This chapter explains the basics of Pharo execution: methods and how they are internally represented.
-Methods execute one after the other, and _call_ each other by means of message send operations.
+Methods execute one after the other, and _call_ each other by means of message-send operations.
 Methods execute under the hood using a stack machine.
 A stack holds the current calls and their values.
 Bytecode instructions and primitives manipulate this stack with push and pop operations.
 
-In this chapter we explain in detail how methods are modelled using the sista bytecode set{!citation|ref=Bera14a!}.
+In this chapter, we explain in detail how methods are modeled using the sista bytecode set{!citation|ref=Bera14a!}.
 We explain how bytecode and primitive instructions are executed using a conceptual stack.
-The bytecode interpreter and the call stack are introduced in a following chapter.
+The bytecode interpreter and the call stack are introduced in Chapter *@cha:Slang@*.
 
 ### Compiled Methods
 
 Pharo users write methods in Pharo syntax.
 However, Pharo source code is just text and is not executable.
 Before executing those methods, a bytecode compiler processes the source code and translates it to an executable form by performing a sequence of transformations until it generates a `CompiledMethod` instance.
-A parsing step translates the source code into a tree data structure called an _abstract syntax tree_, a name resolution step attaches semantic to identifiers, a lowering step creates a control flow graph representation, and finally a code generation step produces the `CompiledMethod` object containing the code and meta-data required for execution.
+A parsing step translates the source code into a tree data structure called an _abstract syntax tree_, a name resolution step attaches semantics to identifiers, a lowering step creates a control flow graph representation, and finally a code generation step produces the `CompiledMethod` object containing the code and meta-data required for execution.
 
 #### Intermezzo: Variables in Pharo
 
 To understand how Pharo code works, it is useful to do a quick reminder on how do variables work.
-In this chapter we will deal with the low-level representation of variables (how read/writes are implemented).
+In this chapter, we will deal with the low-level representation of variables (how read/writes are implemented).
 For a more complete overview on variables and their usage, please refer yourselves to Pharo by Example{!citation|ref=Duca17a!}.
 
 Pharo supports three main kind of variables.
-Each kind of variable is stored differently in memory and has different lifetime and behavior _i.e.,_ they are allocated and deallocated at different moments in time.
+Each kind of variable is stored differently in memory and has a different lifetime and behavior _i.e.,_ they are allocated and deallocated at different moments in time.
 
 **`self` and `super`:** `self` and `super` are so called _pseudo-variables_, _i.e.,_ syntactically looking variables but defined by the compiler and with special semantics. Differently from normal variables, `self` and `super` cannot be manually assigned. Both `self` and `super` are defined automatically by the compiler, and bound when a method starts executing. Both these pseudo-variables have as value the current message receiver: the object that received the message that led to the current method execution.
 
@@ -64,26 +66,32 @@ Methods using literal variables store the corresponding associations in their li
 #### Literals and the Literal Frame
 
 Pharo code includes all sort of literal values that need to be known and accessed at runtime.
-For example, the code below shows a method using integers, arrays and strings.
+For example, Listing *@exampleMethod@* shows a method using integers, arrays, and strings.
 
-```caption=Source code with several literals
+```caption=Source code with several literals&label=exampleMethod
 MyClass >> exampleMethod
     self someComputation > 1
 		ifTrue: [ ^ #() ]
 		ifFalse: [ self error: 'Unexpected!' ]
 ```
 
-In Pharo, literal values are stored each in different a reference slot in a method.
+In Pharo, literal values are stored each in different reference slot in a method.
 The collection of reference slots in a method is called the _literal frame_.
 Remember from the object representation chapter, that `CompiledMethod` instances are variable objects that contain a variable reference part and a variable byte indexable part.
 
-Commonly, the literal frame contains references to numbers, characters, strings, arrays and symbols used in a method.
-In addition, when referencing globals (and thus classes), class variables and shared variables, the literal frame references their corresponding associations.
-Finally, the literal frame references also runtime meta-data such as flags or message selectors required to perform message-sends.
+- Commonly, the literal frame contains references to numbers, characters, strings, arrays and symbols used in a method.
+- In addition, when referencing globals (and thus classes), class variables and shared variables, the literal frame references their corresponding associations.
+- Finally, the literal frame references also runtime meta-data such as flags or message selectors required to perform message-sends.
 
 It is worth noticing that the literal frame poses no actual limitation to what type of object it references.
-Such capability is exploited in rare cases when a method's behavior cannot be expressed in Pharo syntax.
-This is for eample the case of foreign function interface methods that are compiled by a separate compiler and stores foreign function meta-data as literals.
+Such capability is rarely exploited when a method's behavior cannot be expressed in Pharo syntax.
+This is for example the case of foreign function interface methods that are compiled by a separate compiler and store foreign function meta-data as literals.
+
+### Compiled Method
+
+A compiled method is structured around a method header, a literal frame, a bytecode sequence and a method trailer as shown in Figure *@methodshape@*.
+
+![.%anchor=methodshape](figures/compile_method_shape.pdf)
 
 #### Method Header
 

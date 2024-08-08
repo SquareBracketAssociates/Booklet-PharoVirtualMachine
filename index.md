@@ -23,6 +23,12 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 <!inputFile|path=Chapters/3-MethodsAndBytecode/methodsbytecode.md!>
 <!inputFile|path=Chapters/4-Interpreter/theInterpreter.md!>
 
+
+## Slang
+@cha:Slang
+Just here so that we can refer to it
+
+
 # The Memory Manager
 
 <!inputFile|path=Chapters/GarbageCollector/memoryStructure.md!>
