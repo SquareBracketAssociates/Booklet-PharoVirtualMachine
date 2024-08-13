@@ -1,5 +1,6 @@
 # About the figures
 
+
 ## Old figures: omnigraffle
 
 Old figures are made with omnigraffle and exported to pdf and png.
@@ -10,6 +11,17 @@ The problem with these is that keeping the same look and feel over all of these 
 ## New figures: asciiart -> svg -> pdf
 
 Using asciiart allows me (Guille) to keep the same look and feel in the figures.
+
+### Editing your figures online
+
+The canonical editor is:
+
+https://ivanceras.github.io/svgbob-editor/
+
+You can help yourself using https://asciiflow.com/#/ but it is not guaranteed that you will have the same output
+
+### Converting them to pdf
+
 Converting ascii art to pdf requires two command line tools: `aasvg` and `rsvg-convert` which I installed as follows in Mac:
 
 ```bash
