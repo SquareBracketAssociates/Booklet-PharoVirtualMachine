@@ -21,7 +21,9 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 
 <!inputFile|path=Chapters/2-ObjectStructure/objectStructure.md!>
 <!inputFile|path=Chapters/3-MethodsAndBytecode/methodsbytecode.md!>
+<!inputFile|path=Chapters/BasicsOnExecution/basicsOnExecution.md!>
 <!inputFile|path=Chapters/4-Interpreter/theInterpreter.md!>
+<!inputFile|path=Chapters/5-DeeperBytecode/methodsbytecode.md!>
 
 
 ## Slang
