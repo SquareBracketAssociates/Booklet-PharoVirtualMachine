@@ -1,0 +1,36 @@
+           Before |                                       |            || The Stack     
+                  +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+            || Grows         
+                  +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+            \/ Down
+                  +---------------------------------------+
+framePointer ---->+ callerFramePointer                    |
+                  | method                                |
+                  | context                               |
+                  | flags                 Caller's frame  |
+                  | receiver                              |
+                  | temporary 1                           |
+                  | temporary 2                           |
+                  | ...                                   |    
+                  | "stack value n   (send receiver)"  ---+-------------->+--+<-.
+                  | "stack value n+1 (send argument 1)"---+---->+--+<---. +--+  |
+                  | ...                                   |     +--+    |       |
+stackPointer ---->+ "stack value n+m (send argument n)"---+-->+--+<---. |       |
+                  +---------------------------------------+   +--+    | |       |
+                                                                      | |       |
+Before Send                                                           | |       |
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - + + - - - + - - - - - -
+After Send                                                            | |       | +---+<--.
+                  |                                       |           | |       `-+-1 |   |
+                  +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+           | |         +---+   |
+                  +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+           | `---------+-2 |   |
+                  +---------------------------------------+           |           +---+   |
+framePointer ---->+ callerFramePointer                    |           `-----------+-3 |   |
+                  | method                                |                       +---+   |
+                  | context                               |    message object             |
+                  | flags                 Caller's frame  | .->+---------------+          |
+                  | receiver                              | |  | selector    --+-> ...    |
+                  | temporary 1                           | |  | arguments   --+----------'
+                  | temporary 2                           | |  | lookupClass --+-> ...
+                  | ...                                   | |  +---------------+
+                  | "stack value n   (send receiver)"     | |
+stackPointer ---->+ "stack value n+1 (send argument 1)"---+-'
+                  +---------------------------------------+

@@ -1,7 +1,7 @@
                                                 Before return  :  After return
                                                                :
  || The Stack     |                                       |    :                   |                                       |
- || Grows         +._ _ _.- - -._ _ _.- - -._ _ _.- - -._ +    :                   +._ _ _.- - -._ _ _.- - -._ _ _.- - -._ +
+ || Grows         +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+    :                   +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+
  \/ Down          +---------------------------------------+    : framePointer ---->+---------------------------------------+
                   | callerFramePointer                    |    :                   | callerFramePointer                    |
                   | method                                |    :                   | method                                |
@@ -14,7 +14,7 @@
                   | stack value n   "(send receiver)"     |    : stackPointer ---->| stack value n   "(return value)"      |
                   | stack value n+1 "(send argument 1)"   |    :                   +---------------------------------------+
                   | ...                                   |    :
-                  | stack value n+m "(send argument n )"  |    :                         .--------------.
+                  | stack value n+m "(send argument n)"   |    :                         .--------------.
                   | saved instructionPointer -------------|--. : instructionPointer --.  |object header |
 framePointer ----->+--------------------------------------+  | :                      |  |literal 0     |
                   | callerFramePointer                    |  | :                      |  |...           |

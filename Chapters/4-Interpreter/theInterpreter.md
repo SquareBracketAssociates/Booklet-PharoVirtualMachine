@@ -742,6 +742,9 @@ Then the original message reification is set up by:
 - allocating an array to hold all the original arguments
 - popping the arguments from the stack and store them in the new array
 - allocating a message object and storing in it the original selector, argument array and lookup class
+
+![Reifying the message for does not understand.](figures/interpreter_dnu.pdf?label=dnu_message)
+
 Then, the `messageSelector` interpreter variable is overwritten with the `doesNotUnderstand:` selector found in the special objects array, and the lookup is restarted.
 
 ```caption=The lookup method revisited with `doesNotUnderstand:` support

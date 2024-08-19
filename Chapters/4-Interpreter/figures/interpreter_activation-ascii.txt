@@ -1,5 +1,5 @@
  || The Stack     |                                       |
- || Grows         +._ _ _.- - -._ _ _.- - -._ _ _.- - -._ +
+ || Grows         +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+
  \/ Down          |                                       |
                   | callerFramePointer                    |
                   | method                                |
@@ -9,10 +9,10 @@
                   | temporary 1                           |
                   | temporary 2                           |
                   | ...                                   |
-                  | stack value n   (send receiver) ------+--> someObject
-                  | stack value n+1 (send argument 1 )    |      
+                  | "stack value n   (send receiver)" ----+--> someObject
+                  | "stack value n+1 (send argument 1 ) " |      
                   | ...                                   |      ^
-                  | stack value n+m (send argument n )    |      |
+                  | "stack value n+m (send argument n )"  |      |
                   | instructionPointer                    |      |
 framePointer ----->+--------------------------------------+      |
                   | callerFramePointer                    |      |
