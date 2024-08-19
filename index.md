@@ -35,7 +35,7 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 # Optimizations
 
 <!inputFile|path=Chapters/5-DeeperBytecode/methodsbytecode.md!>
-<!inputFile|path=Chapters/6-InterpreterOptmizations/interpreteroptimizations.md!>
+<!inputFile|path=Chapters/6-InterpreterOptimizations/interpreteroptimizations.md!>
 
 # JIT Compilation
 
