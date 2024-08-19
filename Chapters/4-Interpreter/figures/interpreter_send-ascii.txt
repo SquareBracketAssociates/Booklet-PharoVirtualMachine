@@ -1,17 +1,17 @@
- || The Stack     |                                       |
- || Grows         +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+
- \/ Down          +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+
-                  +---------------------------------------+
-framePointer ---->+ callerFramePointer                    |
-                  | method                                |
-                  | context                               |
-                  | flags                 Caller's frame  |
-                  | receiver                              |
-                  | temporary 1                           |
-                  | temporary 2                           |
-                  | ...                                   |
-                  | stack value n   "(send receiver)"     +
-                  | stack value n+1 "(send argument 1 )"  |
-                  | ...                                   |
-stackPointer -----> stack value n+m "(send argument n )"  |
-                  +---------------------------------------+
+ || The Stack     |                                     |
+ || Grows         +._ _ _.- - -._ _ _.- - -._ _ _.- - -.+
+ \/ Down          +._ _ _.- - -._ _ _.- - -._ _ _.- - -.+
+                  +-------------------------------------+
+framePointer  --->+ callerFramePointer                  |
+                  | method                              |
+                  | context                             |
+                  | flags               Caller's frame  |
+                  | receiver                            |
+                  | temporary 1                         |
+                  | temporary 2                         |
+                  | ...                                 |
+                  | stack value n   "(send receiver)"   |
+                  | stack value n+1 "(send argument 1)" |
+                  | ...                                 |
+stackPointer  --->| stack value n+m "(send argument n)" |
+                  +-------------------------------------+

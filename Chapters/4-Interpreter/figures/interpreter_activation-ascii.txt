@@ -1,4 +1,5 @@
- || The Stack     |                                       |
+                  |                                       |
+ || The Stack     +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+
  || Grows         +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+
  \/ Down          |                                       |
                   | callerFramePointer                    |

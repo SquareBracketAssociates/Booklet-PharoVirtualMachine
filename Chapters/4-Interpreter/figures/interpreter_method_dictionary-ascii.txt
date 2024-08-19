@@ -1,9 +1,9 @@
  class
 +--------------------+     method 
 | superclass         |     dictionary
-| methodDictionary --|--->+------------+     internal 
+| methodDictionary  -|--->+------------+     internal 
 | format             |    | tally      |     array
-| ...                |    | array -----|--->+----------+
+| ...                |    | array  ----|--->+----------+
 +--------------------+    | selector 1 |    | method 1 |
                           | selector 2 |    | method 2 |
                           | ...        |    | ...      |
