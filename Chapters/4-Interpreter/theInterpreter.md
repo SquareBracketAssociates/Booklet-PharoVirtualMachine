@@ -582,25 +582,226 @@ We will slightly revisit this calling convention when introducing just-in-time c
 
 ### Interpreting Primitives
 
+So far we have concentrated on interpreting bytecodes.
+In this chapter section we concentrate on the interpretation of primitive methods.
 
-### When the Lookup Fails
+Recall that primitive methods are normal methods that contain a reference to a primitive function.
+For example, the next code snippet shows the method `SmallInteger>>+` implementing the addition of two tagged integers.
+This method has the pragma `primitive: 1` indicating that this method is a primitive method, referencing the primitive 1.
+
+```caption=The primitive method implementing addition in SmallInteger
+SmallInteger >> + aNumber
+
+	<primitive: 1>
+	^ super + aNumber
+````
+
+#### Primitive Instructions and Calling Convention by Example
+
+Primitive instructions are stack-based instructions with a catch: they can fail.
+
+When called, primitive instructions expect all its arguments on the stack, plus the interpreter variable `numberOfArguments` set to the actual number of arguments of the message send.
+Thus, primitive instructions have two return values: a failure/success code, and an optional return value if success.
+To allow this, primitive instructions store their error code in an interpreter variable, and their result on the stack.
+Invoking a primitive instruction follows the convention on return:
+ - set the primitive failure code variable `primFailCode` to 0 on success, or an error code otherwise
+ - if failure, leave the stack untouched
+ - if success, pop the arguments, then push the result
+
+The following code illustrates such concepts with `primitiveAdd` the primitive instruction that adds two tagged small integers.
+`primitiveAdd` first fetches it's two arguments from the top two slots of the stack.
+Second, it checks if they are integer objects: if they are not, it returns indicating a failure.
+Third, it sums both integer values, and in case of overflow (_i.e.,_ in case the addition cannot be represented as a tagged small integer) it returns indicating a failure.
+Finally, if the sum does not overflow, the two arguments are popped from the stack and the result is pushed.
+
+```
+Interpreter >> primitiveAdd	
+	| maybeSmallInteger maybeSmallInteger2 result |
+
+	maybeSmallInteger := self stackValue: 0.
+	maybeSmallInteger2 := self stackValue: 1.
+	
+	(objectMemory isIntegerObject: maybeSmallInteger)
+		ifFalse: [ ^ self primitiveFail ].
+	(objectMemory isIntegerObject: maybeSmallInteger2)
+		ifFalse: [ ^ self primitiveFail ].
+
+	"Check for overflow"
+	result := self
+		sumSmallInteger: maybeSmallInteger
+		withSmallInteger: maybeSmallInteger2
+		ifOverflow: [ ^ self primitiveFail ].
+
+	self pop: 2 thenPush: result
+```
+
+Notice how this primitive does not do any destructive operation on the stack unless we are sure that it cannot fail.
+Alternatively, if it popped the top elements of the stack at the beginning, the stack should have been rebuilt upon failure, by re-pushing the arguments in the right order. 
+
+**Design Note: when should a primitive fail?**
+The design of primitives is revolved around type-safety and memory-safety.
+Since Pharo is a dynamically-typed programming language, types are not know in advance.
+Instead, types should be checked at runtime before performing dangerous operations.
+In the example above it checks the types of the arguments _and_ the non-overflow of the addition.
+Primitives that load/store from/into object slots type check the receiver and index arguments, but also check that the index is within bounds.
+Notice that such a design guide primitives to provide a clear separation between the _fast and slow paths_.
+Primitives generally provide a safe implementation for a fast path, leaving the slow path to the fallback code.
+
+#### Decoding a Method's Primitive Index
+
+We distinguish primitive methods from non-primitive methods using a bit in their first literal.
+The primitive index of a primitive method is stored in its first bytecode instruction: a call primitive bytecode.
+The call primitive bytecode is a 3-byte bytecode instruction with opcode 248.
+The two subsequent bytes represent the primitive index in little endian: `byte1 + (byte2 << 8)`.
+The following code shows how the runtime extracts the primitive index of a method.
+
+```
+Interpreter >> primitiveIndexOf: methodPointer
+	^self primitiveIndexOfMethod: methodPointer header: (objectMemory methodHeaderOf: methodPointer)
+
+Interpreter >> primitiveIndexOfMethod: theMethod header: methodHeader
+	| firstBytecode |
+	firstBytecode := self
+		firstBytecodeOfHeader: methodHeader
+		method: theMethod.
+	^ (objectMemory byteAt: firstBytecode + 1)
+		+ ((objectMemory byteAt: firstBytecode + 2) << 8)
+
+Interpreter >> firstBytecodeOfHeader: methodHeader method: theMethod
+	^theMethod
+	 + ((LiteralStart + (self literalCountOfHeader: methodHeader)) * objectMemory bytesPerOop)
+	 + objectMemory baseHeaderSize
+
+Interpreter >> literalCountOfHeader: headerPointer
+	^ (objectMemory integerValueOf: headerPointer)
+		bitAnd: HeaderNumLiteralsMask
+````
+
+#### Primitive Dispatch and Failure Fallback
+
+When a method is executed, the interpreter checks first if the method is a primitive method _i.e.,_ if it has its flag turned on.
+If that is the case, the interpreter invokes the primitive instead of activating the method.
+As with bytecode instructions, primitives use also table dispatch to map primitive numers (or indexes) to primitive functions.
+The code that follows shows a sketch of the primitive table.
+
+```
+	#(	(1 primitiveAdd)
+		(2 primitiveSubtract)
+		(3 primitiveLessThan)
+		(4 primitiveGreaterThan)
+		(5 primitiveLessOrEqual)
+		(6 primitiveGreaterOrEqual)
+		(7 primitiveEqual)
+		(8 primitiveNotEqual)
+		(9 primitiveMultiply)
+		(10 primitiveDivide)
+		(11 primitiveMod)
+		...
+	)
+```
+
+To execute the primitive, we fetch the primitive function from the table, then we dispatch the primitive using `perform:`.
+The following piece of code shows a simplified version of Pharo's interpreter code.
+First, the interpreter decodes the primitive index and fetches the primitive function pointer.
+If the method has an associated primitive function, the function is executed.
+If success, the method returns directly to the caller.
+Otherwise, the method is activated, forcing the execution of the fallback code in the method's bytecode.
+
+```
+primitiveIndex := self primitiveIndexOf: newMethod.
+primitiveFunctionPointer := primitiveTable at: primitiveIndex.
+primitiveFunctionPointer ~= 0 ifTrue: [ | success |
+	self perform: primitiveFunctionPointer.
+
+	self success ifTrue: [
+		"If success, return to the caller"
+		^ nil
+	]
+].
+
+"handle primitive error or no primitive"
+self activateNewMethod
+```
+
+### When the Lookup Fails: VM Callbacks
+
+So far we assumed that the message lookup does always find a method to execute, although this may not always be the case.
+In this section we explain two interpreter mechanisms that handle lookup errors: does not understand and cannot interpret.
+From an interpreter point of view, these mechanisms are _callbacks_ to Pharo code indicating the problematic cases.
 
 #### Does Not Understand
 
+When a message is sent, the method lookup searches the entire receiver's hierarchy for a method with the same selector as the message.
+If the algorithm reaches the top of the hierarchy (`nil`), then the interpreter sends the `doesNotUnderstand:` message to the receiver.
+The interpreter massages a bit the stack and the interpreter state, and looks up the `doesNotUnderstand:` selector instead of the original selector.
+This creates the illusion that the VM replaced the original message by a `doesNotUnderstand:` message.
+
+Massaging the stack implies preparing it to send the `doesNotUnderstand:` message.
+The thing is, the stack contains the receiver and arguments of the message but `doesNotUnderstand:` expects as single argument: the reification of the original message.
+Then the original message reification is set up by:
+- allocating an array to hold all the original arguments
+- popping the arguments from the stack and store them in the new array
+- allocating a message object and storing in it the original selector, argument array and lookup class
+Then, the `messageSelector` interpreter variable is overwritten with the `doesNotUnderstand:` selector found in the special objects array, and the lookup is restarted.
+
+```caption=The lookup method revisited with `doesNotUnderstand:` support
+Interpreter >> lookupMethodInClass: class
+	| currentClass dictionary found |
+	<inline: false>
+	self assert: (self addressCouldBeClassObj: class).
+	self lookupBreakFor: class.
+	currentClass := class.
+	[currentClass ~= objectMemory nilObject] whileTrue: [
+		dictionary := objectMemory
+			followObjField: MethodDictionaryIndex
+			ofObject: currentClass.
+		found := self lookupMethodInDictionary: dictionary.
+		found ifTrue: [^currentClass].
+		currentClass := self superclassOf: currentClass ].
+
+	"Cound not find a normal message -- raise exception #doesNotUnderstand:"
+	self createActualMessageTo: class.
+	messageSelector := objectMemory splObj: SelectorDoesNotUnderstand.
+	^self lookupMethodInClass: class
+```
+
 #### Cannot Interpret
 
-### Interpreter optimizations
+The VM implements also the `cannotInterpret:` hook: a hook that gets activated when the VM finds `nil` in the place of a class' method dictionary.
+Similar to `doesNotUnderstand:`, `cannotInterpret:` requires massaging the stack and setting up the message reification.
+However, the lookup cannot be restarted from the original class, as this will find again a `nil` method dictionary and _loop_.
+Instead, `cannotInterpret:` restart's the lookup from the superclass of the class that had a `nil` method dictionary, cutting up the recursion.
 
-#### Where does the interpreter time go?
-
-#### Global Lookup Cache
-
-#### Static Type Predictions
-
-#### Instruction Lookaheads
-
-#### Frameless Methods
+```caption=The lookup method
+Interpreter >> lookupMethodInClass: class
+	| currentClass dictionary found |
+	<inline: false>
+	self assert: (self addressCouldBeClassObj: class).
+	self lookupBreakFor: class.
+	currentClass := class.
+	[currentClass ~= objectMemory nilObject] whileTrue: [
+		dictionary := objectMemory
+			followObjField: MethodDictionaryIndex
+			ofObject: currentClass.
+		
+		dictionary = objectMemory nilObject ifTrue:
+			["MethodDict pointer is nil (hopefully due a swapped out stub)
+				-- raise exception #cannotInterpret:."
+			self createActualMessageTo: class.
+			messageSelector := objectMemory splObj: SelectorCannotInterpret.
+			^self lookupMethodInClass: (self superclassOf: currentClass)].
+		
+		found := self lookupMethodInDictionary: dictionary.
+		found ifTrue: [^currentClass].
+		currentClass := self superclassOf: currentClass ].
+	...
+```
 
 ### Conclusion
 
-### References
+In this chapter we studied how the interpreter Pharo interpreter is written.
+Both bytecode and primitive instructions are implemented through method dispatch.
+The key instruction in Pharo is the message send.
+When a message send instruction is executed, it first looks up the method to execute in the receiver's hierarchy.
+Then, if it is a primitive method, it executes the associated primitive instruction.
+If the primitive instruction fails or the method is a normal method, the method is _activated_: a frame is created and the method's bytecode gets executed.

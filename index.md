@@ -23,13 +23,6 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 <!inputFile|path=Chapters/3-MethodsAndBytecode/methodsbytecode.md!>
 <!inputFile|path=Chapters/BasicsOnExecution/basicsOnExecution.md!>
 <!inputFile|path=Chapters/4-Interpreter/theInterpreter.md!>
-<!inputFile|path=Chapters/5-DeeperBytecode/methodsbytecode.md!>
-
-
-## Slang
-@cha:Slang
-Just here so that we can refer to it
-
 
 # The Memory Manager
 
@@ -39,10 +32,19 @@ Just here so that we can refer to it
 <!inputFile|path=Chapters/GarbageCollector/freeList.md!>
 <!inputFile|path=Chapters/GarbageCollector/ephemerons.md!>
 
+# Optimizations
+
+<!inputFile|path=Chapters/5-DeeperBytecode/methodsbytecode.md!>
+<!inputFile|path=Chapters/6-InterpreterOptmizations/interpreteroptimizations.md!>
+
 # JIT Compilation
 
 <!inputFile|path=Chapters/CallingConventions/CallingConventions.md!>
 <!inputFile|path=Chapters/JIT/stackStructure.md!>
+
+## Slang
+@cha:Slang
+Just here so that we can refer to it
 
 # Exercises
 

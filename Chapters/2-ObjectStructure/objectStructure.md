@@ -424,9 +424,16 @@ For example, given a byte array with format 21 and slot size 10, we can compute 
 CompiledMethods are similar to byte arrays in terms of padding.
 However, they use a different format so the runtime can differentiate them from normal byte arrays.
 
+### Methods and Headers
+
+TODO!
+
 ### Classes
 
-HERE!
+TODO!
+
+### The Special Objects Array
+
 
 ### Conclusion
 
