@@ -1,4 +1,4 @@
-## Object Representation and Memory Access
+## Object Representation
 
 
 Before delving inside the internals of the VM execution, it is important to understand the data it manipulates, in our case, Pharo objects.
@@ -429,10 +429,6 @@ However, they use a different format so the runtime can differentiate them from 
 TODO!
 
 ### Classes
-
-TODO!
-
-### The Special Objects Array
 
 TODO!
 
