@@ -13,6 +13,6 @@ on:
 
 jobs:
   build:
-    uses: guillep/BookBuilderDashboard/.github/workflows/build-pillarbook-texlive23.yml@master
+    uses: SquareBracketAssociates/BookBuilderDashboard/.github/workflows/main.yml@newVersionOfPillar
     with:
       bookname: vm-wip
