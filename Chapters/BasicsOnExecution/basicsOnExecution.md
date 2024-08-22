@@ -61,7 +61,7 @@ The fact that the variable is named `origin` depends on the fact that this metho
 The commented form of the bytecodes for Rectangle width is shown below: 
 
 
-![.](figures/width_0.pdf)
+![.](figures/interpreter_activation.pdf)
 
 %Rectangle >> #width
 %- <01> pushRcvr: 1 - push the value of the receiver's second instance variable (corner) onto the stack

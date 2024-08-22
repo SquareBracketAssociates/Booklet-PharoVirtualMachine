@@ -426,7 +426,62 @@ However, they use a different format so the runtime can differentiate them from 
 
 ### Methods and Headers
 
-TODO!
+Pharo users write methods in Pharo syntax.
+However, Pharo source code is just text and is not executable.
+Before executing those methods, a bytecode compiler processes the source code and translates it to an executable form by performing a sequence of transformations until it generates a `CompiledMethod` instance.
+A parsing step translates the source code into a tree data structure called an _abstract syntax tree_, a name resolution step attaches semantics to identifiers, a lowering step creates a control flow graph representation, and finally a code generation step produces the `CompiledMethod` object containing the code and meta-data required for execution.
+A compiled method is structured around a method header, a literal frame, a bytecode sequence and a method trailer as shown in Figure *@methodshape@*.
+
+![Structure of a compiled method.%anchor=methodshape&width=60](figures/compile_method_shape.pdf)
+
+
+#### Literals and the Literal Frame
+
+Pharo code includes all sort of literal values that need to be known and accessed at runtime.
+For example, Listing *@exampleMethod@* shows a method using integers, arrays, and strings.
+
+```caption=Source code with several literals&anchor=exampleMethod
+MyClass >> exampleMethod
+    self someComputation > 1
+		ifTrue: [ ^ #() ]
+		ifFalse: [ self error: 'Unexpected!' ]
+```
+
+In Pharo, literal values are stored each in different reference slot in a method.
+The collection of reference slots in a method is called the _literal frame_.
+Remember from the object representation chapter, that `CompiledMethod` instances are variable objects that contain a variable reference part and a variable byte indexable part.
+
+- Commonly, the literal frame contains references to numbers, characters, strings, arrays and symbols used in a method.
+- In addition, when referencing globals (and thus classes), class variables and shared variables, the literal frame references their corresponding associations.
+- Finally, the literal frame references also runtime meta-data such as flags or message selectors required to perform message-sends.
+
+It is worth noticing that the literal frame poses no actual limitation to what type of object it references.
+Such capability is rarely exploited when a method's behavior cannot be expressed in Pharo syntax.
+This is for example the case of foreign function interface methods that are compiled by a separate compiler and store foreign function meta-data as literals.
+
+#### Method Header
+
+All methods contain at least one literal named the _method header_, referencing an immediate integer representing a mask of flags.
+
+- **Encoder:** a bit indicating if the method uses the default bytecode set or not.
+- **Primitive:** a bit indicating if the method has a primitive operation or not.
+- **Number of parameters:** 4 bits representing the number of parameters of the method.
+- **Number of temporaries:** 6 bits representing the number of temporary variables declared in the method.
+- **Number of literals:** 15 bits representing the number of literals contained in the method.
+- **Frame size:** 1 bit representing if the method will require small or large frame sizes.
+
+The encoder and primitive flags will be covered later in this chapter.
+The frame size will be explored in the context reification chapter.
+
+#### Method Trailer
+
+Following the method literals, a `CompiledMethod` instance contains a byte-indexable variable part, containing bytecode instructions.
+However, it is of common usage in Pharo to make this byte-indexable part slightly larger to contain trailing meta-data after a method's bytecode.
+Such meta-data is called the _method trailer_.
+
+The method trailer can be arbitrarily long, encoding binary data such as integers or encoded text.
+Pharo usually uses the trailer to encode the offset of the method source code in a file.
+It has, however, also been used to encode a method source code in utf8 encoding, or zipped.
 
 ### Classes
 

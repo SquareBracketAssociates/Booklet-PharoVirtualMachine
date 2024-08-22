@@ -1,9 +1,0 @@
- 
-instructionPtr  -----> <01> pushRcvr 1 - push the value of the receiver's second instance variable (corner )
-                       <7E> send 'x' - send the unary message x	
-                       <00> pushRcvr 0 - push the value of the receiver's first instance variable (origin )
-                       <7E> send 'x' - send the unary message x
-                       <61> send '-' - send the binary message -
-                       <5C> returnTop
-
-
