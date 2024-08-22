@@ -117,10 +117,32 @@ And it works pretty well.
 
 Although the interpreter performs pretty well in modern hardware, there is a non-negligible performance overhead posed by the interpretation process itself.
 Thus, commonly executed methods are compiled to machine code using a just-in-time (JIT) compiler named _cogit_, and the resulting machine code is stored in a native code cache.
+The Cogit JIT compiler is a JIT compiler implementing peephole optimizations through abstract interpretation, and using an x86-inspired intermediate representation with fixed virtual registers.
 
+The JIT compiler has a significant impact in the overall VM design.
+The interpreter and the execution stack need to be redesigned to allow transferring the control between native machine code and the interpreter.
+Think: interpreted methods could call machine code methods, and vice-versa.
 
 #### What's not in the picture
 
-Image loading, profiling support
+The picture above shows the core components of the VM and how they relate each other.
+There are however, other subtle and important parts of the runtime that are not there to simplify the picture.
+To name some:
+- **Image loading details:** the different snapshot formats and how they are managed.
+- **Profiling support:** allowing performance measures of Pharo code.
+- **Concurrency:** green threads and scheduling.
+- **Debugging and exception support:** on-demand reification of contexts, stack unwinds.
+- **System library support:** native code interfacing with system calls to manage, _e.g.,_ files and sockets.
 
 ### How to Approach this Book
+
+This book is organized in _almost standalone_ chapters.
+Altough we did our best to keep chapters independent of each other, understanding how objects are represented in memory could be important to understand some of the garbage collector internals.
+Because of this, the book is organized around a set of critical paths and peripheral chapters.
+
+Critical paths give an idea of dependencies between chapters.
+Typical critical paths are the one to get into the JIT compiler, or the memory manager.
+Peripheral chapters explain _optional(?)_ concepts and details, that extends your knowledge in an orthogonal way.
+This is for example the case of the VM debugging support and block closures.
+
+Of course, feel free to read them in any order you may like.

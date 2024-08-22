@@ -23,9 +23,6 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 
 <!inputFile|path=Chapters/1-ObjectStructure/objectStructure.md!>
 <!inputFile|path=Chapters/2-MethodsAndBytecode/methodsbytecode.md!>
-
-# Bytecode Execution
-
 <!inputFile|path=Chapters/3-SemanticsByExample/basicsOnExecution.md!>
 <!inputFile|path=Chapters/4-Interpreter/theInterpreter.md!>
 
@@ -33,3 +30,24 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 
 <!inputFile|path=Chapters/5-DeeperBytecode/methodsbytecode.md!>
 <!inputFile|path=Chapters/6-InterpreterOptimizations/interpreteroptimizations.md!>
+
+# The Memory Manager
+
+<!inputFile|path=Chapters/GarbageCollector/memoryStructure.md!>
+<!inputFile|path=Chapters/GarbageCollector/newSpace.md!>
+<!inputFile|path=Chapters/GarbageCollector/oldSpace.md!>
+<!inputFile|path=Chapters/GarbageCollector/freeList.md!>
+<!inputFile|path=Chapters/GarbageCollector/ephemerons.md!>
+
+# JIT Compilation
+
+<!inputFile|path=Chapters/CallingConventions/CallingConventions.md!>
+<!inputFile|path=Chapters/JIT/stackStructure.md!>
+
+## Slang
+@cha:Slang
+Just here so that we can refer to it
+
+# Exercises
+
+<!inputFile|path=Chapters/HandonsStatic/handonsstatic.md!>

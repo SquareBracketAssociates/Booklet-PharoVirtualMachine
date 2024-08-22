@@ -16,3 +16,9 @@ jobs:
     uses: SquareBracketAssociates/BookBuilderDashboard/.github/workflows/main.yml@newVersionOfPillar
     with:
       bookname: vm-wip
+      inputfile: index.md
+
+    uses: SquareBracketAssociates/BookBuilderDashboard/.github/workflows/main.yml@newVersionOfPillar
+    with:
+      bookname: vm-wip-part1
+      inputfile: index-part1.md
