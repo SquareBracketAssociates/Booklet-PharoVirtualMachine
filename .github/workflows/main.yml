@@ -17,9 +17,23 @@ jobs:
     with:
       bookname: vm-wip
       inputfile: index.md
+      autorelease: false
 
   partone:
     uses: SquareBracketAssociates/BookBuilderDashboard/.github/workflows/main.yml@newVersionOfPillar
     with:
       bookname: vm-wip-part1
       inputfile: index-part1.md
+      autorelease: false
+      
+  upload:
+    needs: [fullbook, partone]
+    steps:
+    - uses: actions/download-artifact@v4
+    - uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: true
+        title: "Development Build"
+        files: "*.pdf"
