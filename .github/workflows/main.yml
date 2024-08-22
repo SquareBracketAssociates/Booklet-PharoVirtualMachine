@@ -13,6 +13,6 @@ on:
 
 jobs:
   build:
-    uses: SquareBracketAssociates/BookBuilderDashboard/.github/workflows/main.yml@newVersionOfPillar
+    uses: SquareBracketAssociates/BookBuilderDashboard/.github/workflows/main.yml@guillep-patch-1
     with:
       bookname: vm-wip
