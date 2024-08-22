@@ -26,11 +26,16 @@ jobs:
       inputfile: index-part1.md
       autorelease: false
       
-  upload:
+  release:
     runs-on: ubuntu-latest
     needs: [fullbook, partone]
     steps:
     - uses: actions/download-artifact@v4
+    - run: ls -R
+    - uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+    - run: ls -R
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
