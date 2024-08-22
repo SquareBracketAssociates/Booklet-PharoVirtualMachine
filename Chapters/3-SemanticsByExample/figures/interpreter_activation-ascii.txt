@@ -1,7 +1,14 @@
- 
-IP  --> <01> pushRcvr 1 - push the receiver's 2nd instance variable (corner )
-        <7E> send 'x' - send the message x	
-        <00> pushRcvr 0 - push  the receiver's 1st instance variable (origin ) 
-        <7E> send 'x' - send the message x
-        <61> send '-' - send the message -
-        <5C> returnTop
+                                       +-context -----+
+-> 28 "<00> push instance variable: x" | "Point>>#x"  |
+   29 "<5C> return top of stack"       | "pc = 28"    |
+                                       | receiver  ---+-> 1@2
+                                       | temps - - - -|
+                                       | empty        |
+                                       | stack - - - -|
+                                       | empty        |
+                                       | - - - - - - -|
+                                       | sender    -+ |
+                                       +------------+-+
+                                                    |
+                                                    v
+                                                   ...

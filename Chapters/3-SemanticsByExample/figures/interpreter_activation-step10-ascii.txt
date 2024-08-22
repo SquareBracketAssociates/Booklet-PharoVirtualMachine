@@ -1,0 +1,16 @@
+      "                              "                         .->+-----+ +-----+
+      "                              " +-context ------------+ |  | 1@2 | | 3@4 |
+   25 "push instance variable: corner" | "Rectangle>>#width" | |  +-----+ +-----+
+   26 "send: x                       " | "pc = 30"           | '-------------. ^
+   27 "pop into temporary: cornerX   " | receiver          --+-> +---------+ | |
+   28 "push instance variable: origin" |- temps - - - - - - -|   | origin -+-' |
+   29 "send: x                       " | "originX = nil"     |   | corner -+---'
+-> 30 "pop into temporary: originX   " | "cornerX = 3"       |   +---------+
+   31 "push temporary: cornerX       " |- stack - - - - - - -|
+   32 "push temporary: originX       " | 1                   | 
+   33 "send: -                       " |- - - - - - - - - - -|
+   34 "returnTop                     " | sender           -+ |
+      "                              " +-------------------+-+
+      "                              "                     |
+      "                              "                     v
+      "                              "                    ...

@@ -23,10 +23,13 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 
 <!inputFile|path=Chapters/1-ObjectStructure/objectStructure.md!>
 <!inputFile|path=Chapters/2-MethodsAndBytecode/methodsbytecode.md!>
+
+# Bytecode Execution
+
 <!inputFile|path=Chapters/3-SemanticsByExample/basicsOnExecution.md!>
 <!inputFile|path=Chapters/4-Interpreter/theInterpreter.md!>
-
-# Optimizations
-
 <!inputFile|path=Chapters/5-DeeperBytecode/methodsbytecode.md!>
-<!inputFile|path=Chapters/6-InterpreterOptimizations/interpreteroptimizations.md!>
+
+%# Optimizations
+
+%<!inputFile|path=Chapters/6-InterpreterOptimizations/interpreteroptimizations.md!>
