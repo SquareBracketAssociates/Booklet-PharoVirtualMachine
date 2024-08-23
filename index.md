@@ -17,35 +17,35 @@ _Acknowledgements._ This work is supported by Ministry of Higher Education and R
 The work is supported by I-Site ERC-Generator Multi project 2018-2022. We gratefully acknowledge the financial support of the Métropole Européenne de Lille.
 This work is also supported by the Action Exploratoire Alamvic led by G. Polito and S. Ducasse.
 
-<!inputFile|path=Chapters/0-RuntimeSystemOverview/runtime.md!>
+<!inputFile|path=Part0-Preamble/0-RuntimeSystemOverview/runtime.md!>
 
 # The Basics
 
-<!inputFile|path=Chapters/1-ObjectStructure/objectStructure.md!>
-<!inputFile|path=Chapters/2-MethodsAndBytecode/methodsbytecode.md!>
+<!inputFile|path=Part0-Preamble/1-ObjectStructure/objectStructure.md!>
+<!inputFile|path=Part1-InterpreterAndBytecode/2-MethodsAndBytecode/methodsbytecode.md!>
 
 # Bytecode Execution
 
-<!inputFile|path=Chapters/3-SemanticsByExample/basicsOnExecution.md!>
-<!inputFile|path=Chapters/4-Interpreter/theInterpreter.md!>
+<!inputFile|path=Part1-InterpreterAndBytecode/3-SemanticsByExample/basicsOnExecution.md!>
+<!inputFile|path=Part1-InterpreterAndBytecode/4-Interpreter/theInterpreter.md!>
 
 # Optimizations
 
-<!inputFile|path=Chapters/5-DeeperBytecode/methodsbytecode.md!>
-<!inputFile|path=Chapters/6-InterpreterOptimizations/interpreteroptimizations.md!>
+<!inputFile|path=Part1-InterpreterAndBytecode/5-DeeperBytecode/methodsbytecode.md!>
+<!inputFile|path=Part1-InterpreterAndBytecode/6-InterpreterOptimizations/interpreteroptimizations.md!>
 
 # The Memory Manager
 
-<!inputFile|path=Chapters/GarbageCollector/memoryStructure.md!>
-<!inputFile|path=Chapters/GarbageCollector/newSpace.md!>
-<!inputFile|path=Chapters/GarbageCollector/oldSpace.md!>
-<!inputFile|path=Chapters/GarbageCollector/freeList.md!>
-<!inputFile|path=Chapters/GarbageCollector/ephemerons.md!>
+<!inputFile|path=Part3-MemoryManagement/GarbageCollector/memoryStructure.md!>
+<!inputFile|path=Part3-MemoryManagement/GarbageCollector/newSpace.md!>
+<!inputFile|path=Part3-MemoryManagement/GarbageCollector/oldSpace.md!>
+<!inputFile|path=Part3-MemoryManagement/GarbageCollector/freeList.md!>
+<!inputFile|path=Part3-MemoryManagement/GarbageCollector/ephemerons.md!>
 
 # JIT Compilation
 
-<!inputFile|path=Chapters/CallingConventions/CallingConventions.md!>
-<!inputFile|path=Chapters/JIT/stackStructure.md!>
+<!inputFile|path=Part2-JIT/CallingConventions/CallingConventions.md!>
+<!inputFile|path=Part2-JIT/JIT/stackStructure.md!>
 
 ## Slang
 @cha:Slang
@@ -53,4 +53,4 @@ Just here so that we can refer to it
 
 # Exercises
 
-<!inputFile|path=Chapters/HandonsStatic/handonsstatic.md!>
+<!inputFile|path=Part4-Tutorials/HandonsStatic/handonsstatic.md!>

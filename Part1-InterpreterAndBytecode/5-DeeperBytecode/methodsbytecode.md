@@ -352,12 +352,13 @@ Some of the most notable instructions are:
 
 ### Conclusion
 
-In this chapter we studied how the Pharo virtual machine represents code.
-The Pharo VM defines a stack machine: computation is expressed by manipulating a stack with push and pop operations.
-Code is organized in methods. Methods contain at most one primitive, a sequence of bytecode instructions and a list of literal values.
+In this chapter we studied the actual encoding of Pharo instructions.
+Moreover, we explored many optimizations that can be done at the level of bytecode encoding.
 
-We explored many optimizations that can be done at the level of bytecode encoding.
-Encoding optimizations help make methods shorter by having smaller bytecode sequences and less method literals.
+- Pharo's bytecode set has a variable encoding with instructions taking between 1 and 3 bytes
+- Encoding optimizations make methods shorter by having smaller bytecode sequencesx and less method literals
+- common bytecode instructions can be shortened and made special instructions, avoiding expensive literals and arguments
+- common bytecode sequences can be combined into (shorter!) super instructions too
 
 In the following chapters we will study the implementation of the Pharo interpreter and several of its portable optimizations.
 In later chapters we will study low-level optimizations of the interpreter thanks to the Slang framework that applies indirect threading, inlinings, and variable autolocalization.

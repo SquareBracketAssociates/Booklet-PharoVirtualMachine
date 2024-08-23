@@ -158,3 +158,12 @@ If the check succeeds, the primitive performs its operation and returns without 
 This first execution path is the _fast path_.
 If the check fails, the primitive fails and the method's fallback bytecode implements the slower type conversion for the other type combinations.
 
+
+### Conclusion
+
+In this chapter we studied how the Pharo virtual machine represents code.
+- The Pharo VM defines a stack machine: computation is expressed by manipulating a stack with push and pop operations. These operations are called bytecode instructions and primitive instructions.
+- Code is organized in methods. Methods contain at most one primitive, a sequence of bytecode instructions and a list of literal values.
+- bytecode instructions manipulating variables carry semantic information about them: there are special instructions for instance variables, class variables and temporary variables. This allows the VM to concentrate on the execution and not to do name analysis at runtime to guess what kind of variable is each name
+- primitive instructions can fail. If they succeed in their computation they pop their arguments and push the result. If they fail, they leave the stack untouched and return an error code.
+- primitive methods make a strong distinction between slow and fast paths: in the fast path they execute the primitive instruction. If it was a success, execution continues in the sender. Otherwise, the method's bytecode is executed.
