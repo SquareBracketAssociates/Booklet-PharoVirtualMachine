@@ -132,6 +132,15 @@ These special objects will be further discussed in the chapters about memory man
 **CompiledMethod.** Compiled methods are variable objects that do not follow the conventions above.
 They contain a word sized variable part storing object literals, followed by a 1-byte variable part storing _bytecode_ instructions.
 
+**Contexts.** Contexts are variable objects. However, they are actually only used in two sizes, small with 16 slots and large with 64 slots. The size to use is determined by the maximum stack space required by the executed method, determined at bytecode compilation time.
+
+```
+CompiledMethod>>frameSize
+    (self header noMask: 16r20000)
+        ifTrue:  [^ SmallFrame]
+        ifFalse: [^ LargeFrame]
+```
+
 #### Representing Objects in Memory
 
 Objects in Pharo are represented as a contiguous memory region with space for a header and data slots.
@@ -344,6 +353,13 @@ The header has been designed so that commonly accessed fields are aligned to a b
 This design largely simplifies the decoding of the header, which boils down to a `load` and a `bit-and` instruction sequence.
 This simplifies the JIT compiler and generates better-quality machine code.
 
+**Design Note: Redundancy for locality.**
+For those readers that know already the this design, or for those that are coming back here after reading Section *@fig:classes@*, you may have noticed that the `object format` field is duplicated between a class and its instances.
+Indeed, classes contain the same field in their meta-data, and that field is copied to the instances during allocation.
+Such redundancy is justified by the _locality property_.
+The class could be far away in memory from its instance, and traversing the memory to find it is generally an expensive operation.
+Thus, having the piece of information directly on the object avoids the VM to fetch the object's class for every operation to do on it.
+
 #### Large Objects and the Overflow Header
 @sec:large_objects
 
@@ -484,8 +500,31 @@ Pharo usually uses the trailer to encode the offset of the method source code in
 It has, however, also been used to encode a method source code in utf8 encoding, or zipped.
 
 ### Classes
+@sec:classes
 
-TODO!
+Classes are special (meta-)objects that represent object behavior and allow us to allocate their instances.
+Classes are, maybe surprisingly for some of you, normal fixed-size objects.
+However, not all fixed-size objects can be classes!
+
+Classes must respect a contract to be considered as such (and to work properly, of course).
+Thus, any fixed-size object respecting this contract can be used as a class.
+Indeed, the VM expects that classes have at least 3 reference slots, which are in order:
+- the class superclass, with a reference to another class, or `nil` if at the top of the hierarchy
+- the class method dictionary, with a reference to a `MethodDictionary` instance, or `nil` to make `cannotInterpret:` intercession as explained in the interpreter chapter
+- the class format, a small integer composing flags with meta-data
+
+The class format encodes the number of fixed slots in its instances, and the kind of object to create.
+Both these bit fields will then be copied into the object header when an object is intantiated.
+
+![The class format encodes the object format and the number of slots.](figures/classformat.pdf)
+
+**Design Note: Precrunched redundant information.**
+Notice that having the number of slots of an object is actually redundant.
+The VM could iterate a class hierarchy, fetch the list of instance variables and sum their sizes.
+That, would turn object instantiation into a very expensive operation.
+Instead, that piece of information is pre-computed and stored in the `format` slot when a class is created.
+The drawback? If we add or remove a slot definition from a class, we need to recompute this number.
+We were rebuilding the class anyway, and classes change much less often that objects are instantiated, so the price is well paid.
 
 ### Conclusion
 
