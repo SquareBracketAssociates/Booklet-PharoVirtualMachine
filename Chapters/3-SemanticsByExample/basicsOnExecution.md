@@ -74,6 +74,11 @@ With these simplifications, we will show methods as follows:
 	29 <5C> return top of stack
 ```
 
+### Execution Model
+
+Now that we have a grasp on how bytecodes are represented, we need to understand how execution is handled before getting into a concrete example.
+This section introduces method contexts, or contexts for short, an abstraction that represents a method execution.
+Method context model the state of the execution of a single method, and combined turn into a _call stack.
 
 #### Contexts
 
@@ -112,7 +117,7 @@ Executing bytecode follows, inspired by how actual hardward works, a fetch-decod
 2. The read byte is decoded, and mapped to the instruction to execute.
 3. Finally, the instruction is executed, and the program counter is set to the next instruction
 
-### Step by Step method Execution
+### Step by Step Method Execution by Example
 
 Let's consider the following expression:
 
@@ -219,3 +224,12 @@ The method context will reference the method to execute to `Point>>-`, the messa
 
 
 ### Conclusion
+
+This chapter presented a high level overview of bytecode execution:
+- bytecode is executed one after the other in a method
+- jump instructions change the sequential aspect of execution and move the program counter to an arbitrary instruction
+- execution state is stored in contexts containing a stack and temporary variables. Values are stored into temporary variables using store instructions, and the results of subexpressions are stored in the stack
+- contexts also store the program counter, useful to follow the execution and suspend a method execution
+- a message send suspends the current context and create a new context for the called method
+- primitive methods execute a primitive instruction on the context of the sender, without creating a context. Only if the primitive fails a context is created and the fallback bytecode is executed
+- from the perspective of the _sender_ context, the execution of a message send is a black box: a message send pops the arguments, and pushes the results. The sender does not need to know the implementation of the called method, whether it is a primitive method or not
