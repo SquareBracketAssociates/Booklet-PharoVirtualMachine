@@ -184,34 +184,34 @@ Now we are back executing our method `Rectangle>>#width`, and we are ready to re
 
 **Step 5: Popping and Storing into Temporary Variables.**
 
-Back in `Rectangle>>#width`, the next instruction pops the top of the stack (oh this is the return value of the `x` message send!) and stores it in the temporary variable `cornerX`. Notice that this instruction stores the value and pops it to the stack all at once.
+Back in `Rectangle>>#width`, the next instruction pops the top of the stack (oh this is the return value of the `x` message send!) and stores it in the temporary variable `cornerX` as shown in Figure *@activation-step06@*. Notice that this instruction stores the value and pops it to the stack all at once.
 Other instructions allow one to do stores without pops, or just pops without stores, or even pop combined with other instructions.
 Such instructions will be explained in the chapter about bytecode and interpreter optimizations.
 
-![.](figures/interpreter_activation-step06.pdf)
+![The results of the message `x` are stored in the temporaries `originX` and `cornerX`. %anchor=activation-step06&width=80](figures/interpreter_activation-step06.pdf)
 
 
 **Steps 6 through 12: Repeat with the Rectangle's origin.**
 
 The next steps are similar to the previous ones, but done with the `origin` instance variable.
-The method pushes the `origin` instance variable value (1@2) to the stack, sends it the message `x`, and when it returns it pops the result and stores it in the temporary variable `originX`.
+The method pushes the `origin` instance variable value (1@2) to the stack, sends it the message `x`, and when it returns it pops the result and stores it in the temporary variable `originX` as shown in Figure *@activation-step06@*
 
-![.](figures/interpreter_activation-step11.pdf)
+![ Before pushing the temporaries to the stack before sending the message `-`.%anchor=activation-step11&width=80](figures/interpreter_activation-step11.pdf)
 
 Now we are ready for the last part of this method: the subtraction!
-But before executing the subtraction, we need to put all of its operands in the stack.
-Instructions at program counters 31 and 32 push the values of the temporary variables and leave us with the following context.
+But before executing the subtraction, we need to put all of its operands in the stack as shown in Figure *@activation-step11@*.
+Instructions at program counters 31 and 32 push the values of the temporary variables and leave us with the following context as shown in Figure *@activation-step1213@*.
 
-![.](figures/interpreter_activation-step1213.pdf)
+![Before sending the message `-`. %anchor=activation-step1213&width=90](figures/interpreter_activation-step1213.pdf)
 
 #### Step 13: The Subtraction Primitive
 
 At program counter 33 we perform the message send `-`.
 Again, the send finds the receiver and looks up the method to execute.
-Here, the subtraction is a binary selector with one argument, thus the receiver is the value just before the top of the stack, the small integer 2.
+Here, the subtraction is a binary selector with one argument, thus the receiver is the value just before the top of the stack, the small integer 2 as shown in Figure.
 Thus, looking up the selector `-` from the class `SmallInteger`, yields the method `SmallInteger>>-`.
 
-Differently from the previous methods, `SmallInteger>>-` is a primitive method:
+Differently from the previous methods, `SmallInteger>>#-` is a primitive method:
 
 ```
 SmallInteger >> - aNumber
@@ -219,15 +219,15 @@ SmallInteger >> - aNumber
 	^super - aNumber
 ```
 
-Primitive methods work differently from normal methods: they execute directly on the caller context (our `Rectangle>>width` context).
+Primitive methods work differently from normal methods: they execute directly on the caller context (our `Rectangle>>#width` context).
 If the primitive instruction succeeds, the primitive operands are popped and the result is pushed.
-This is what happens in this case, `3 - 1` is a properly working subtraction that results in the value 2.
+This is what happens in this case, `3 - 1` is a properly working subtraction that results in the value 2 as shown in Figure **.
 
-![.](figures/interpreter_activation-step14.pdf)
+![ The primitive succeeds - it did not create a new context but worked directly in the context of `Point>>#width`.%anchor=activation-step14&width=90](figures/interpreter_activation-step14.pdf)
 
 If the primitive instruction fails, we proceed to execute the method normally.
 The instruction pops the receiver (and arguments that we did not have here) from the stack, and creates a new method context.
-The method context will reference the method to execute to `Point>>-`, the message receiver, initialize its program counter to the first instruction that will execute `super - aNumber`.
+The method context will reference the method to execute to `Point>>#-`, the message receiver, initialize its program counter to the first instruction that will execute `super - aNumber`.
 
 
 ### Conclusion
