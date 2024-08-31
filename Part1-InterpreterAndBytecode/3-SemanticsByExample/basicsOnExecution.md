@@ -107,7 +107,7 @@ The value stack stores the results of subexpressions, allowing an arbitrary numb
 In Figure *@activation1@* we show the list of bytecodes in the method and the context object.
 An arrow points to the next instruction to execute in the instruction list.
 
-![A context to represent the execution of method Point>>#x. %anchor=activation1](figures/interpreter_activation.pdf)
+![A context to represent the execution of method Point>>#x. %width=70&anchor=activation1](figures/interpreter_activation.pdf)
 
 
 #### Understanding Bytecode Execution
@@ -118,6 +118,9 @@ Executing bytecode follows, inspired by how actual hardward works, a fetch-decod
 3. Finally, the instruction is executed, and the program counter is set to the next instruction
 
 ### Step by Step Method Execution by Example
+
+![ A context ready to execute the method `Point>>#width`. %width=80&anchor=activation-step01](figures/interpreter_activation-step01.pdf)
+
 
 Let's consider the following expression:
 
@@ -134,15 +137,17 @@ This context is initialized as follows (as shown in Figure *@activation-step01@*
 - it starts with an empty stack
 - its sender is the context sending the `((1@2) corner: (3@4)) width` message, avoided in the example for simplicity.
 
-![ . %anchor=activation-step01](figures/interpreter_activation-step01.pdf)
+
+
+
 
 **Step 1: Pushing Values to the Stack.**
 
 The first instruction in the method `Rectangle>>#width` pushes to the stack the value of the `origin` instance variable.
-After its execution, the stack contains a new element: a reference to the object `3@4`.
+After its execution, the stack contains a new element: a reference to the object `3@4` (as shown in Figure *@activation-step02@*).
 Moreover, the program counter increases, indicating that the next instruction to execute is a message send.
 
-![.](figures/interpreter_activation-step02.pdf)
+![After executing the first instruction, the context stack contains a reference to the origin instance variable (e.g. `3@4`).%width=80&anchor=activation-step02](figures/interpreter_activation-step02.pdf)
 
 
 **Step 2: Message Sends.**
@@ -154,30 +159,32 @@ In this case, since `x` is a unary message without arguments, the receiver is th
 Thus, looking up the selector `x` from the class `Point`, yields the method `Point>>x`.
 
 Then, the instruction pops the receiver (and arguments that we did not have here) from the stack, and creates a new method context.
-The method context will reference the method to execute to `Point>>x`, the message receiver, initialize its program counter to the first program counter of the method (28), initialize all temps to `nil` (none in this case), starts with an empty stack, and sets as sender the previous execution context.
+As shown in Figure *@activation-step03@*, the method context refers to the method to execute to `Point>>#x`, the message receiver, initialize its program counter to the first program counter of the method (28), initialize all temps to `nil` (none in this case), starts with an empty stack, and sets as sender the previous execution context.
 
-![.](figures/interpreter_activation-step03.pdf)
+![ A new context is created for the execution of message `x` sent to the object popped of the stack of `Rectangle>>#width` context. The executing method is `Point>>#x`. `Rectangle>>#width` instruction pointer refers to the next instruction to execute once `x` message will finish. %anchor=activation-step03&width=80](figures/interpreter_activation-step03.pdf)
 
-Now the executing method is `Point>>x`, with receiver `3@4`.
+Now the executing method is `Point>>#x`, with receiver `3@4`.
 
 **Steps 3 and 4: Push and Return.**
 
-The first bytecode in the method pushes the value of the instance variable `x` of our point to current context's stack.
+The first bytecode in the method `Point>>#x` pushes the value of the instance variable `x` of `3@4` to _current_ context's stack (as shown in Figure *@activation-step04@*).
 
-![.](figures/interpreter_activation-step04.pdf)
+![Starting the execution of  `Point>>#x`: pushing the value of `x` to the stack. %anchor=activation-step04&width=80](figures/interpreter_activation-step04.pdf)
 
 The last instruction in this method returns the control to the sender context.
 The return value of this instruction is the top of the stack (3).
 When the return instruction gets executed, the current execution context gets discarded, and its sender becomes (again) the current execution context.
-The return value is then pushed to the stack of the new current context.
+The return value is then pushed to the stack of the new current context as shown in Figure *@activation-step05@*.
 
-![.](figures/interpreter_activation-step05.pdf)
+![When the method `Point>>#x` returns a value, the context representing its execution is discarded and the execution resumes on the previous context. %anchor=activation-step05&width=80](figures/interpreter_activation-step05.pdf)
 
-Now we are back executing our method `Rectangle>>width`, and we are ready to restart the execution from where it was suspended: the program counter 27.
+Now we are back executing our method `Rectangle>>#width`, and we are ready to restart the execution from where it was suspended: the program counter 27.
+
+{!comment=Stef here!}
 
 **Step 5: Popping and Storing into Temporary Variables.**
 
-Back in `Rectangle>>width`, the next instruction pops the top of the stack (oh this is the return value of the `x` message send!) and stores it in the temporary variable `cornerX`. Notice that this instruction stores the value and pops it to the stack all at once.
+Back in `Rectangle>>#width`, the next instruction pops the top of the stack (oh this is the return value of the `x` message send!) and stores it in the temporary variable `cornerX`. Notice that this instruction stores the value and pops it to the stack all at once.
 Other instructions allow one to do stores without pops, or just pops without stores, or even pop combined with other instructions.
 Such instructions will be explained in the chapter about bytecode and interpreter optimizations.
 
