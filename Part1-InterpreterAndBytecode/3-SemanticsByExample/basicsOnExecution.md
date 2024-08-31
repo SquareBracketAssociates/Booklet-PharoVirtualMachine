@@ -3,11 +3,11 @@
 
 This chapter explains how bytecode is executed by the virtual machine in a high-level manner, using examples.
 The idea is to get you used to the stack semantics.
-For this purpose, this chapter will make a first approximation to the concept of execution contexts.
-Execution contexts represent the execution of methods: they hold the values of temporary variables and values pushed to the stack and they allow to suspend the execution of methods by remembering the executed instructions.
+For this purpose, this chapter first approximates the concept of execution contexts.
+Execution contexts represent the execution of methods: they hold the values of temporary variables and values pushed to the stack and they allow one to suspend the execution of methods by remembering the executed instructions.
 
 The interpreter chapter we will explain how these semantics map to the low(er)-level code of the interpreter and the compiler.
-Later, contexts will come back as reflective reifications, allowing Pharo support its powerful debugger!
+Later, contexts will come back as reflective reifications, allowing Pharo to support its powerful debugger!
 
 ### Setting up the Scene
 
@@ -50,7 +50,7 @@ The final instruction, `<5C>`, is the instruction `returnTop`, which returns fro
 	29 <5C> returnTop
 ```
 
-#### Simplifying the Presentation
+### Simplifying the Presentation
 
 During this chapter we will, for pedagogical purposes, avoid explaining the call primitive bytecode.
 Regarding this chapter, such a bytecode is just an optimization that will be explained in later chapters.
@@ -78,7 +78,7 @@ With these simplifications, we will show methods as follows:
 
 Now that we have a grasp on how bytecodes are represented, we need to understand how execution is handled before getting into a concrete example.
 This section introduces method contexts, or contexts for short, an abstraction that represents a method execution.
-Method context model the state of the execution of a single method, and combined turn into a _call stack.
+Method contexts model the state of the execution of a single method, and combined turn into a _call stack_.
 
 #### Contexts
 
@@ -91,10 +91,10 @@ Executing a method requires that we:
 6. remember the caller method execution, to return to it
 
 All this is supported with a simple data structure, that we will call a _context_ that holds onto:
- - the method's program counter containing the next instruction to be executed
- - an array of temporary variables containing the values for each instance variable
- - a stack of values for intermediate expressions
- - a pointer to the caller's context, namely the _sender_, which contains the suspended execution of the caller method
+- the method's program counter containing the next instruction to be executed
+- an array of temporary variables containing the values for each instance variable
+- a stack of values for intermediate expressions
+- a pointer to the caller's context, namely the _sender_, which contains the suspended execution of the caller method
 
 Every time an instruction is executed, the program counter will advance to the next instruction.
 The exception are _jump instructions_, which will make the program counter _jump_ to a specific program counter.
@@ -128,11 +128,11 @@ Let's consider the following expression:
 This expression creates a rectangle object, and sends it the message `width`, activating the method we saw before.
 When the method `Rectangle>>width` gets activated, a context is created for it.
 This context is initialized as follows:
- - it references the method executed
- - its program counter is the first program counter of the method
- - it has one entry for each temporary variable, initialized to `nil`
- - it starts with an empty stack
- - its sender is the context sending the `((1@2) corner: (3@4)) width` message, avoided in the example for simplicity.
+- it references the method executed
+- its program counter is the first program counter of the method
+- it has one entry for each temporary variable, initialized to `nil`
+- it starts with an empty stack
+- its sender is the context sending the `((1@2) corner: (3@4)) width` message, avoided in the example for simplicity.
 
 ![.](figures/interpreter_activation-step01.pdf)
 
@@ -191,8 +191,8 @@ The method pushes the `origin` instance variable value (1@2) to the stack, sends
 
 ![.](figures/interpreter_activation-step11.pdf)
 
-Now we are ready for the last part of this method: the substraction!
-But before executing the substraction, we need to put all of its operands in the stack.
+Now we are ready for the last part of this method: the subtraction!
+But before executing the subtraction, we need to put all of its operands in the stack.
 Instructions at program counters 31 and 32 push the values of the temporary variables and leave us with the following context.
 
 ![.](figures/interpreter_activation-step1213.pdf)
@@ -201,7 +201,7 @@ Instructions at program counters 31 and 32 push the values of the temporary vari
 
 At program counter 33 we perform the message send `-`.
 Again, the send finds the receiver and looks up the method to execute.
-Here, the substraction is a binary selector with one argument, thus the receiver is the value just before the top of the stack, the small integer 2.
+Here, the subtraction is a binary selector with one argument, thus the receiver is the value just before the top of the stack, the small integer 2.
 Thus, looking up the selector `-` from the class `SmallInteger`, yields the method `SmallInteger>>-`.
 
 Differently from the previous methods, `SmallInteger>>-` is a primitive method:
@@ -212,24 +212,24 @@ SmallInteger >> - aNumber
 	^super - aNumber
 ```
 
-Primitive methods work different from normal methods: they execute directly on the caller context (our `Rectangle>>width` context).
+Primitive methods work differently from normal methods: they execute directly on the caller context (our `Rectangle>>width` context).
 If the primitive instruction succeeds, the primitive operands are popped and the result is pushed.
-This is what happens in this case, `3 - 1` is a properly working substraction that results in the value 2.
+This is what happens in this case, `3 - 1` is a properly working subtraction that results in the value 2.
 
 ![.](figures/interpreter_activation-step14.pdf)
 
-If the primitive instruction failed, we proceed to execute the method normally.
+If the primitive instruction fails, we proceed to execute the method normally.
 The instruction pops the receiver (and arguments that we did not have here) from the stack, and creates a new method context.
 The method context will reference the method to execute to `Point>>-`, the message receiver, initialize its program counter to the first instruction that will execute `super - aNumber`.
 
 
 ### Conclusion
 
-This chapter presented a high level overview of bytecode execution:
+This chapter presented a high-level overview of bytecode execution:
 - bytecode is executed one after the other in a method
 - jump instructions change the sequential aspect of execution and move the program counter to an arbitrary instruction
 - execution state is stored in contexts containing a stack and temporary variables. Values are stored into temporary variables using store instructions, and the results of subexpressions are stored in the stack
-- contexts also store the program counter, useful to follow the execution and suspend a method execution
-- a message send suspends the current context and create a new context for the called method
+- contexts also store the program counter, useful for following the execution and suspending a method execution
+- a message send suspends the current context and creates a new context for the called method
 - primitive methods execute a primitive instruction on the context of the sender, without creating a context. Only if the primitive fails a context is created and the fallback bytecode is executed
 - from the perspective of the _sender_ context, the execution of a message send is a black box: a message send pops the arguments, and pushes the results. The sender does not need to know the implementation of the called method, whether it is a primitive method or not
