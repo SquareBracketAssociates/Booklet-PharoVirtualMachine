@@ -50,6 +50,8 @@ The final instruction, `<5C>`, is the instruction `returnTop`, which returns fro
 	29 <5C> returnTop
 ```
 
+You may wonder why the first bytecode index does not start 1 or 0. This is because the bytecode sequence is part of a compiled method and the compiled method contains a memory region to hold some constants such as numbers, message selectors,... This region is called the literal frame. 
+
 ### Simplifying the Presentation
 
 During this chapter we will, for pedagogical purposes, avoid explaining the call primitive bytecode.
@@ -239,4 +241,10 @@ This chapter presented a high-level overview of bytecode execution:
 - contexts also store the program counter, useful for following the execution and suspending a method execution
 - a message send suspends the current context and creates a new context for the called method
 - primitive methods execute a primitive instruction on the context of the sender, without creating a context. Only if the primitive fails a context is created and the fallback bytecode is executed
-- from the perspective of the _sender_ context, the execution of a message send is a black box: a message send pops the arguments, and pushes the results. The sender does not need to know the implementation of the called method, whether it is a primitive method or not
+- from the perspective of the _sender_ context, the execution of a message send is a black box: a message send pops the arguments, and pushes the results. The sender does not need to know the implementation of the called method, whether it is a primitive method or not.
+
+
+### Little todo
+
+- explain briefly why bytecode starts a 25 or so.
+- 
