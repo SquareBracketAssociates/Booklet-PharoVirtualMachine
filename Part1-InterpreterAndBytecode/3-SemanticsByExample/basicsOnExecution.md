@@ -231,16 +231,31 @@ If the primitive instruction fails, we proceed to execute the method normally.
 The instruction pops the receiver (and arguments that we did not have here) from the stack, and creates a new method context.
 The method context will reference the method to execute to `Point>>#-`, the message receiver, initialize its program counter to the first instruction that will execute `super - aNumber`.
 
+### Points to consider
+
+The execution of the method `Point>>#width` illustrates some aspects that a real system will have to address. 
+
+- First the context stack may grow more depending on the level of instructions nesting. When using a contiguous memory region to represent compiled methods (as opposed to use a pointer to a separate data structure) the maximum depth size of the stack should be computed to avoid overflow.
+
+- Second, contexts are a nice abstraction to understand program execution and to represent the execution  for reflective operations but they have drawbacks and because of this the virtual machine uses a different representation called _stack frame_ for normal execution and use contexts for reflective operation such as `thisContext`.
+
+We list here the limits of the context representation:
+
+  - Each time a method sends a message, the receiver and arguments have to be copied to the new context. This is clearly a lost of time. 
+  - The representation of contexts as objects (also called a spaghetti stack), can spread stack elements in different memory location breaking the locality of data that microprocessors use to speed up execution.
+  
+Representing execution elements in contiguous way improves this two drawbacks. 
+
 
 ### Conclusion
 
 This chapter presented a high-level overview of bytecode execution:
-- bytecode is executed one after the other in a method
-- jump instructions change the sequential aspect of execution and move the program counter to an arbitrary instruction
-- execution state is stored in contexts containing a stack and temporary variables. Values are stored into temporary variables using store instructions, and the results of subexpressions are stored in the stack
-- contexts also store the program counter, useful for following the execution and suspending a method execution
+- bytecode is executed one after the other in a method.
+- jump instructions change the sequential aspect of execution and move the program counter to an arbitrary instruction.
+- execution state is stored in contexts containing a stack and temporary variables. Values are stored into temporary variables using store instructions, and the results of subexpressions are stored in the context stack.
+- contexts also store the program counter, which is useful for following the execution and suspending a method execution
 - a message send suspends the current context and creates a new context for the called method
-- primitive methods execute a primitive instruction on the context of the sender, without creating a context. Only if the primitive fails a context is created and the fallback bytecode is executed
+- primitive methods execute a primitive instruction on the context of the sender, without creating a context. Only if the primitive fails a context is created and the fallback bytecode is executed.
 - from the perspective of the _sender_ context, the execution of a message send is a black box: a message send pops the arguments, and pushes the results. The sender does not need to know the implementation of the called method, whether it is a primitive method or not.
 
 
