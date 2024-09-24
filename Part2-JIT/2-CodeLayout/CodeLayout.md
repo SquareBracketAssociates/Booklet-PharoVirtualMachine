@@ -47,6 +47,8 @@ sqInt valueObject;
 
 ```
 
+![ Structure of a method header. %width=50&anchor=methodStructureHeaderWithZoom](methodStructureHeaderWithZoom.png)
+
 
 ### Preamble and Postamble
 
