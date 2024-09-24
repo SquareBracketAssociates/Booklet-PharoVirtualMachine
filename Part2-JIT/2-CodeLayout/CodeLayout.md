@@ -26,28 +26,48 @@ It consists of:
   -  number of literals.
   -  frame size.
 
-  
-Here is the structure that represents the jitted method as shown in Listing *@jitmethodstruc@*.
 
-```language=C&anchor=jitmethodstruc
-This is to show to faouzi
-
-DECL_MAYBE_SQ_GLOBAL_STRUCT;
-sqInt byteSize;
-char *bytes;
-sqInt fmt;
-sqInt fmt2;
-sqInt index;
-usqInt numBytes;
-usqInt numSlots;
-sqInt rcvr;
-char *sp;
-sqInt value;
-sqInt valueObject;
-
-```
 
 ![ Structure of a method header. %width=50&anchor=methodStructureHeaderWithZoom](methodStructureHeaderWithZoom.png)
+
+
+
+### CogMethod in Pharo and C 
+  
+Here is the class `CogMethod` in Pharo that represents the jitted method as shown in Listing *@jitmethodstruc@*.
+This is this class that once generated in C as structure represents jitted methods. 
+
+```
+VMStructType << #CogMethod	slots: {			 #objectHeader .			 #homeOffset .			 #startpc .			 #padToWord .			 #cmNumArgs .			 #cmType .			 #cmRefersToYoung .			 #cpicHasMNUCaseOrCMIsFullBlock .			 #cmUsageCount .			 #cmUsesPenultimateLit .			 #cbUsesInstVars .			 #cmUnusedFlags .			 #stackCheckOffset .			 #blockSize .			 #picUsage .			 #methodObject .			 #methodHeader .			 #selector };	sharedPools: { CogMethodConstants . VMBasicConstants . VMBytecodeConstants };	tag: 'JIT';	package: 'VMMaker'
+```
+
+Once the code is generated we obtain the following C structure in the file CogMethod.h.
+
+
+```language=C&anchor=jitmethodstruc
+typedef struct {
+	sqLong	objectHeader;
+	unsigned		cmNumArgs : 8;
+	unsigned		cmType : 3;
+	unsigned		cmRefersToYoung : 1;
+	unsigned		cpicHasMNUCaseOrCMIsFullBlock : 1;
+	unsigned		cmUsageCount : 3;
+	unsigned		cmUsesPenultimateLit : 1;
+	unsigned		cbUsesInstVars : 1;
+	unsigned		cmUnusedFlags : 2;
+	unsigned		stackCheckOffset : 12;
+	unsigned short	blockSize;
+	unsigned short	picUsage;
+	sqInt	methodObject;
+	sqInt	methodHeader;
+	sqInt	selector;
+ } CogMethod;
+```
+
+### Word about cmUsageCount
+
+Since the code zone is not infinite, it needs to be compacted from time to time. 
+The field `cmUsageCount` uses 3 bits to represent the number of use the jitted method that is used by walking the stack. This field is used to decide which jitted methods can be removed from the code zone.  
 
 
 ### Preamble and Postamble
