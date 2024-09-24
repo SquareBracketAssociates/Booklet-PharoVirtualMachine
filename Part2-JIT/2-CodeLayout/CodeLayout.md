@@ -7,11 +7,11 @@ The input is here.
 ### Code Layout Overview
 
 
-![ Structure of a method. %width=60&anchor=methodStructure1](methodStructure1.png)
+![ Structure of a method. %width=30&anchor=methodStructure1](methodStructure1.png)
 
 ### Meta-Data Header
 
-A header at the address of the cog method, that describes the meta information about the method (see Figure *@ methodStructure1@*. 
+A header at the address of the cog method, that describes the meta information about the method (see Figure *@methodStructure1@*. 
 It makes jitted method objects similar to normal objects, marked as reachable so as to survive garbage collection until it is not needed to free up space, which is much needed since cog methods are stored in a 1,4 mb memory region.
 
 It consists of:
@@ -25,6 +25,28 @@ It consists of:
   -  number of temp variables.
   -  number of literals.
   -  frame size.
+
+  
+Here is the structure that represents the jitted method as shown in Listing *@jitmethodstruc@*.
+
+```language=C&anchor=jitmethodstruc
+This is to show to faouzi
+
+DECL_MAYBE_SQ_GLOBAL_STRUCT;
+sqInt byteSize;
+char *bytes;
+sqInt fmt;
+sqInt fmt2;
+sqInt index;
+usqInt numBytes;
+usqInt numSlots;
+sqInt rcvr;
+char *sp;
+sqInt value;
+sqInt valueObject;
+
+```
+
 
 ### Preamble and Postamble
 
