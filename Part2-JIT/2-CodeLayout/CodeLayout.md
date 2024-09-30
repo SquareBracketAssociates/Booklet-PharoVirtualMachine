@@ -20,9 +20,8 @@ This header is common to Cog method, a PIC, and a megamorphic call site.
 An object header at the address of a jitted method describes the meta information about the method. 
 The method header consists of (see Figure *@methodStructureHeaderWithZoom@*:
 
-- A header. 
-It makes jitted method objects similar to normal objects, marked as reachable so as to survive garbage collection until it is not needed to free up space, which is much needed since jitted methods are stored in a 1,4 mb memory region.
-- flags. For example to describe if we should create a frame or not (tobe investigated)
+- A header that makes jitted method objects similar to normal objects, marked as reachable so as to survive garbage collection until it is not needed to free up space, which is much needed since jitted methods are stored in a 1,4 mb memory region.
+- flags. For example to describe if we should create a frame or not (to be investigated)
 - block size is the size in bytes of the entire method, including the header.
 - block entry offset is the offset from the header address to the start of the method.
 - A pointer to the compiled method it is compiled from. Note that the compiled method has also a pointer to its jit method. 
@@ -62,13 +61,57 @@ The each portion of code is tagged to give direct access to it. For example:
 - You can skip access to the type checking by jumping to the start of the next code block. 
 
 ### CogMethod in Pharo and C 
-  
+
+Now we can see concretely how a jit method is represented. 
+
 Here is the class `CogMethod` in Pharo that represents the jitted method as shown in Listing *@jitmethodstruc@*.
-This is this class that once generated in C as structure represents jitted methods. 
+This is the class that once generated in C as structure, represents jitted methods. 
 
 ```
-VMStructType << #CogMethod	slots: {			 #objectHeader .			 #homeOffset .			 #startpc .			 #padToWord .			 #cmNumArgs .			 #cmType .			 #cmRefersToYoung .			 #cpicHasMNUCaseOrCMIsFullBlock .			 #cmUsageCount .			 #cmUsesPenultimateLit .			 #cbUsesInstVars .			 #cmUnusedFlags .			 #stackCheckOffset .			 #blockSize .			 #picUsage .			 #methodObject .			 #methodHeader .			 #selector };	sharedPools: { CogMethodConstants . VMBasicConstants . VMBytecodeConstants };	tag: 'JIT';	package: 'VMMaker'
+VMStructType << #CogMethod
+	slots: {
+			 #objectHeader .
+			 #cmNumArgs .
+			 #cmType .
+			 #cmRefersToYoung .
+			 #cpicHasMNUCaseOrCMIsFullBlock .
+			 #cmUsageCount .
+			 #cmUsesPenultimateLit .
+			 #cbUsesInstVars .
+			 #cmUnusedFlags .
+			 #stackCheckOffset .  "stackCheckOffset is the entry doing the  stack overflow checks."
+			 #blockSize .
+			 #picUsage . describes how many case are already used
+			 #methodObject .
+			 #methodHeader .
+			 #selector };
+	sharedPools: { CogMethodConstants . VMBasicConstants . VMBytecodeConstants };
+	tag: 'JIT';
+	package: 'VMMaker'
 ```
+
+
+
+The following instance variables represent the flags mentioned above.
+
+```
+			 #cmNumArgs .
+			 #cmType .
+			 #cmRefersToYoung .
+			 #cpicHasMNUCaseOrCMIsFullBlock .
+			 #cmUsageCount .
+			 #cmUsesPenultimateLit .
+			 #cbUsesInstVars .
+			 #cmUnusedFlags .
+```
+
+- stackCheckOffset is the entry doing the  stack overflow checks.
+- blockSize is the size. 
+- picUsage for a PIC describes how many case are already used.
+- methodObject refers to the compiled method and its header.
+- selector
+
+
 
 Once the code is generated we obtain the following C structure in the file CogMethod.h.
 
@@ -93,10 +136,11 @@ typedef struct {
  } CogMethod;
 ```
 
-### Word about cmUsageCount
+### A word about cmUsageCount
 
 Since the code zone is not infinite, it needs to be compacted from time to time. 
 The field `cmUsageCount` uses 3 bits to represent the number of use the jitted method that is used by walking the stack. This field is used to decide which jitted methods can be removed from the code zone.  
+(see MPLR paper if needed).
 
 
 
@@ -107,12 +151,6 @@ Primitives have fiew variations from the normal methods, they have a C implement
 
 - A function written in C, also called plugin .
 - A function written completely in machine code, called Complete primitives.
-- First part of the method body has machine code for fast paths, if the primitive fails executing, in other words the case calling the primitive doesn't corrrespond to a fast path, it continue through the methed to delegate to a c function.
-    
+- First part of the method body has machine code for fast paths, if the primitive fails executing them, in other words the case calling the primitive doesn't corrrespond to a fast path, it continues through the methed to delegate to a c function.
+    ![ Structure of a primitive. %width=30&anchor=methodStructure1](primitiveStructure.png)
 When The primitive code succeeds it returns result before having to create a new frame for the fallback code.
-
-Complete, Unfailing and Unimplemented primitives
-
-
-
-
