@@ -63,9 +63,10 @@ must be boolean, store checks, write barriers...
 
 This memory zone has jitted methods and intrinsics generated at the vm startup like trampolines and associating machine code frame to a context object.
  The figure *@trampolinesInNativeCodeZone@* shows three areas of the native code zone:
-    1. The first one includes native code routines trampolines and enilopmarts. 
-    2. Native functions, otherwise called CogMethods if a method is compiled, CogFullBlocks for block closures, PICs.
-    3. A linked-list of native functions and PICs referencing young objects.
-![ Native code zone. %width=30&anchor=trampolinesInNativeCodeZone](trampolinesMemory.png)
+ 
+    - The first one includes native code routines trampolines and enilopmarts. 
+    - Native functions, otherwise called CogMethods if a method is compiled, CogFullBlocks for block closures, PICs.
+    - A linked-list of native functions and PICs referencing young objects.
+![ Native code zone. %width=50&anchor=trampolinesInNativeCodeZone](trampolinesMemory.png)
 
 When the space is full the compaction is done based on the least recently used naive algorithm to free a quarter of the machine code zone.
