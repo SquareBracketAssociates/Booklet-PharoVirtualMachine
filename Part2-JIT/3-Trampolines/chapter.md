@@ -35,22 +35,22 @@ The c functions are compiled by c compiler, and we don’t know which registers 
 
 #### Calling Interpreter from Interpreter
 
-Natural
+Receiver and parameters are pushed to the stack, then a lookup of the method is done.
 
 #### Calling MC from MC
 
-Natural
+In c the the calling function, which usually starts with main, transfers control of the stack to the called functions by expanding the stack with a frame at the next available high address, the stack shrinks after the called function pops its variables from the stack, giving the result to the caller which continues its execution at the return address.
 
 #### Calling MC from Interpreter
 
-Two ways to jump, by return, by call.
+There are two ways to jump, by return, by call.
 To make the transition the native code calls a trampoline that prepares arguments and aligns the stack, sets up conditions to then call the c code if those are satisfied.
 
 #### Calling Interpreter from MC
 
 Reentering the interpreter, sigjmp, setjump.
 
-VM C runtime calls a reverse trampoline (enilopmart) that prepares arguments and switches to smalltalk stack and returns to the generated method to avoid having reverse trampoline in the stack.
+VM C runtime calls a reverse trampoline (enilopmart) that prepares arguments and switches to smalltalk stack and returns to the generated method not by calling it to avoid having reverse trampoline in the stack.
 
 Reverse trampolines take arguments through the smalltalk stack, pop them and puts them in the right spots (e.g., registers) then returns to the generated method.
 
@@ -63,10 +63,10 @@ must be boolean, store checks, write barriers...
 
 This memory zone has jitted methods and intrinsics generated at the vm startup like trampolines and associating machine code frame to a context object.
  The figure *@trampolinesInNativeCodeZone@* shows three areas of the native code zone:
- 
-    - The first one includes native code routines trampolines and enilopmarts. 
-    - Native functions, otherwise called CogMethods if a method is compiled, CogFullBlocks for block closures, PICs.
-    - A linked-list of native functions and PICs referencing young objects.
+
+    1. The first one includes native code routines trampolines and enilopmarts. 
+    2. Native functions, otherwise called CogMethods if a method is compiled, CogFullBlocks for block closures, PICs.
+    3. A linked-list of native functions and PICs referencing young objects.
 ![ Native code zone. %width=50&anchor=trampolinesInNativeCodeZone](trampolinesMemory.png)
 
 When the space is full the compaction is done based on the least recently used naive algorithm to free a quarter of the machine code zone.
