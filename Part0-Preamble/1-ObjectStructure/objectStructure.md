@@ -23,7 +23,7 @@ For example, 64-bit machines are machines that have a bit width of 64.
 Since nowadays the most common machines are 64-bit machines, we will focus our presentation on them.
 However, the Pharo VM also supports 32-bit machines for compatibility with smaller devices.
 
-![Word size and alignment on 32-bit and 64-bit architectures.](figures/architecture32vs64.pdf width=100&label=fig:32vs64Architectures)
+![Word size and alignment on 32-bit and 64-bit architectures. %width=100&anchor=fig:32vs64Architectures](figures/architecture32vs64.pdf)
 
 Memory is conceptually divided into cells of 1-byte length, each byte using 8 bits.
 Data is manipulated in units that group many bytes together.
@@ -86,7 +86,7 @@ Let's imagine that the word is stored at address a.
 - The highest address -a+7- contains the most significant byte -16r0F- (see Fig. *@fig:LittleEndian@*).
 If we wanted to read the bytes in most-to-least significance order, then we need to iterate it backward: from a+7 to a.
 
-![16rFEDCBA987654321 in 64-bits Little and Big-Endian.](figures/LittleBigEndian.drawio.pdf width=95&label=fig:LittleEndian)
+![16rFEDCBA987654321 in 64-bits Little and Big-Endian.](figures/LittleBigEndian.drawio.pdf width=95&anchor=fig:LittleEndian)
 
 ### Object Layout
 
@@ -148,7 +148,7 @@ The header contains meta data used for decoding the object internals, such as th
 The data slots contain the object slots.
 Figure *@fig:objectLayout@* illustrates the layout of a 3-slot object in both 32-bit and 64-bit architectures.
 
-![Object layout and alignment on 32-bit and 64-bit architectures.](figures/objectLayout.pdf width=90&label=fig:objectLayout)
+![Object layout and alignment on 32-bit and 64-bit architectures.](figures/objectLayout.pdf width=90&anchor=fig:objectLayout)
 
 Each object has a mandatory base header that contains common information such as its class, its size and mutable bits for the Garbage Collector.
 When objects are more than 254 words long, they are considered large, and their actual size is stored in an overflow header that precedes the base header.
@@ -182,7 +182,7 @@ An object `A` references an object `B` with an absolute pointer to `B`'s base he
 Figure *@references@* shows two objects forming a cycle. Each object has a single reference slot pointing to the other.
 References point to the object base header.
 
-![References to heap-allocated objects are pointers to an object's base header.](figures/references.pdf width=90&label=references)
+![References to heap-allocated objects are pointers to an object's base header.](figures/references.pdf width=90&anchor=references)
 
 
 ### Immediate Objects
@@ -236,8 +236,8 @@ Currently, Pharo supports integers, characters and floating point numbers as imm
 In 64-bit architectures, they use the tags `001`, `010` and `100` respectively, as shown in Figure *@fig:64bitsimm@*.
 In 32-bit architectures, floats are not represented as immediate objects, integers present a 1-bit tag `1`, while characters are represented with the 2-bit tag `10`, as shown in Figure *@fig:32bitsimm@*.
 
-![64-bit immediate objects.](figures/64bitsImmediate.pdf width=100&label=fig:64bitsimm)
-![32-bit immediate objects.](figures/32bitsImmediate.pdf width=100&label=fig:32bitsimm)
+![64-bit immediate objects.](figures/64bitsImmediate.pdf width=100&anchor=fig:64bitsimm)
+![32-bit immediate objects.](figures/32bitsImmediate.pdf width=100&anchor=fig:32bitsimm)
 
 The following code shows how we can tag, untag and verify if a value is taggable.
 The next sections explain the specific designs for integers, characters and floats, for 64 and 32 bits.
@@ -305,7 +305,7 @@ However, to accommodate the 64 bits into 61 bits, immediate floats give up 3 bit
 The VM verifies that only immediate floats that do not lose information in this format are encoded as immediates.
 For floats that do not satisfy this constraint, floats use a boxed representation as explained in Section *@sec:boxing@*.
 
-![64 bits `SmallFloat` immediate.](figures/64bitsFloatImmediate.pdf width=100&label=fig:64bitsfloatimm)
+![64 bits `SmallFloat` immediate.](figures/64bitsFloatImmediate.pdf width=100&anchor=fig:64bitsfloatimm)
 
 Figure *@fig:64bitsfloatimm@* shows the structure of a `SmallFloat`.
 The sign bit is moved to the lowest bit of the tagged value, and the highest 3 bits of the exponent are lost.
@@ -333,7 +333,7 @@ This section explains the overall design of the object header and each of its fi
 The base object header contains meta data that the Virtual Machine uses for several purposes such as decoding an object's contents, maintaining garbage collection state, or even doing runtime type checks.
 Regardless of the architecture, the base header is 64 bits length, which means it is 2 words in 32 bits and 1 word in 64 bits as shown in Figure *@fig:objectheader@*.
 
-![Base Object Header.](figures/ObjectHeader.pdf width=100&label=fig:objectheader)
+![Base Object Header.](figures/ObjectHeader.pdf width=100&anchor=fig:objectheader)
 
 This header is composed of several fields, marked with different colors in the figure.
 From the most significant to the least significant bits, the fields are as follows:
@@ -378,7 +378,7 @@ SD: Would be nice to have a diagram
 When an object has an overflow header, the object size field in the base header is marked with the value 255.
 The pseudocode in Listing *@list:numSlots@* shows how to obtain the number of data slots of an object.
 
-```caption=Extracting the number of data slots in an object&label=list:numSlots
+```caption=Extracting the number of data slots in an object&anchor=list:numSlots
 numSlotsOf: objOop
 	numSlots := self baseNumSlotsOf: objOop.
 	^numSlots = 255
@@ -404,7 +404,7 @@ The 12 most significant bits in the class index indicate the page index. The 10 
 Each class stores its own index as its hash.
 This allows the VM to get the index of a class without iterating the entire class table, and to guarantee a unique identity hash per class.
 
-![Finding a class in the class table using its index.](figures/classtable.pdf label=classtable)
+![Finding a class in the class table using its index.](figures/classtable.pdf anchor=classtable)
 
 #### Encoding of the Object Format Field
 @sec:format_encoding

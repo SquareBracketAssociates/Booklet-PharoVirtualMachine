@@ -20,7 +20,7 @@ For example, these are the memory where objects are allocated, the execution sta
 
 Figure *@fig:runtime@* shows a very high-level view of the main VM components.
 
-![Runtime Overview.](figures/runtime-system.pdf?label=fig:runtime)
+![Runtime Overview.](figures/runtime-system.pdf anchor=fig:runtime)
 
 #### The Heap and the Memory Manager
 
