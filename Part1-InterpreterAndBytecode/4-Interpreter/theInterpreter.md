@@ -152,7 +152,7 @@ The fixed fields in a frame are the following:
 - **Flags:** Only available in interpreter frames (as opposed to compiled code frames). It contains a bit mask with the number of arguments, a flag indicating if the context object is set, and a flag indicating if the frame is a method or a closure execution.
 - **Receiver:** The message receiver _i.e.,_ the object referenced by `self` in the current method execution.
 
-![The structure of a stack frame and the interpreter pointers.](figures/interpreter_variables.pdf?label=interpreterVariables)
+![The structure of a stack frame and the interpreter pointers. %anchor=interpreterVariables](figures/interpreter_variables.pdf)
 
 The frame on the top of the stack is said to be _active_.
 The active frame is delimited by the variables `stackPointer` at its top and `framePointer` at its base.
@@ -165,7 +165,7 @@ A frame is suspended by pushing its instruction pointer to the stack before crea
 Thus, the stack can be reconstructed by iterating from the top frame up to its caller's frame start until the end of the stack.
 Notice that the stack pointer needs not to be stored: a suspended frame's stack pointer is the slot that precedes its suspended instruction pointer, which is found relative to its following frame.
 
-![The call stack as a linked lists of frames in the stack.](figures/interpreter_call_stack.pdf?label=interpreter_stack)
+![The call stack as a linked lists of frames in the stack. %anchor=interpreter_stack](figures/interpreter_call_stack.pdf)
 
 
 #### Stack Frame Flags
@@ -178,7 +178,7 @@ The stack frame flags store, from lower to higher bits in the bit field:
 - **isBlock flag:** Only available in non-JIT VMs: It's a 1-byte field used as a boolean, indicating if the frame is for a block closure execution or not. In JIT VMs, this flag is available as as a tag in the method pointer.
 - **Number of backjumps performed in this method:** Only available in JIT VMs. It's a 1-byte field used as a counter, indicating how many backjumps where performed by this method execution during interpretation. If this field goes over a threshold, meaning that a long loop is being interpreted, the JIT compiler decides to compile the method and switch to compiled execution.
 
-![Structure of the frame flags in 64 bits.](figures/interpreter_flags.pdf?label=interpreterFlags)
+![Structure of the frame flags in 64 bits. %anchor=interpreterFlags](figures/interpreter_flags.pdf)
 
 Notice that the frame flags have a first constant field in the range 0-7 with value 1.
 This value is set to make the bitfield look as a tagged small integer, thus guarding the GC walking the stack from interpreting this value as a pointer.
@@ -306,7 +306,7 @@ send #between:and:
 
 When a message send instruction is executed, the stack looks as follows:
 
-![Preparing the Stack to send a message.](figures/interpreter_send.pdf?label=interpreterBeforeSend)
+![Preparing the Stack to send a message. %anchor=interpreterBeforeSend](figures/interpreter_send.pdf)
 
 
 #### Message Send Bytecodes
@@ -399,7 +399,7 @@ The fixed instance variables are:
 - `tally`: the number of occupied slots in the dictionary
 - `array`: the method array
 
-![Method dictionaries implement hash table using a double array.](figures/interpreter_method_dictionary.pdf?label=methoddict)
+![Method dictionaries implement hash table using a double array. %anchor=methoddict](figures/interpreter_method_dictionary.pdf)
 
 Although commonly method dictionaries use selector objects as keys, any object is accepted.
 The search algorithm uses a simple hash function over the keys:
@@ -465,7 +465,7 @@ Interpreter >> lookupMethodInDictionary: dictionary
 
 Super sends only differ from normal sends in the way the method lookup starts.
 Instead of starting from the receiver's class, super sends start from the superclass of the current method's owner class, as shown in the expression `self superclassOf: (self methodClassOf: method).`
-The method's owner class is stored in an association in last literal of the current method.
+The method's owner class is stored in an association in the last literal of the current method.
 
 ```
 Interpreter >> extSendSuperBytecode
@@ -568,7 +568,7 @@ Interpreter >> frameStackedReceiverOffset: theFP
 The following figure shows the stack after a return instruction: the three interpreter variables have been restored destroying the callee frame.
 In the caller's frame, the stack values representing the receiver and arguments have been popped, the return value has been pushed.
 
-![The stack before and after a return instruction.](figures/interpreter_return.pdf?label=return)
+![The stack before and after a return instruction.%anchor=return](figures/interpreter_return.pdf)
 
 #### Calling Convention Summary
 
@@ -743,7 +743,7 @@ Then the original message reification is set up by:
 - popping the arguments from the stack and store them in the new array
 - allocating a message object and storing in it the original selector, argument array and lookup class
 
-![Reifying the message for does not understand.](figures/interpreter_dnu.pdf?label=dnu_message)
+![Reifying the message for does not understand. %anchor=dnu_message](figures/interpreter_dnu.pdf)
 
 Then, the `messageSelector` interpreter variable is overwritten with the `doesNotUnderstand:` selector found in the special objects array, and the lookup is restarted.
 
