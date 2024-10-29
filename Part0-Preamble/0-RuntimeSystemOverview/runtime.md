@@ -20,7 +20,7 @@ For example, these are the memory where objects are allocated, the execution sta
 
 Figure *@fig:runtime@* shows a very high-level view of the main VM components.
 
-![Runtime Overview.](figures/runtime-system.pdf anchor=fig:runtime)
+![Runtime Overview. % anchor=fig:runtime](figures/runtime-system.pdf)
 
 #### The Heap and the Memory Manager
 
@@ -54,13 +54,14 @@ Such information is used to perform operations such as type checks, allocations 
 The runtime system requires, from time to time, to have specific information from the heap:
 - where is the object `nil`?
 - where is the class `Array`?
+- what is the message that should be sent when the method is not found?
 - where is the selector `doesNotUnderstand:`?
 
 Such an interface is cristalized by the _special objects array_.
-The special objects array is an array that references a set of special objects at _well known indices_.
-The following snippet shows a couple of lines of the method `newSpecialObjectsArray` that recreates an array for such purposes.
+The special objects array is an array that references a set of special objects at _well-known indices_.
+The following snippet shows a couple of lines of the method `newSpecialObjectsArray` that recreates an array for such purposes (See Listing *@newSpecialObjectsArray@*).
 
-```caption=A excerpt of the special objects array
+```caption=An excerpt of the special objects array&anchor=newSpecialObjectsArray
 newSpecialObjectsArray
 	| newArray |
 	newArray := Array new: 60.
@@ -101,15 +102,14 @@ objectMemory splObj: SelectorCannotInterpret.
 
 #### The Interpreter and the Lookup Cache
 
-When executing Pharo code, two options are available: it's either executed by the interpreter or by compiled native code.
-The interpreter is the most basic of both, and executes code that has been executed few times or cannot be compiled.
+When executing Pharo code, two options are available: it's either executed by the interpreter or by compiled native code. The interpreter is the most basic one. It executes code that has been executed a few times or cannot be compiled.
 
 When in charge of the execution, the interpreter executes Pharo bytecode, one by one.
 It implements many different optimizations both in the interpreter and in the bytecode set.
-For example, common instructions are specialized and shortened, common sequences are folded, instructions are threaded.
+For example, common instructions are specialized and shortened, common sequences are folded and instructions are threaded.
 
 Moreover, the interpreter contains the implementation and optimization of the method lookup algorithm, key to support message sends.
-The method lookup, a method search in the receiver's hierarchy, is one of the most used and most expensives operations in Pharo programs.
+The method lookup, a method search in the receiver's hierarchy, is one of the most used and most expensive operations in Pharo programs.
 To avoid the expensive lookup, the interpreter uses a lookup cache that stores the results of previous searches.
 And it works pretty well.
 
@@ -119,14 +119,14 @@ Although the interpreter performs pretty well in modern hardware, there is a non
 Thus, commonly executed methods are compiled to machine code using a just-in-time (JIT) compiler named _cogit_, and the resulting machine code is stored in a native code cache.
 The Cogit JIT compiler is a JIT compiler implementing peephole optimizations through abstract interpretation, and using an x86-inspired intermediate representation with fixed virtual registers.
 
-The JIT compiler has a significant impact in the overall VM design.
-The interpreter and the execution stack need to be redesigned to allow transferring the control between native machine code and the interpreter.
-Think: interpreted methods could call machine code methods, and vice-versa.
+The JIT compiler has a significant impact on the overall VM design.
+The interpreter and the execution stack need to be redesigned to allow transferring the control between the native machine code and the interpreter.
+Think: interpreted methods can call machine code methods, and vice-versa.
 
 #### What's not in the picture
 
-The picture above shows the core components of the VM and how they relate each other.
-There are however, other subtle and important parts of the runtime that are not there to simplify the picture.
+Figure *@fig:runtime@* above shows the core components of the VM and how they relate to each other.
+There are, however, other subtle and important parts of the runtime that are not there to simplify the picture.
 To name some:
 - **Image loading details:** the different snapshot formats and how they are managed.
 - **Profiling support:** allowing performance measures of Pharo code.
@@ -137,11 +137,11 @@ To name some:
 ### How to Approach this Book
 
 This book is organized in _almost standalone_ chapters.
-Altough we did our best to keep chapters independent of each other, understanding how objects are represented in memory could be important to understand some of the garbage collector internals.
+Although we did our best to keep chapters independent of each other, understanding how objects are represented in memory could be important to understanding some of the garbage collector internals.
 Because of this, the book is organized around a set of critical paths and peripheral chapters.
 
 Critical paths give an idea of dependencies between chapters.
-Typical critical paths are the one to get into the JIT compiler, or the memory manager.
+Typical critical paths are the ones to get into the JIT compiler or the memory manager.
 Peripheral chapters explain _optional(?)_ concepts and details, that extends your knowledge in an orthogonal way.
 This is for example the case of the VM debugging support and block closures.
 

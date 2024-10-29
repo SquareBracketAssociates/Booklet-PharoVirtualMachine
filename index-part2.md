@@ -22,8 +22,10 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 # JIT Compilation
 
 <!inputFile|path=Part2-JIT/1-CogitOverview/chapter.md!>
-<!inputFile|path=Part2-JIT/2-CodeLayout/chapter.md!>
+<!inputFile|path=Part2-JIT/2-CodeLayout/CodeLayout.md!>
 <!inputFile|path=Part2-JIT/3-Trampolines/chapter.md!>
 <!inputFile|path=Part2-JIT/4-PICs/chapter.md!>
 <!inputFile|path=Part2-JIT/5-AbstractInterpretation/chapter.md!>
 <!inputFile|path=Part2-JIT/5-CodeCache/chapter.md!>
+
+<!inputFile|path=Part4-Tutorials/HandonsStatic/handonsstatic.md!>
