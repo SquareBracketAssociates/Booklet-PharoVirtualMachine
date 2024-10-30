@@ -1,0 +1,28 @@
+                  |                                       |
+ || The Stack     +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+
+ || Grows         +._ _ _.- - -._ _ _.- - -._ _ _.- - -.__+
+ \/ Down          |                                       |
+                  | callerFramePointer                    |
+                  | method                                |
+                  | context                               |
+                  | flags                 Caller's frame  |
+                  | receiver                              |
+                  | temporary 1                           |
+                  | temporary 2                           |
+                  | ...                                   |
+                  | "stack value n   (send receiver)" ----+--> someObject
+                  | "stack value n+1 (send argument 1 ) " |      
+                  | ...                                   |      ^
+                  | "stack value n+m (send argument n )"  |      |
+                  | instructionPointer                    |      |
+framePointer ----->+--------------------------------------+      |
+                  | callerFramePointer                    |      |
+                  | method                                |      |
+                  | context               Callee's frame  |      |
+                  | flags                                 |      |
+                  | receiver -----------------------------|------'
+                  | temporary 1                           |
+                  | temporary 2                           |
+                  | ...                                   |
+stackPointer -----> stack value 1                         |
+                  +---------------------------------------+

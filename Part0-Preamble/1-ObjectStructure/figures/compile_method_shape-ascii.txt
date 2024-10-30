@@ -1,0 +1,16 @@
+
+compiled method  
+                      \
+                       v
+method header  -------->+---------------------+
+                        |'Hello' 
+                        |#nextPutAll:
+                        |...
+byte code ----------->  +---------------------+
+                        |80
+                        |put real one here
+                        |
+method trailer ---->    +---------------------+
+                        |
+                        |
+method end ---->        +---------------------+

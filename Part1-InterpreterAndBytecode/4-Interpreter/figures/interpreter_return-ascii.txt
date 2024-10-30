@@ -1,0 +1,31 @@
+                                             Before return  :  After return
+                                                            :
+ ||               |                                    |    :                   |                                |
+ || The Stack     +._ _ _.- - -._ _ _.- - -._ _ _.- - -+    :                   +._ _ _.- - -._ _ _.- - -._ _ _.-+
+ || Grows         +._ _ _.- - -._ _ _.- - -._ _ _.- - -+    :                   +._ _ _.- - -._ _ _.- - -._ _ _.-+
+ \/ Down          +------------------------------------+    : framePointer  --->+--------------------------------+
+                  | callerFramePointer                 |    :                   | callerFramePointer             |
+                  | method                             |    :                   | method                         |
+                  | context                            |    :                   | context                        |
+                  | flags              Caller's frame  |    :                   | flags           Caller's frame |
+                  | receiver                           |    :                   | receiver                       |
+                  | temporary 1                        |    :                   | temporary 1                    |
+                  | temporary 2                        |    :                   | temporary 2                    |
+                  | ...                                |    :                   | ...                            |
+                  | stack value n   "(send receiver)"  |    : stackPointer  --->| stack value n "(return value)" |
+                  | stack value n+1 "(send argument 1)"|    :                   +--------------------------------+
+                  | ...                                |    :
+                  | stack value n+m "(send argument n)"|    :                         .--------------.
+                  | saved instructionPointer ----------|--. : instructionPointer  -.  |object header |
+framePointer  ---->+-----------------------------------+  | :                      |  |literal 0     |
+                  | callerFramePointer                 |  | :                      |  |...           |
+                  | method                             |  | :                      |  |literal n     |
+                  | context            Callee's frame  |  | :                      |  |~~~~~~~~~~~~~~|
+                  | flags                              |  | :                      |  |bytecode 1    |
+                  | receiver                           |  `-:----------------------+->|bytecode 2    |
+                  | temporary 1                        |    :                         |...           |
+                  | temporary 2                        |    :                         |bytecode n    |
+                  | ...                                |    :                         '--------------'
+stackPointer  ----> stack value 1                      |    :
+                  +------------------------------------+    :
+instructionPointer  -> ...

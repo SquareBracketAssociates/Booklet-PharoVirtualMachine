@@ -28,28 +28,8 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 
 <!inputFile|path=Part1-InterpreterAndBytecode/3-SemanticsByExample/basicsOnExecution.md!>
 <!inputFile|path=Part1-InterpreterAndBytecode/4-Interpreter/theInterpreter.md!>
-
-# Optimizations
-
 <!inputFile|path=Part1-InterpreterAndBytecode/5-DeeperBytecode/methodsbytecode.md!>
-<!inputFile|path=Part1-InterpreterAndBytecode/6-InterpreterOptimizations/interpreteroptimizations.md!>
 
-# The Memory Manager
+%# Optimizations
 
-<!inputFile|path=Part3-MemoryManagement/GarbageCollector/memoryStructure.md!>
-<!inputFile|path=Part3-MemoryManagement/GarbageCollector/newSpace.md!>
-<!inputFile|path=Part3-MemoryManagement/GarbageCollector/oldSpace.md!>
-<!inputFile|path=Part3-MemoryManagement/GarbageCollector/freeList.md!>
-<!inputFile|path=Part3-MemoryManagement/GarbageCollector/ephemerons.md!>
-
-# JIT Compilation
-
-<!inputFile|path=Part2-JIT/CallingConventions/CallingConventions.md!>
-
-## Slang
-@cha:Slang
-Just here so that we can refer to it
-
-# Exercises
-
-<!inputFile|path=Part4-Tutorials/HandonsStatic/handonsstatic.md!>
+%<!inputFile|path=Part1-InterpreterAndBytecode/6-InterpreterOptimizations/interpreteroptimizations.md!>
