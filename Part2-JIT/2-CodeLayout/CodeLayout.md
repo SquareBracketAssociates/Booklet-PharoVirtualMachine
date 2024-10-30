@@ -142,9 +142,6 @@ Since the code zone is not infinite, it needs to be compacted from time to time.
 The field `cmUsageCount` uses 3 bits to represent the number of use the jitted method that is used by walking the stack. This field is used to decide which jitted methods can be removed from the code zone.  
 (see MPLR paper if needed).
 
-
-
-
 ### Primitive Method Layout
 
 Primitives have fiew variations from the normal methods, they have a C implementation or native machine code, based on these implementations  we have three types of primitives:
