@@ -62,7 +62,6 @@ The each portion of code is tagged to give direct access to it. For example:
 - You can skip access to the type checking by jumping to the start of the next code block. 
 
 ### CogMethod in Pharo and C 
-<<<<<<< HEAD
   
 Listing *@jitmethodclass@* shows the class `CogMethod` in Pharo that represents a jitted method as shown in Listing *@jitmethodstruc@*. This is this class that once generated in C as C-structure represents jitted methods. 
 
@@ -73,7 +72,7 @@ VMStructType << #CogMethod
 			 #homeOffset .
 			 #startpc .
 			 #padToWord .
-=======
+
 
 Now we can see concretely how a jit method is represented. 
 
@@ -84,7 +83,6 @@ This is the class that once generated in C as structure, represents jitted metho
 VMStructType << #CogMethod
 	slots: {
 			 #objectHeader .
->>>>>>> 1a4c8f022457d1183f4c2e118f74e506d74024c9
 			 #cmNumArgs .
 			 #cmType .
 			 #cmRefersToYoung .
@@ -93,15 +91,9 @@ VMStructType << #CogMethod
 			 #cmUsesPenultimateLit .
 			 #cbUsesInstVars .
 			 #cmUnusedFlags .
-<<<<<<< HEAD
-			 #stackCheckOffset .
+			 #stackCheckOffset . "stackCheckOffset is the entry doing the  stack overflow checks."
 			 #blockSize .
-			 #picUsage .
-=======
-			 #stackCheckOffset .  "stackCheckOffset is the entry doing the  stack overflow checks."
-			 #blockSize .
-			 #picUsage . describes how many case are already used
->>>>>>> 1a4c8f022457d1183f4c2e118f74e506d74024c9
+			 #picUsage . "describes how many case are already used""
 			 #methodObject .
 			 #methodHeader .
 			 #selector };
@@ -110,25 +102,23 @@ VMStructType << #CogMethod
 	package: 'VMMaker'
 ```
 
-<<<<<<< HEAD
-Once the code is generated we obtain the following C structure in the file CogMethod.h (See Listing *@jitmethodstruc@*).
-=======
 
+Once the code is generated we obtain the following C structure in the file CogMethod.h (See Listing *@jitmethodstruc@*).
 
 The following instance variables represent the flags mentioned above.
 
 ```
-			 #cmNumArgs .
-			 #cmType .
-			 #cmRefersToYoung .
-			 #cpicHasMNUCaseOrCMIsFullBlock .
-			 #cmUsageCount .
-			 #cmUsesPenultimateLit .
-			 #cbUsesInstVars .
-			 #cmUnusedFlags .
+	#cmNumArgs .
+	#cmType .
+	#cmRefersToYoung .
+	#cpicHasMNUCaseOrCMIsFullBlock .
+	#cmUsageCount .
+	#cmUsesPenultimateLit .
+	#cbUsesInstVars .
+	#cmUnusedFlags .
 ```
 
-- stackCheckOffset is the entry doing the  stack overflow checks.
+- stackCheckOffset is the entry doing the stack overflow checks.
 - blockSize is the size. 
 - picUsage for a PIC describes how many case are already used.
 - methodObject refers to the compiled method and its header.
@@ -137,8 +127,6 @@ The following instance variables represent the flags mentioned above.
 
 
 Once the code is generated we obtain the following C structure in the file CogMethod.h.
->>>>>>> 1a4c8f022457d1183f4c2e118f74e506d74024c9
-
 
 ```caption=Jitted method C structure&language=C&anchor=jitmethodstruc
 typedef struct {
@@ -160,28 +148,22 @@ typedef struct {
  } CogMethod;
 ```
 
-<<<<<<< HEAD
+
 ### A word about `cmUsageCount`
 
 Since the code zone is not infinite, it needs to be compacted from time to time. 
 The field `cmUsageCount` uses 3 bits to represent the number of uses of the jitted method that is used>
 It does so by walking the stack. This field is used to decide which jitted methods can be removed from the code zone.  
-=======
-### A word about cmUsageCount
-
-Since the code zone is not infinite, it needs to be compacted from time to time. 
-The field `cmUsageCount` uses 3 bits to represent the number of use the jitted method that is used by walking the stack. This field is used to decide which jitted methods can be removed from the code zone.  
-(see MPLR paper if needed).
->>>>>>> 1a4c8f022457d1183f4c2e118f74e506d74024c9
 
 
+    ![ Structure of a primitive. %width=30&anchor=methodStructure1](primitiveStructure.png)
 
 
 ### Primitive Method Layout
 
 Primitives have few variations from the normal methods, they have a C implementation or native machine code, based on these implementations, we have three types of primitives: (which ones)
 
-<<<<<<< HEAD
+
 - A function written in C, also called _plugin_.
 - A function written completely in machine code, called _Complete primitive_.
 - (is this the third one?)First part of the method body has machine code for fast paths, if the primitive fails execution, in other words the case calling the primitive doesn't correspond to a fast path, it continues through the method to delegate to a C function.
@@ -189,14 +171,3 @@ Primitives have few variations from the normal methods, they have a C implementa
 When The primitive code succeeds, it returns a result before having to create a new frame for the fallback code.
 
 Complete, Unfailing and Unimplemented primitives
-
-
-
-
-=======
-- A function written in C, also called plugin .
-- A function written completely in machine code, called Complete primitives.
-- First part of the method body has machine code for fast paths, if the primitive fails executing them, in other words the case calling the primitive doesn't corrrespond to a fast path, it continues through the methed to delegate to a c function.
-    ![ Structure of a primitive. %width=30&anchor=methodStructure1](primitiveStructure.png)
-When The primitive code succeeds it returns result before having to create a new frame for the fallback code.
->>>>>>> 1a4c8f022457d1183f4c2e118f74e506d74024c9
