@@ -58,8 +58,14 @@ The _method body_ has the following separated and tagged structure:
 
 The each portion of code is tagged to give direct access to it. For example:
 
-- The abort routine can be branched-to when method code fails.
-- You can skip access to the type checking by jumping to the start of the next code block. 
+- The standard entry point is the one that contains comparison of passed arguments types.
+- The abort routine can be branched-to when method code fails if expected types mismatched.
+- You can skip access to the type checking by jumping to the start of the next code block  ( no-check entry offset ). 
+
+Here is a sample assembly code of the method `(Object>>#yourself)` that presents three entry points. 
+A normal entry point
+
+ ![ Entry Points of a frameless Method. %width=50&anchor=EntryPoints](Entrypoints.png)
 
 ### CogMethod in Pharo and C 
   
