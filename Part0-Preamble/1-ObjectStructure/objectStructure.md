@@ -1,15 +1,14 @@
 ## Object Representation
 
-
 Before delving inside the internals of the VM execution, it is important to understand the data it manipulates, in our case, Pharo objects.
 This chapter presents in-depth how objects are represented in memory.
-This will allow us to understand in further chapters how objects are created and mutated, how dynamic type checks are performed, and the different memory optimizations employed.
-
-Since a couple of years, the Pharo VM uses the Spur memory model, designed and implemented by Eliot Miranda for the OpenSmalltalk VM {!citation|ref=Mira18a!}.
-This model greatly improved the Garbage Collector (GC) and the complexity of JIT-compiled machine code.
+This allow us to understand in further chapters how objects are created and mutated, how dynamic type checks are performed, and the different memory optimizations employed.
 
 
-### Background
+For a couple of years, the Pharo VM has used the Spur memory model, designed and implemented by Eliot Miranda for the OpenSmalltalk VM {!citation|ref=Mira18a!}. This model greatly improved the Garbage Collector (GC) and the complexity of JIT-compiled machine code.
+
+
+### Background and Terminology
 
 This section defines some terminology necessary to understand this chapter, such as _word_, _nibble_, and _alignment_.
 It is important to set up a common vocabulary because some of these terms are used differently by different technologies, and the Pharo VM terminology is no exception.
@@ -28,14 +27,17 @@ However, the Pharo VM also supports 32-bit machines for compatibility with small
 Memory is conceptually divided into cells of 1-byte length, each byte using 8 bits.
 Data is manipulated in units that group many bytes together.
 A _word_ is a fixed unit of data with as many bits as the processor bit width.
-This means a word is 64 bits long --or 8 bytes long-- in 64-bit processors, and 32 bits long --or 4 bytes long-- in 32-bit processors.
+This means that 
+- a word is 64 bits long --or 8 bytes long-- in 64-bit processors, and
+- 32 bits long --or 4 bytes long-- in 32-bit processors.
+
 Figure *@fig:32vs64Architectures@* shows the memory layout on both 32 and 64-bit architectures.
 The main difference between these two architectures is their word size.
 
 Each 1-byte memory cell has an address, a unique identifier that can be used to read and write into that memory cell.
 Addresses are typically restricted to fit in a word.
 Memory addresses form a sequence ranging from 0 to the highest integer that can be represented in a word.
-For example, on 64-bit processers the maximum address is 2^64, thus it can address 2^64 different bytes.
+For example, on 64-bit processors, the maximum address is 2^64. Thus, it can address 2^64 different bytes.
 Memory cells are said to be contiguous if their addresses are contiguous.
 Note that Figure *@fig:32vs64Architectures@* only shows addresses that are a multiple of a word, although each 1-byte cell also has an address.
 Representing memory addresses as data is what is commonly referred to as pointers.
@@ -88,18 +90,20 @@ If we wanted to read the bytes in most-to-least significance order, then we need
 
 ![16rFEDCBA987654321 in 64-bits Little and Big-Endian.](figures/LittleBigEndian.drawio.pdf width=95&anchor=fig:LittleEndian)
 
-### Object Layout
+### Object Layout Formats
+@sec:layout
+@sec:formats
 
 Pharo programs are made of objects which are, for the most part, allocated in memory and occupy space.
 We call these objects _heap-allocated_ because they reside in a memory region managed by the VM called the _heap_, that we will explore in later chapters.
 
-#### Object Formats
-@sec:layout
-@sec:formats
-
 Pharo objects contain _slots_ that store the object's data.
-Objects come in different kinds, determining the number of slots they contain and how their slot contents is interpreted.
+Objects come in different kinds, determining the number of slots they contain and how their slot content is interpreted.
+This information is encoded in a format. This format is shared between the class and its instances.
+
+
 The following table summarizes the most common types of objects and their variations.
+
 
 | Type/Format    | # slots | Slot type       | Slot size    | Variations |
 | -------------- | --------------- | --------------- | --------------- | ---------- |
@@ -108,43 +112,53 @@ The following table summarizes the most common types of objects and their variat
 | Byte indexable | variable        | byte            | 1/2/4/8 bytes   | -          |
 | CompiledMethod | variable        | reference+byte  | word + 1 byte   | -          |
 
-**Fixed and variable slots.** The number of slots in an object is either fixed, variable or a combination of both.
+#### Fixed and variable slots. 
+
+The number of slots in an object is either fixed, variable or a combination of both.
 Fixed slots are those decided statically. For example, an instance of class `Point` declaring variables `x` and `y` has two fixed slots.
 Variable slots are those determined at allocation time. The simplest example of variable slots are arrays, whose number of slots is specified as argument of the method `new:`.
 Some objects may contain a combination of fixed and variable slots, as it is the case of the instances of `Context`.
 
-**Slot type.** Slots contain either object references or plain data bytes.
+#### Slot type.
+
+Slots contain either object references or plain data bytes.
 Object references are pointers that reference other objects forming a graph, further explained in *@sec:references@*.
 Plain data is stored as raw bytes in a slot, typically representing low-level data types such as integers or floats.
 
-**Slot size.** The different slots in an object have a size that limits their contents.
-Reference slots store an address, and thus are a word long.
-Byte slots store a sequence of bytes, and thus element size can be 1, 2, 4 or 8 bytes.
-All fixed slots in an object are of type reference.
-All variable slots in an object are of the same type and are defined by its class.
+#### Slot size. 
+
+The different slots in an object have a size that limits their contents.
+- Reference slots store an address, and thus are a word long.
+- Byte slots store a sequence of bytes, and thus, the element size can be 1, 2, 4, or 8 bytes.
+- All fixed slots in an object are of type reference.
+- All variable slots in an object are of the same type and are defined by its class.
 For example, instances of the class `ByteArray` have 1-byte slots, and instances of `FloatArray` have 8-byte slots containing IEEE-754 double-precision floating point numbers.
 
-**Weak and Ephemeron.** Weak and Ephemeron object formats are variations of the types described above, extending them with special semantics for the memory manager.
-Weak objects are objects whose variable slots work as weak references (in contrast with strong references). That is, they don't prevent the garbage collection of the referenced object.
-Ephemeron objects are fixed objects representing a key-value mapping whose value is referenced strongly as long as the key is referenced by objects other than the ephemeron.
+#### Weak and Ephemeron. 
+
+Weak and Ephemeron object formats are variations of the types described above, extending them with special semantics for the memory manager.
+- Weak objects are objects whose variable slots work as weak references (in contrast with strong references). That is, they don't prevent the garbage collection of the referenced object.
+- Ephemeron objects are fixed objects representing a key-value mapping whose value is referenced strongly as long as the key is referenced by objects other than the ephemeron.
+
 These special objects will be further discussed in the chapters about memory management.
 
-**CompiledMethod.** Compiled methods are variable objects that do not follow the conventions above.
-They contain a word sized variable part storing object literals, followed by a 1-byte variable part storing _bytecode_ instructions.
+#### CompiledMethod. 
+Compiled methods are variable objects that do not follow the conventions above.
+They contain a word-sized variable part storing object literals, followed by a 1-byte variable part storing _bytecode_ instructions.
 
-**Contexts.** Contexts are variable objects. However, they are actually only used in two sizes, small with 16 slots and large with 64 slots. The size to use is determined by the maximum stack space required by the executed method, determined at bytecode compilation time.
+#### Contexts. Contexts are variable objects. However, they are actually only used in two sizes small with 16 slots and large with 64 slots. The size to use is determined by the maximum stack space required by the executed method, determined at bytecode compilation time (See Listing *@frameSizeListing@*).
 
-```
-CompiledMethod>>frameSize
+```anchor=frameSizeListing
+CompiledMethod >> frameSize
     (self header noMask: 16r20000)
         ifTrue:  [^ SmallFrame]
         ifFalse: [^ LargeFrame]
 ```
 
-#### Representing Objects in Memory
+### Representing Objects in Memory
 
 Objects in Pharo are represented as a contiguous memory region with space for a header and data slots.
-The header contains meta data used for decoding the object internals, such as the size, its type and its class.
+The header contains metadata used for decoding the object internals, such as the size, its type and its class.
 The data slots contain the object slots.
 Figure *@fig:objectLayout@* illustrates the layout of a 3-slot object in both 32-bit and 64-bit architectures.
 
@@ -524,7 +538,7 @@ The VM could iterate a class hierarchy, fetch the list of instance variables and
 That, would turn object instantiation into a very expensive operation.
 Instead, that piece of information is pre-computed and stored in the `format` slot when a class is created.
 The drawback? If we add or remove a slot definition from a class, we need to recompute this number.
-We were rebuilding the class anyway, and classes change much less often that objects are instantiated, so the price is well paid.
+We were rebuilding the class anyway, and classes change much less often than objects are instantiated, so the price is well paid.
 
 ### Conclusion
 
@@ -532,7 +546,7 @@ In this chapter, we explored how Pharo objects are represented in memory using t
 From a user's perspective, objects have a set of fixed and variable slots.
 Slots contain references to objects or plain byte data.
 
-Under the hood, most objects are allocated in the heap and possess a header with meta data.
+Under the hood, most objects are allocated in the heap and possess a header with metadata.
 Object slots are stored in word-large data slots, and padding is inserted so that all objects are aligned to the 8-byte boundary.
 We exploit object alignment to implement integers, floats, and characters as tagged pointers.
 Tagged pointers use the least significant bits of a pointer to encode a type, and the most significant bits to encode a value.
