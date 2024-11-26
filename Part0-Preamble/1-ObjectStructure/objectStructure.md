@@ -27,7 +27,8 @@ However, the Pharo VM also supports 32-bit machines for compatibility with small
 Memory is conceptually divided into cells of 1-byte length, each byte using 8 bits.
 Data is manipulated in units that group many bytes together.
 A _word_ is a fixed unit of data with as many bits as the processor bit width.
-This means that 
+This means that
+
 - a word is 64 bits long --or 8 bytes long-- in 64-bit processors, and
 - 32 bits long --or 4 bytes long-- in 32-bit processors.
 
@@ -59,13 +60,13 @@ The low nibble has a value of 1.
 A processor's Instruction Set Architecture (ISA) generally provides instructions that read and write data from an address with different granularity.
 For example, there are instructions to read/write individual bytes or entire words.
 Although ISAs give a lot of freedom to developers, modern architectures and micro-architectures (how CPUs are implemented internally) behave better when data access is consistent and predictable.
-Particularly, address alignment, _i.e.,_ its relative position in memory, is a property exploited by micro-architectures, compilers and programming languages for optimization.
+Particularly, address alignment, _i.e.,_ its relative position in memory, is a property exploited by micro-architectures, compilers, and programming languages for optimization.
 
 A read from and write to an address are said to be aligned when the address is a multiple of the accessed element size, in bytes.
 1-byte reads are always aligned because all addresses are multiples of 1.
 8-byte reads are aligned when the address is multiple of 8.
 
-We will see later in this chapter how the Pharo VM exploits alignment to implement tagged pointers, and optimize the reading of object header meta data.
+We will see later in this chapter how the Pharo VM exploits alignment to implement tagged pointers and optimize the reading of object header metadata.
 
 #### Most and Least Significant Bytes and Bits
 
@@ -74,21 +75,21 @@ Moreover, the individual bits within a single cell are ordered too.
 
 We say that the _most significant_ bit in a byte is the bit that has the most value in a byte, and conversely for the _least significant_ bit.
 We can define the most and least significant bytes in a word in the same way.
-For example, the bit string 00000101 represents the number 5 in binary, and its least significant bit is represented by the rightest bit with value 1.
+For example, the bit string 00000101 represents the number 5 in binary, and its least significant bit is represented by the rightest bit with the value 1.
 
 While we usually represent bytes from left to right (most to least significant), this is only the case with some architectures.
 The order in which individual bytes of a word are stored in memory is again a trait of the computer architecture: the endianness.
 An architecture is said to be _little endian_ if data bytes are stored from the least significant to the most significant, and _big endian_ otherwise.
 Understanding endianness is important when reading and writing values smaller than a word.
 
-Nowadays, the most popular architectures out there are little-endian.
-This means that a 64-bit word with the value `16rFEDCBA987654321` is stored backward.
-Let's imagine that the word is stored at address a.
-- The lowest address -a- contains the least significant byte -16r21-.
-- The highest address -a+7- contains the most significant byte -16r0F- (see Fig. *@fig:LittleEndian@*).
-If we wanted to read the bytes in most-to-least significance order, then we need to iterate it backward: from a+7 to a.
+Nowadays, the most popular architecture out there is little-endian.
+This means that a 64-bit word with the value `16rFEDCBA987654321` is stored backward. Let's imagine that the word is stored at address `a`.
 
-![16rFEDCBA987654321 in 64-bits Little and Big-Endian.](figures/LittleBigEndian.drawio.pdf width=95&anchor=fig:LittleEndian)
+- The lowest address `a` contains the least significant byte `16r21`.
+- The highest address `a+7` contains the most significant byte `16r0F` (see Fig. *@fig:LittleEndian@*).
+If we wanted to read the bytes in most-to-least significance order, then we need to iterate it backward: from `a+7` to `a`.
+
+![16rFEDCBA987654321 in 64-bits Little and Big-Endian. % width=95&anchor=fig:LittleEndian](figures/LittleBigEndian.drawio.pdf)
 
 ### Object Layout Formats
 @sec:layout
@@ -99,7 +100,7 @@ We call these objects _heap-allocated_ because they reside in a memory region ma
 
 Pharo objects contain _slots_ that store the object's data.
 Objects come in different kinds, determining the number of slots they contain and how their slot content is interpreted.
-This information is encoded in a format. This format is shared between the class and its instances.
+This information is encoded in a format. This format is shared between the class and its instances for speed reasons. Indeed, a class and its instances may be far from each other and always going to the class to decode the instance format is then costly.
 
 
 The following table summarizes the most common types of objects and their variations.
@@ -114,41 +115,47 @@ The following table summarizes the most common types of objects and their variat
 
 #### Fixed and variable slots. 
 
-The number of slots in an object is either fixed, variable or a combination of both.
+The number of slots in an object is either fixed, variable, or a combination of both.
 Fixed slots are those decided statically. For example, an instance of class `Point` declaring variables `x` and `y` has two fixed slots.
-Variable slots are those determined at allocation time. The simplest example of variable slots are arrays, whose number of slots is specified as argument of the method `new:`.
+Variable slots are those determined at allocation time. The simplest example of variable slots are arrays, whose number of slots is specified as the argument of the method `new:`.
 Some objects may contain a combination of fixed and variable slots, as it is the case of the instances of `Context`.
 
 #### Slot type.
 
 Slots contain either object references or plain data bytes.
-Object references are pointers that reference other objects forming a graph, further explained in *@sec:references@*.
+Object references are pointers that reference other objects forming a graph, further explained in Section *@sec:references@*.
 Plain data is stored as raw bytes in a slot, typically representing low-level data types such as integers or floats.
 
 #### Slot size. 
 
-The different slots in an object have a size that limits their contents.
+The different slots in an object have a size that limits their contents:
+
 - Reference slots store an address, and thus are a word long.
 - Byte slots store a sequence of bytes, and thus, the element size can be 1, 2, 4, or 8 bytes.
 - All fixed slots in an object are of type reference.
 - All variable slots in an object are of the same type and are defined by its class.
+
 For example, instances of the class `ByteArray` have 1-byte slots, and instances of `FloatArray` have 8-byte slots containing IEEE-754 double-precision floating point numbers.
 
 #### Weak and Ephemeron. 
 
 Weak and Ephemeron object formats are variations of the types described above, extending them with special semantics for the memory manager.
+
 - Weak objects are objects whose variable slots work as weak references (in contrast with strong references). That is, they don't prevent the garbage collection of the referenced object.
 - Ephemeron objects are fixed objects representing a key-value mapping whose value is referenced strongly as long as the key is referenced by objects other than the ephemeron.
 
 These special objects will be further discussed in the chapters about memory management.
 
 #### CompiledMethod. 
+
 Compiled methods are variable objects that do not follow the conventions above.
 They contain a word-sized variable part storing object literals, followed by a 1-byte variable part storing _bytecode_ instructions.
 
-#### Contexts. Contexts are variable objects. However, they are actually only used in two sizes small with 16 slots and large with 64 slots. The size to use is determined by the maximum stack space required by the executed method, determined at bytecode compilation time (See Listing *@frameSizeListing@*).
+#### Contexts. 
 
-```anchor=frameSizeListing
+Contexts are variable objects. However, they are actually only used in two sizes small with 16 slots and large with 64 slots. The size to use is determined by the maximum stack space required by the executed method, determined at bytecode compilation time (See Listing *@frameSizeListing@*).
+
+```caption=Determining the size of the stack frame&anchor=frameSizeListing
 CompiledMethod >> frameSize
     (self header noMask: 16r20000)
         ifTrue:  [^ SmallFrame]
@@ -157,46 +164,52 @@ CompiledMethod >> frameSize
 
 ### Representing Objects in Memory
 
-Objects in Pharo are represented as a contiguous memory region with space for a header and data slots.
-The header contains metadata used for decoding the object internals, such as the size, its type and its class.
-The data slots contain the object slots.
+ 
+Objects in Pharo are represented as a contiguous memory region with space for a _header_ and _data zone_.
+
+- The header contains metadata used for decoding the object internals, such as the size, its type and its class.
+
+- The data zone contains data slots.
 Figure *@fig:objectLayout@* illustrates the layout of a 3-slot object in both 32-bit and 64-bit architectures.
 
-![Object layout and alignment on 32-bit and 64-bit architectures.](figures/objectLayout.pdf width=90&anchor=fig:objectLayout)
+![Object layout and alignment on 32-bit and 64-bit architectures.  %width=90&anchor=fig:objectLayout](figures/objectLayout.pdf)
 
-Each object has a mandatory base header that contains common information such as its class, its size and mutable bits for the Garbage Collector.
+Each object has a mandatory base header that contains common information such as its class, its size, and mutable bits for the Garbage Collector.
 When objects are more than 254 words long, they are considered large, and their actual size is stored in an overflow header that precedes the base header.
-The base and overflow headers have each a fixed size of 8 bytes \(64 bits\).
+The base and overflow headers each have a fixed size of 8 bytes (64 bits).
 Headers are discussed in-depth in Section *@sec:header@*.
 
-Data slots contain the different slots in an object.
+The data zone contains the different data slots in an object.
 However, there is not a one-to-one mapping between an object's slots and its underlying data slots.
-Data slots are always 1 word long and their number is chosen to accommodate all the slots of the object.
-Each reference slot occupies one data slot.
+
+Data slots are always 1 word long and their number is chosen to accommodate all the slots of the object. Each reference slot occupies one data slot.
 Byte slots, however, may occupy less than a data slot.
-For example, in a 64-bit system, a data slot can accommodate 8 1-byte-long slots, 4 2-byte-long slots, 2 4-byte-long slots or 1 8-byte-long slots.
+For example, in a 64-bit system, a data slot can accommodate 8 1-byte-long slots, 4 2-byte-long slots, 2 4-byte-long slots, or 1 8-byte-long slots.
 
 A special case arises when byte slots do not entirely fill an object's data slots.
 For example, a 3-slot byte array occupies 3 bytes in a word-long data slot.
 In such a case, the Pharo VM introduces padding _i.e.,_ filling space.
 Such unused filler is used to guarantee that the next object is aligned to the 8-byte boundary, a property that can be exploited for both performance and the representation of immediate objects explained in Section *@sec:alignment@*
 
-#### References and Ordinary Object Pointers
+### References and Ordinary Object Pointers
 @sec:references
 
 Objects reference each other, forming a directed graph.
 Nodes in the graph are the objects themselves, edges in the graph are usually called _object references_.
 In the Pharo VM, object references are called _ordinary object pointers_, or _oop_s for short.
+
 There are two kinds of oops: object pointers to other objects and immediate objects.
-Pointers work as normal pointers in low-level languages.
-Immediate objects are objects encoded in invalid object pointers using a technique called tagged pointers that takes advantage of pointer alignment.
+
+- Pointers work as normal pointers in low-level languages.
+- Immediate objects are objects encoded in invalid object pointers using a technique called _tagged pointers_ that takes advantage of pointer alignment.
+
 
 Every object in Pharo has an address in memory, which is the memory address of its base header.
 An object `A` references an object `B` with an absolute pointer to `B`'s base header stored in one of `A`'s reference slots.
 Figure *@references@* shows two objects forming a cycle. Each object has a single reference slot pointing to the other.
 References point to the object base header.
 
-![References to heap-allocated objects are pointers to an object's base header.](figures/references.pdf width=90&anchor=references)
+![References to heap-allocated objects are pointers to an object's base header. %](figures/references.pdf)
 
 
 ### Immediate Objects
