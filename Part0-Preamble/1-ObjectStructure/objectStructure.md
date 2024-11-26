@@ -307,7 +307,6 @@ It is important to see that the objects that are encoded this way should be immu
 ##### Remark two.
 To speed the decoding of the encoded objects, in 32-bits, the system assigns the tag 1 and 11 to the same class SmallInteger. This way there is no need to perform extra check: first bit at one is integer and 10 is character (see below).
 
->[! SD]  I would like a piece of code here ] 
 
 
 
