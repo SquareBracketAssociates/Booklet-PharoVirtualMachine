@@ -198,26 +198,28 @@ Objects reference each other, forming a directed graph.
 Nodes in the graph are the objects themselves, edges in the graph are usually called _object references_.
 In the Pharo VM, object references are called _ordinary object pointers_, or _oop_s for short.
 
-There are two kinds of oops: object pointers to other objects and immediate objects.
+There are two kinds of oops: object pointers to other objects and immediate objects (see Figure *@reference3@*)
 
 - Pointers work as normal pointers in low-level languages.
 - Immediate objects are objects encoded in invalid object pointers using a technique called _tagged pointers_ that takes advantage of pointer alignment.
 
+![References  are pointers to an object's base header. Immediate objects embed value inside the references.%anchor=reference3](figures/references3.pdf)
 
 Every object in Pharo has an address in memory, which is the memory address of its base header.
 An object `A` references an object `B` with an absolute pointer to `B`'s base header stored in one of `A`'s reference slots.
-Figure *@references@* shows two objects forming a cycle. Each object has a single reference slot pointing to the other.
+Figure *@references@* shows two objects forming a cycle. Each object has a reference slot pointing to the other.
 References point to the object base header.
 
-![References to heap-allocated objects are pointers to an object's base header. %](figures/references.pdf)
+![References to heap-allocated objects are pointers to an object's base header. %](figures/references2.pdf)
 
 
 ### Immediate Objects
 
 The object representation presented so far imposes a non-negligible overhead on small objects, because of the space taken by its header.
 This problem becomes more visible with types that tend to have a large number of instances.
+
 Integers, for example, are in theory infinite and are used very often by even the simplest programs to drive the execution of loops.
-Representing integer objects as heap allocated objects becomes a bottleneck in an application very fast. Instead, Pharo uses a common optimization called _tagged pointers_ to represent integers and other common simple-valued immutable objects of the like.
+Representing integer objects as heap-allocated objects becomes a bottleneck in an application very fast. Instead, Pharo uses a common optimization called _tagged pointers_ to represent integers and other common simple-valued immutable objects of the like.
 
 #### Alignment and Padding
 @sec:alignment
@@ -232,9 +234,11 @@ To guarantee that objects are always aligned to the 8-byte boundary, the allocat
 This happens in two cases: byte objects in general, and potentially all objects in 32-bit architectures.
 Byte objects may contain a number of slots that does not entirely fill a data slot, as shown in Section *@sec:formats@*, thus requiring padding to fill a data slot.
 Moreover, data slots in 32-bit architectures are 4 bytes long, and thus an odd number of data slots requires 4 bytes of padding.
+
 Figure *@fig:objectLayout@* shows an example of how an object with 1 header and 3 slots is laid out both in 32-bit and 64-bit architectures.
-- in 64-bit architectures, the object occupies 4 words, for a total of 32 bytes: 1 base header of 8 bytes, and 3 slots of 1 word each. The next free address \(32 in Figure *@fig:objectLayout@*\) is aligned and thus an object can start there.
-- in 32-bit architectures, the object occupies 5 words, for a total of 20 bytes: 1 base header of 2 words \(8 bytes / 4 bytes per word\), and 3 slots of 1 word each. The next free address \(20 in Figure *@fig:objectLayout@*\) is not aligned. In this case, the allocator inserts a 4 byte padding to align the following object to the 8-byte boundary.
+
+- in 64-bit architectures, the object occupies 4 words, for a total of 32 bytes: 1 base header of 8 bytes, and 3 slots of 1 word each. The next free address (32 in Figure *@fig:objectLayout@*) is aligned and thus an object can start there.
+- in 32-bit architectures, the object occupies 5 words, for a total of 20 bytes: 1 base header of 2 words (8 bytes / 4 bytes per word), and 3 slots of 1 word each. The next free address (20 in Figure *@fig:objectLayout@*) is not aligned. In this case, the allocator inserts a 4-byte padding to align the following object to the 8-byte boundary.
 
 Padding represents wasted memory and could be avoided in 32-bit architectures by requiring an alignment to a word.
 However, enforcing the same alignment in all architectures allows an overall code simplification by unifying the 64-bit and 32-bit implementations.
@@ -250,24 +254,17 @@ Since all Pharo objects are aligned to 8 bytes, all object references will be mu
 Pointer tagging exploits this property by encoding data within the least significant bits of a pointer.
 With these three bits, we can encode up to 7 different tags (111, 110, ... 001) that tell us how to interpret the most significant bits.
 
-The main advantage of this technique is to save storage space for common objects, which indirectly improves on data locality and CPU cache behavior.
-Its main drawback is the overhead incurred by runtime type checks: we need to verify if a pointer is tagged or not before operating on data.
 
-Another consideration for tagged pointers is that they significantly reduce the number of values that can be represented.
-For example, tagged integers in the described schema have a maximum precision of 61 bits (+ 3 bits of tag = 64 bits).
-In the following sections we explain variable-sized tags and boxed values.
-Variable-sized tags help us mitigate this problem in 32-bit architectures, in which the loss is 10% (3 bits out of 32).
-Moreover, a combination of pointer tagging and boxed values allows us to represent larger numbers by assuming that such larger numbers will be less common.
+Currently, Pharo supports integers, characters, and floating point numbers as immediate objects.
 
-Currently, Pharo supports integers, characters and floating point numbers as immediate objects.
-In 64-bit architectures, they use the tags `001`, `010` and `100` respectively, as shown in Figure *@fig:64bitsimm@*.
-In 32-bit architectures, floats are not represented as immediate objects, integers present a 1-bit tag `1`, while characters are represented with the 2-bit tag `10`, as shown in Figure *@fig:32bitsimm@*.
+- In 64-bit architectures, they use the tags `001`, `010`, and `100` respectively, as shown in Figure *@fig:64bitsimm@*.
 
-![64-bit immediate objects.](figures/64bitsImmediate.pdf width=100&anchor=fig:64bitsimm)
-![32-bit immediate objects.](figures/32bitsImmediate.pdf width=100&anchor=fig:32bitsimm)
+- In 32-bit architectures, floats are not represented as immediate objects, integers present a 1-bit tag `1`, while characters are represented with the 2-bit tag `10`, as shown in Figure *@fig:32bitsimm@*.
 
-The following code shows how we can tag, untag and verify if a value is taggable.
-The next sections explain the specific designs for integers, characters and floats, for 64 and 32 bits.
+![64-bit immediate objects. %width=100&anchor=fig:64bitsimm](figures/64bitsImmediate.pdf )
+![32-bit immediate objects. %width=100&anchor=fig:32bitsimm](figures/32bitsImmediate.pdf )
+
+The following code shows how we can tag, untag, and verify if a value is taggable.
 
 ```caption=Testing Small integers.
 "Convert native values into objects and vice-versa"
@@ -292,10 +289,37 @@ objectMemory isSmallFloatValue: aValue.
 objectMemory isCharacterValue: aValue.
 ```
 
-#### Immediate Characters and Integers in 64 bits
+The main advantage of this technique is to save storage space for common objects, which indirectly improves on data locality and CPU cache behavior.
+Its main drawback is the overhead incurred by runtime type checks: we need to verify if a pointer is tagged or not before operating on data.
+
+Another consideration for tagged pointers is that they significantly reduce the number of values that can be represented.
+For example, tagged integers in the described schema have a maximum precision of 61 bits (+ 3 bits of tag = 64 bits).
+In the following sections, we explain variable-sized tags and boxed values.
+Variable-sized tags help us mitigate this problem in 32-bit architectures, in which the loss is 10% (3 bits out of 32).
+Moreover, a combination of pointer tagging and boxed values allows us to represent larger numbers by assuming that such larger numbers will be less common.
+
+
+
+##### Remark one. 
+In 64 bits, the VM only uses three values over the 8 possible.
+It is important to see that the objects that are encoded this way should be immutable objects. Indeed since they are represented as references they do not point on state that can be shared because the references themselves are the objects. We can think also that immediate objects other than the one we have (smallinteger, characters and floats) could be special references for isolation or other langage mechanism. 
+
+##### Remark two.
+To speed the decoding of the encoded objects, in 32-bits, the system assigns the tag 1 and 11 to the same class SmallInteger. This way there is no need to perform extra check: first bit at one is integer and 10 is character (see below).
+
+>[! SD]  I would like a piece of code here ] 
+
+
+
+The next sections explain the specific designs for integers, characters and floats, for 64 and 32 bits.
+
+### Immediate Characters and Integers in 64 bits
+
 
 In 64 bits, all immediate objects are represented as 61 bits of value and 3 bits of tag.
-In Pharo, immediate integers are instances of the class `SmallInteger`, and immediate characters are instances of the class `Character`. `SmallInteger` immediate objects range is between \[-2^60,2^60-1\] and are represented in two's complement.
+In Pharo, immediate integers are instances of the class `SmallInteger`, and immediate characters are instances of the class `Character`. 
+
+`SmallInteger` immediate objects range is between \[-2^60,2^60-1\] and are represented in two's complement.
 For example, the binary value `2r1010001` represents the untagged value `2r1010` which has the decimal value `10`.
 
 ```caption=On 64 bits, SmallInteger instances are encoded in 61 bits.
@@ -309,7 +333,7 @@ SmallInteger maxVal == (2**60-1)
 Immediate characters encode their Unicode codepoint in the 61 value bits.
 This is, so far, enough to represent all Unicode codepoints: the maximum valid codepoint nowadays is 16r10FFFF, which requires only 21 bits.
 
-#### 32-bit Immediate Integers and Variable Tags
+### 32-bit Immediate Integers and Variable Tags
 
 In 32-bit architectures using 3 bits of tag would leave 29 bits left to represent integers.
 Instead of choosing this fixed tag representation, the 32-bit VM uses variable tagging.
@@ -320,11 +344,13 @@ Immediate integers are tagged with a single bit and use the remaining 31 bits to
 The range of immediate integers is \[-2^30,2^30-1\]. For example: `2r10101` represents untagged binary number `2r1010` which has the decimal value `10`.
 
 Figure *@fig:32bitsimm@* illustrates the entire 32-bit tagging schema, with tag bits in gray:
+
 - `00` is an aligned address and therefore it is an object pointer in the heap.
 - `*1` is the tag for immediate integers.
 - `10` is the tag for immediate characters.
 
-#### 64-bit Immediate Floats
+
+### 64-bit Immediate Floats
 
 In 64-bit architectures, the Pharo VM represents floats as immediate objects with the tag `100`.
 The tagged value is an IEEE-754 64-bit double-precision floating point number accommodated in 61 bits.
@@ -332,12 +358,12 @@ However, to accommodate the 64 bits into 61 bits, immediate floats give up 3 bit
 The VM verifies that only immediate floats that do not lose information in this format are encoded as immediates.
 For floats that do not satisfy this constraint, floats use a boxed representation as explained in Section *@sec:boxing@*.
 
-![64 bits `SmallFloat` immediate.](figures/64bitsFloatImmediate.pdf width=100&anchor=fig:64bitsfloatimm)
+![64 bits `SmallFloat` immediate. %width=100&anchor=fig:64bitsfloatimm](figures/64bitsFloatImmediate.pdf )
 
 Figure *@fig:64bitsfloatimm@* shows the structure of a `SmallFloat`.
 The sign bit is moved to the lowest bit of the tagged value, and the highest 3 bits of the exponent are lost.
 
-#### Boxed Native Objects
+### Boxed Native Objects
 @sec:boxing
 
 Numbers that cannot be encoded as _immediates_ need to either gracefully fail or implement a fallback mechanism.
@@ -347,6 +373,8 @@ Boxed numbers are byte objects that contain the native number encoded in their b
 In Pharo, boxed numbers include large integers (instances of `LargePositiveInteger` and `LargeNegativeInteger`) and boxed floats (instances of `BoxedFloat64`).
 Large integers implement variable-sized integers and represent arbitrary large integers as a string of bytes.
 Boxed floats are instead of fixed size: they represent IEEE-754 double-precision floating point numbers, and store the corresponding float in 8 bytes.
+
+
 
 ### Object Header
 @sec:header
@@ -360,7 +388,7 @@ This section explains the overall design of the object header and each of its fi
 The base object header contains meta data that the Virtual Machine uses for several purposes such as decoding an object's contents, maintaining garbage collection state, or even doing runtime type checks.
 Regardless of the architecture, the base header is 64 bits length, which means it is 2 words in 32 bits and 1 word in 64 bits as shown in Figure *@fig:objectheader@*.
 
-![Base Object Header.](figures/ObjectHeader.pdf width=100&anchor=fig:objectheader)
+![Base Object Header. %width=100&anchor=fig:objectheader](figures/ObjectHeader.pdf)
 
 This header is composed of several fields, marked with different colors in the figure.
 From the most significant to the least significant bits, the fields are as follows:
@@ -376,7 +404,8 @@ From the most significant to the least significant bits, the fields are as follo
   - 2 bits are not used.
 
 Notice that the fields of the header are not all contiguous: miscellaneous bits are interleaved in between them.
-The header has been designed so that commonly accessed fields are aligned to a byte or 2-byte boundary.
+The header has been designed so that commonly accessed fields are aligned to a byte or 4-byte boundary. You can also imagine that the information displayed in Figure *@fig:objectheader@* could be displayed on a single line.  
+ 
 This design largely simplifies the decoding of the header, which boils down to a `load` and a `bit-and` instruction sequence.
 This simplifies the JIT compiler and generates better-quality machine code.
 
@@ -414,7 +443,7 @@ numSlotsOf: objOop
 ```
 
 
-#### Class References and Class Table
+### Class References and Class Table
 
 Each object includes a reference to its class in its header.
 However, for space reasons, an object does not store the absolute address.
@@ -431,9 +460,9 @@ The 12 most significant bits in the class index indicate the page index. The 10 
 Each class stores its own index as its hash.
 This allows the VM to get the index of a class without iterating the entire class table, and to guarantee a unique identity hash per class.
 
-![Finding a class in the class table using its index.](figures/classtable.pdf anchor=classtable)
+![Finding a class in the class table using its index. %anchor=classtable](figures/classtable.pdf )
 
-#### Encoding of the Object Format Field
+### Encoding of the Object Format Field
 @sec:format_encoding
 
 The object format field contains 5 bits that are used to identify the object's format explained in Section *@sec:layout@*.
@@ -547,7 +576,7 @@ Both these bit fields will then be copied into the object header when an object 
 
 **Design Note: Precrunched redundant information.**
 Notice that having the number of slots of an object is actually redundant.
-The VM could iterate a class hierarchy, fetch the list of instance variables and sum their sizes.
+The VM could iterate a class hierarchy, fetch the list of instance variables, and sum their sizes.
 That, would turn object instantiation into a very expensive operation.
 Instead, that piece of information is pre-computed and stored in the `format` slot when a class is created.
 The drawback? If we add or remove a slot definition from a class, we need to recompute this number.
@@ -565,12 +594,12 @@ We exploit object alignment to implement integers, floats, and characters as tag
 Tagged pointers use the least significant bits of a pointer to encode a type, and the most significant bits to encode a value.
 Thus, tagged pointers help us represent objects without the overhead of a memory header.
 
-### References
-@sec:references
+%### References
+%@sec:references
 
-- Spur [http://www.mirandabanda.org/cogblog/2013/09/05/a-spur-gear-for-cog/](http://www.mirandabanda.org/cogblog/2013/09/05/a-spur-gear-for-cog/)
-- [https://clementbera.wordpress.com/category/spur/](https://clementbera.wordpress.com/category/spur/)
-- [https://clementbera.wordpress.com/2018/11/09/64-bits-immediate-floats/](https://clementbera.wordpress.com/2018/11/09/64-bits-immediate-floats/)
-- [https://clementbera.wordpress.com/2014/01/16/spurs-new-object-format/](https://clementbera.wordpress.com/2014/01/16/spurs-new-object-format/)
-- [https://clementbera.wordpress.com/2014/02/06/7-points-summary-of-the-spur-memory-manager/](https://clementbera.wordpress.com/2014/02/06/7-points-summary-of-the-spur-memory-manager/)
-- [http://www.mirandabanda.org/cogblog/category/spur/page/3/](http://www.mirandabanda.org/cogblog/category/spur/page/3/)
+%- Spur [http://www.mirandabanda.org/cogblog/2013/09/05/a-spur-gear-for-cog/](http://www.mirandabanda.org/cogblog/2013/09/05/a-spur-gear-for-cog/)
+%- [https://clementbera.wordpress.com/category/spur/](https://clementbera.wordpress.com/category/spur/)
+%- [https://clementbera.wordpress.com/2018/11/09/64-bits-immediate-floats/](https://clementbera.wordpress.com/2018/11/09/64-bits-immediate-floats/)
+%- [https://clementbera.wordpress.com/2014/01/16/spurs-new-object-format/](https://clementbera.wordpress.com/2014/01/16/spurs-new-object-format/)
+%- [https://clementbera.wordpress.com/2014/02/06/7-points-summary-of-the-spur-memory-manager/](https://clementbera.wordpress.com/2014/02/06/7-points-summary-of-the-spur-memory-manager/)
+%- [http://www.mirandabanda.org/cogblog/category/spur/page/3/](http://www.mirandabanda.org/cogblog/category/spur/page/3/)
