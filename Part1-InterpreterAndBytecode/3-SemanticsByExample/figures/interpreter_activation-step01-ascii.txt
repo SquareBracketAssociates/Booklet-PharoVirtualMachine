@@ -1,5 +1,5 @@
                                                               .->+-----+ +-----+
-                                       +-context ---------- + |  | 1@2 | | 3@4 |
+                                       +-context -----------+ |  | 1@2 | | 3@4 |
 -> 25 "push instance variable: corner" | "Rectangle>>#width"| |  +-----+ +-----+
    26 "send: x"                        | "pc = 25"          | '-------------. ^
    27 "pop into temporary: cornerX"    | receiver         --+-> +---------+ | |
