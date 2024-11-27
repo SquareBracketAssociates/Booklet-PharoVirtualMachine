@@ -1,5 +1,5 @@
 ## Methods, Bytecode, and Primitives
-
+@cha:MethodBytecode
 
 This chapter explains the basics of Pharo execution: methods and how they are internally represented.
 Methods execute one after the other, and _call_ each other by means of message-send operations.
@@ -44,10 +44,10 @@ Instance variables are allocated as part of an object slots, occupying a referen
 Instance variables have also a unique 0-base index per ascending hierarchy, because an instance contains all the instance variables declared in its class and all its superclasses.
 For example, given the class `Class` declaring `N` instance variables and having a superclass `Super` declaring `M` instance variables, the variables declared in `Super` have indexes from 0 to `M`, the variables declared in `Class` have indexes from `M+1` to `M+N`.
 
-**Literal variables:** Literal variables are variables declared either as _Class Variables_, _Shared Variables_ or _Global Variables_.
+**Literal variables:** Literal variables are variables declared either as _Shared Variables_, _Shared Pools_ or _Global Variables_.
 These variables have a larger visibility than the two other kind of variables.
 Class variables are visible by all classes and instances of a hierarchy.
-Shared variables work like class variables but can be imported in different hierarchies.
+Shared Pools work like shared variables but can be imported in different hierarchies.
 Global variables are globally visible.
 Literal variables live as long as the program, or a developer decides to explicitly undeclare them.
 
@@ -57,7 +57,7 @@ Methods using literal variables store the corresponding associations in their li
 
 ### Stack Bytecode
 
-Pharo encodes bytecode instructions using the Sista bytecode set{!citation|ref=Bera14a!}.
+Pharo encodes bytecode instructions using the Sista bytecode set {!citation|ref=Bera14a!}.
 The Sista bytecode set defines a set of stack instructions with instructions that are one, two or three bytes long.
 Instructions fall into five main categories: pushes, stores, sends, returns, and jumps.
 
@@ -107,9 +107,11 @@ Different store instructions are:
 Control flow instructions are a family of instructions that change the sequential order in which instructions naturally execute.
 In most programming languages, such instructions represent conditionals, loops, case statements.
 In Pharo, all these boil down to jump instructions, a.k.a., gotos.
+
 Different jump instructions are:
-- conditional jumps pop the top of the value stack and transfer the control flow to the target instruction if the value is either `true` or `false`
-- unconditional jumps transfer the control flow to the target instruction regardless of the values on the value stack
+
+- Conditional jumps pop the top of the value stack and transfer the control flow to the target instruction if the value is either `true` or `false`.
+- Unconditional jumps transfer the control flow to the target instruction regardless of the values on the value stack.
 
 #### Send and Return Instructions
 
@@ -144,7 +146,7 @@ When a primitive function is executed, the value stack contains the method argum
 A key difference between primitive functions and bytecode instructions is that primitives _can fail_.
 When a primitive method is executed, it executes first the primitive function.
 If the primitive function succeeds, the primitive method returns the result of the primitive function.
-If the primitive function fails, the primitive method executes _falls back_ to the method's bytecode.
+If the primitive function fails, the primitive method executes _falls back_ of the method's bytecode.
 For example, in the case above, if the primitive 1 fails, the statement `^ super + addend` will get executed.
 
 **Design Note: fast vs slow paths.** The failure mechanism of primitives is generally used to separate fast paths from slow paths.
@@ -162,6 +164,6 @@ If the check fails, the primitive fails and the method's fallback bytecode imple
 In this chapter we studied how the Pharo virtual machine represents code.
 - The Pharo VM defines a stack machine: computation is expressed by manipulating a stack with push and pop operations. These operations are called bytecode instructions and primitive instructions.
 - Code is organized in methods. Methods contain at most one primitive, a sequence of bytecode instructions and a list of literal values.
-- bytecode instructions manipulating variables carry semantic information about them: there are special instructions for instance variables, class variables and temporary variables. This allows the VM to concentrate on the execution and not to do name analysis at runtime to guess what kind of variable is each name
-- primitive instructions can fail. If they succeed in their computation they pop their arguments and push the result. If they fail, they leave the stack untouched and return an error code.
-- primitive methods make a strong distinction between slow and fast paths: in the fast path they execute the primitive instruction. If it was a success, execution continues in the sender. Otherwise, the method's bytecode is executed.
+- Bytecode instructions manipulating variables carry semantic information about them: there are special instructions for instance variables, shared variables and temporary variables. This allows the VM to concentrate on the execution and not to do name analysis at runtime to guess what kind of variable is each name
+- Primitive instructions can fail. If they succeed in their computation they pop their arguments and push the result. If they fail, they leave the stack untouched and return an error code.
+- Primitive methods make a strong distinction between slow and fast paths: in the fast path they execute the primitive instruction. If it was a success, execution continues in the sender. Otherwise, the method's bytecode is executed.
