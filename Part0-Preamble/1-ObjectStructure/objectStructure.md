@@ -264,9 +264,9 @@ Currently, Pharo supports integers, characters, and floating point numbers as im
 ![64-bit immediate objects. %width=100&anchor=fig:64bitsimm](figures/64bitsImmediate.pdf )
 ![32-bit immediate objects. %width=100&anchor=fig:32bitsimm](figures/32bitsImmediate.pdf )
 
-The following code shows how we can tag, untag, and verify if a value is taggable.
+The following code (Listing *@testingsmallintcaption@*) shows how we can tag, untag, and verify if a value is taggable.
 
-```caption=Testing Small integers.
+```anchor=testingsmallintcaption=Testing Small integers.
 "Convert native values into objects and vice-versa"
 integerValue := objectMemory integerValueOf: aSmallIntegerObject.
 aSmallIntegerObject := objectMemory integerObjectOf: integerValue.
@@ -409,7 +409,7 @@ This design largely simplifies the decoding of the header, which boils down to a
 This simplifies the JIT compiler and generates better-quality machine code.
 
 **Design Note: Redundancy for locality.**
-For those readers that know already the this design, or for those that are coming back here after reading Section *@fig:classes@*, you may have noticed that the `object format` field is duplicated between a class and its instances.
+For those readers that know already this design, or for those that are coming back here after reading Section *@sec:classes@*, you may have noticed that the `object format` field is duplicated between a class and its instances.
 Indeed, classes contain the same field in their meta-data, and that field is copied to the instances during allocation.
 Such redundancy is justified by the _locality property_.
 The class could be far away in memory from its instance, and traversing the memory to find it is generally an expensive operation.
@@ -427,8 +427,6 @@ For this purpose, large objects contain an extra header, namely the overflow hea
 
 
 The overflow header is 8 bytes long and contains the object size. It allows for very large objects with sizes of up to 2^64 words, which is largely sufficient.
-
-SD: Would be nice to have a diagram
 
 When an object has an overflow header, the object size field in the base header is marked with the value 255.
 The pseudocode in Listing *@list:numSlots@* shows how to obtain the number of data slots of an object.
@@ -456,7 +454,7 @@ Since programs are expected to have a low number of classes, class indexes are l
 The class table is organized into 4096 pages of 1024 elements.
 The 12 most significant bits in the class index indicate the page index. The 10 least significant bits in the class index indicate the index of the class within the page.
 
-Each class stores its own index as its hash.
+Each class stores its own index (in the class table) as its hash.
 This allows the VM to get the index of a class without iterating the entire class table, and to guarantee a unique identity hash per class.
 
 ![Finding a class in the class table using its index. %anchor=classtable](figures/classtable.pdf )
@@ -501,12 +499,12 @@ Pharo users write methods in Pharo syntax.
 However, Pharo source code is just text and is not executable.
 Before executing those methods, a bytecode compiler processes the source code and translates it to an executable form by performing a sequence of transformations until it generates a `CompiledMethod` instance.
 A parsing step translates the source code into a tree data structure called an _abstract syntax tree_, a name resolution step attaches semantics to identifiers, a lowering step creates a control flow graph representation, and finally a code generation step produces the `CompiledMethod` object containing the code and meta-data required for execution.
-A compiled method is structured around a method header, a literal frame, a bytecode sequence and a method trailer as shown in Figure *@methodshape@*.
+A compiled method is structured around a method header, a literal frame, a bytecode sequence, and a method trailer as shown in Figure *@methodshape@*.
 
 ![Structure of a compiled method.%anchor=methodshape&width=60](figures/compile_method_shape.pdf)
 
 
-#### Literals and the Literal Frame
+### Literals and the Literal Frame
 
 Pharo code includes all sort of literal values that need to be known and accessed at runtime.
 For example, Listing *@exampleMethod@* shows a method using integers, arrays, and strings.
@@ -520,7 +518,7 @@ MyClass >> exampleMethod
 
 In Pharo, literal values are stored each in different reference slot in a method.
 The collection of reference slots in a method is called the _literal frame_.
-Remember from the object representation chapter, that `CompiledMethod` instances are variable objects that contain a variable reference part and a variable byte indexable part.
+Remember from the object representation Section *@sec:formats@*, that `CompiledMethod` instances are variable objects that contain a variable reference part and a variable byte indexable part.
 
 - Commonly, the literal frame contains references to numbers, characters, strings, arrays and symbols used in a method.
 - In addition, when referencing globals (and thus classes), class variables and shared variables, the literal frame references their corresponding associations.
@@ -539,7 +537,7 @@ All methods contain at least one literal named the _method header_, referencing 
 - **Number of parameters:** 4 bits representing the number of parameters of the method.
 - **Number of temporaries:** 6 bits representing the number of temporary variables declared in the method.
 - **Number of literals:** 15 bits representing the number of literals contained in the method.
-- **Frame size:** 1 bit representing if the method will require small or large frame sizes.
+- **Frame size:** 1 bit representing if the method will require small or large frame size.
 
 The encoder and primitive flags will be covered later in this chapter.
 The frame size will be explored in the context reification chapter.
@@ -559,19 +557,20 @@ It has, however, also been used to encode a method source code in utf8 encoding,
 
 Classes are special (meta-)objects that represent object behavior and allow us to allocate their instances.
 Classes are, maybe surprisingly for some of you, normal fixed-size objects.
-However, not all fixed-size objects can be classes!
+However, not all fixed-size objects are classes!
 
 Classes must respect a contract to be considered as such (and to work properly, of course).
 Thus, any fixed-size object respecting this contract can be used as a class.
 Indeed, the VM expects that classes have at least 3 reference slots, which are in order:
-- the class superclass, with a reference to another class, or `nil` if at the top of the hierarchy
-- the class method dictionary, with a reference to a `MethodDictionary` instance, or `nil` to make `cannotInterpret:` intercession as explained in the interpreter chapter
-- the class format, a small integer composing flags with meta-data
 
-The class format encodes the number of fixed slots in its instances, and the kind of object to create.
-Both these bit fields will then be copied into the object header when an object is intantiated.
+- The class superclass, with a reference to another class, or `nil` if at the top of the hierarchy.
+- The class method dictionary, with a reference to a `MethodDictionary` instance, or `nil` to make `cannotInterpret:` intercession as explained in the interpreter chapter.
+- The class format, a small integer composing flags with meta-data.
 
-![The class format encodes the object format and the number of slots.](figures/classformat.pdf)
+The class format encodes the number of fixed slots in its instances, and the kind of object to create (the object format See Section *@sec:format_encoding@*).
+Both these bit fields will then be copied into the object header when an object is instantiated.
+
+![The class format encodes the object format and the number of slots. %width=60](figures/classformat.pdf)
 
 **Design Note: Precrunched redundant information.**
 Notice that having the number of slots of an object is actually redundant.
