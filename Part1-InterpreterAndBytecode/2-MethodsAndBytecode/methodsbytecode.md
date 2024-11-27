@@ -15,7 +15,7 @@ The bytecode interpreter and the call stack are introduced in Chapter *@cha:Slan
 
 To understand how Pharo code works, it is useful to do a quick reminder on how do variables work.
 In this chapter, we will deal with the low-level representation of variables (how read/writes are implemented).
-For a more complete overview on variables and their usage, please refer yourselves to Pharo by Example{!citation|ref=Duca17a!}.
+For a more complete overview on variables and their usage, please refer yourselves to Pharo by Example {!citation|ref=Duca17a!}.
 
 Pharo supports three main kind of variables.
 Each kind of variable is stored differently in memory and has a different lifetime and behavior _i.e.,_ they are allocated and deallocated at different moments in time.

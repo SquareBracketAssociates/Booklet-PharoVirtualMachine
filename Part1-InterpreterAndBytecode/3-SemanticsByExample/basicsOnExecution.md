@@ -1,17 +1,17 @@
 ## Bytecode Semantics by Example
-
+@cha:SemanticsByExample
 
 This chapter explains how bytecode is executed by the virtual machine in a high-level manner, using examples.
 The idea is to get you used to the stack semantics.
 For this purpose, this chapter first approximates the concept of execution contexts.
 Execution contexts represent the execution of methods: they hold the values of temporary variables and values pushed to the stack and they allow one to suspend the execution of methods by remembering the executed instructions.
 
-The interpreter chapter we will explain how these semantics map to the low(er)-level code of the interpreter and the compiler.
+The interpreter chapter will explain how these semantics map to the low(er)-level code of the interpreter and the compiler.
 Later, contexts will come back as reflective reifications, allowing Pharo to support its powerful debugger!
 
 ### Setting up the Scene
 
-Let us consider the two following methods, `Rectangle>>#center` and `Point>>#x`, with the following source code:
+Let us consider the two following methods, `Rectangle>>#width` and `Point>>#x`, with the following source code:
 
 ```
 Point >> x
@@ -28,27 +28,32 @@ Before being executable, this source code is translated to a format more _pleasa
 Indeed, the Pharo bytecode compiler, outside of the scope of this book, translates this source code into a `CompiledMethod` object.
 The compiled method object, as we studied before, contains a frame of literals and a set of bytecode instructions.
 
-The method `Point>>#x` has the bytecode sequence 248, 8, 1, 0 and 92.
+The method `Point>>#x` has the bytecode sequence 248, 8, 1, 0, and 92.
 
 ```
 (Point >> #x) bytecode
   #[248 8 1 0 92]
 ```
 
-To better understand what each of those bytes mean, Pharo methods implement `symbolicBytecodes`, which returns a textual description of the method's bytecode sequence.
+To better understand what each of those bytes means, Pharo methods implement `symbolicBytecodes`, which returns a textual description of the method's bytecode sequence.
 The next code snippet shows the textual representation of `Point>>#x`'s bytecode.
-For each bytecode, it is first listed the bytecode index within the method, followed by the sequence of bytes that make up the instruction printed in hexa between angle brackets, and finally a textual description of that instruction.
-In our case, the five bytes `248 8 1 0 92` do actually represent three different instructions.
-The first instruction, `<F8 08 01>`, is the instruction `callPrimitive` 264.
-The second instruction, `<00>`, is the instruction `pushRcvr` 0, which pushes the first instance variable (using a 0-base index) of the receiver (`self`).
-The final instruction, `<5C>`, is the instruction `returnTop`, which returns from the method with the value found in the top of the stack.
+For each bytecode, it is first listed the bytecode index within the method, followed by the sequence of bytes that make up the instruction printed in hexa between angle brackets, and finally a textual description of that instruction (as shown in Listing *@symbolic@*).
 
-```
+
+```caption=Describing the byte codes of the accessor `x` of `Point`.&anchor=symbolic
 (Point >> #x) symbolicBytecodes
 	25 <F8 08 01> callPrimitive: 264
 	28 <00> pushRcvr: 0
 	29 <5C> returnTop
 ```
+
+For method `Point>>#x`, the five bytes `248 8 1 0 92` do actually represent three different instructions.
+
+- The first instruction, `<F8 08 01>`, is the instruction `callPrimitive` 264.
+- The second instruction, `<00>`, is the instruction `pushRcvr` 0, which pushes the first instance variable (using a 0-base index) of the receiver (`self`).
+- The final instruction, `<5C>`, is the instruction `returnTop`, which returns from the method with the value found in the top of the stack.
+
+
 
 You may wonder why the first bytecode index does not start 1 or 0. This is because the bytecode sequence is part of a compiled method and the compiled method contains a memory region to hold some constants such as numbers, message selectors,... This region is called the literal frame. 
 
@@ -65,7 +70,7 @@ However, as with any optimization, the code will remain semantically valid witho
 ```
 
 In addition, you may have noticed that textual bytecode descriptions use 0-based indexes to refer to instance variables and that the instruction names remain a bit cryptic.
-This means that to understand an instruction we need to have in our minds the entire layout of a class and its hierarchy, in addition to all the potential acronyms and abbreviations.
+This means that to understand an instruction we need to have in our mind the entire layout of a class and its hierarchy, in addition to all the potential acronyms and abbreviations.
 To avoid this mental overhead, this chapter will show instead the resolved names and nicer reading descriptions.
 We, however, invite the reader to read many method bytecodes to get used to the terminologies.
 With these simplifications, we will show methods as follows:
@@ -85,18 +90,23 @@ Method contexts model the state of the execution of a single method, and combine
 #### Contexts
 
 Executing a method requires that we:
-1. have access to method arguments, and `self`
-2. remember the state of different local variables
-3. remember the state of expressions' subexpressions
-4. execute one by one all the instructions in the method
-5. remember the last executed instruction on a message send
-6. remember the caller method execution, to return to it
 
-All this is supported with a simple data structure, that we will call a _context_ that holds onto:
-- the method's program counter containing the next instruction to be executed
-- an array of temporary variables containing the values for each instance variable
-- a stack of values for intermediate expressions
-- a pointer to the caller's context, namely the _sender_, which contains the suspended execution of the caller method
+1. have access to method arguments, and `self`.
+2. remember the state of different local variables.
+3. remember the state of expressions' subexpressions.
+4. execute one by one all the instructions in the method.
+5. remember the last executed instruction on a message send.
+6. remember the caller method execution, to return to it.
+
+All this is supported with a simple data structure, that we will call a _context_ that holds onto (as shown in Figure *@activation1@*):
+
+- the method's program counter containing the next instruction to be executed,
+- an array of temporary variables containing the values for each instance variable,
+- a stack of values for intermediate expressions, and 
+- a pointer to the caller's context, namely the _sender_, which contains the suspended execution of the caller method.
+
+![A context to represent the execution of method Point>>#x. %width=65&anchor=activation1](figures/interpreter_activation.pdf)
+
 
 Every time an instruction is executed, the program counter will advance to the next instruction.
 An exception is _jump instructions_, which will make the program counter _jump_ to a specific program counter.
@@ -105,19 +115,21 @@ Moreover, storing the program counter allows one to save the execution of a meth
 Temporary variables are tracked in the temporary variable array.
 The value stack stores the results of subexpressions, allowing an arbitrary number of nested expressions.
 
-**About the figures:** Inspired by the Smalltalk-80 Blue Book, we will show how methods are executed with figures similar to the next one.
-In Figure *@activation1@* we show the list of bytecodes in the method and the context object.
+**About the figures:** Inspired by the Smalltalk-80 Blue Book {!citation|ref=Gold83a!}, we will show how methods are executed with figures similar to the next one.
+Figure *@activation1@* shows the list of bytecodes in the method and the context object.
 An arrow points to the next instruction to execute in the instruction list.
 
-![A context to represent the execution of method Point>>#x. %width=70&anchor=activation1](figures/interpreter_activation.pdf)
 
 
 #### Understanding Bytecode Execution
 
-Executing bytecode follows, inspired by how actual hardward works, a fetch-decode-execute cycle.
-1. The byte at the program counter is fetched (read),
+Executing bytecode follows, inspired by how actual hardware works, a fetch-decode-execute cycle.
+1. The byte at the program counter is fetched (read).
 2. The read byte is decoded, and mapped to the instruction to execute.
-3. Finally, the instruction is executed, and the program counter is set to the next instruction
+3. Finally, the instruction is executed, and the program counter is set to the next instruction.
+
+
+
 
 ### Step by Step Method Execution by Example
 
@@ -130,18 +142,18 @@ Let's consider the following expression:
 ((1@2) corner: (3@4)) width
 ``` 
 
-This expression creates a rectangle object, and sends it the message `width`, activating the method we saw before.
+This expression creates a rectangle object, and sends it the message `width`, activating the method presented at the beginning of this chapter.
+
 When the method `Rectangle>>#width` gets activated, a context is created for it.
 This context is initialized as follows (as shown in Figure *@activation-step01@*):
-- it references the method executed
-- its program counter is the first program counter of the method
-- it has one entry for each temporary variable, initialized to `nil`
-- it starts with an empty stack
+
+- it references the method executed,
+- its program counter is the first program counter of the method,
+- it has one entry for each temporary variable, initialized to `nil`,
+- it starts with an empty stack, and 
 - its sender is the context sending the `((1@2) corner: (3@4)) width` message, avoided in the example for simplicity.
 
-
-
-
+![After executing the first instruction, the context stack contains a reference to the origin instance variable (e.g. `3@4`).%width=90&anchor=activation-step02](figures/interpreter_activation-step02.pdf)
 
 **Step 1: Pushing Values to the Stack.**
 
@@ -149,7 +161,7 @@ The first instruction in the method `Rectangle>>#width` pushes to the stack the 
 After its execution, the stack contains a new element: a reference to the object `3@4` (as shown in Figure *@activation-step02@*).
 Moreover, the program counter increases, indicating that the next instruction to execute is a message send.
 
-![After executing the first instruction, the context stack contains a reference to the origin instance variable (e.g. `3@4`).%width=90&anchor=activation-step02](figures/interpreter_activation-step02.pdf)
+
 
 
 **Step 2: Message Sends.**
