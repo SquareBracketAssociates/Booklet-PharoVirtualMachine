@@ -1,6 +1,4 @@
-## Methods, Bytecode and Primitives
-
-@@ Stef: I would cut the byte code (section 3.4) in a separate chapter. There is a big difference in information.
+## Methods, Bytecode, and Primitives
 
 
 This chapter explains the basics of Pharo execution: methods and how they are internally represented.
@@ -9,7 +7,7 @@ Methods execute under the hood using a stack machine.
 A stack holds the current calls and their values.
 Bytecode instructions and primitives manipulate this stack with push and pop operations.
 
-In this chapter, we explain in detail how methods are modeled using the sista bytecode set{!citation|ref=Bera14a!}.
+In this chapter, we explain in detail how methods are modeled using the Sista bytecode set {!citation|ref=Bera14a!}.
 We explain how bytecode and primitive instructions are executed using a conceptual stack.
 The bytecode interpreter and the call stack are introduced in Chapter *@cha:Slang@*.
 
