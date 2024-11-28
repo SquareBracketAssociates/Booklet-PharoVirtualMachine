@@ -148,36 +148,36 @@ When the method `Rectangle>>#width` gets activated, a context is created for it.
 This context is initialized as follows (as shown in Figure *@activation-step01@*):
 
 - it references the method executed,
-- its program counter is the first program counter of the method,
+- its program counter points on the first bytecode of the method,
 - it has one entry for each temporary variable, initialized to `nil`,
 - it starts with an empty stack, and 
 - its sender is the context sending the `((1@2) corner: (3@4)) width` message, avoided in the example for simplicity.
 
-![After executing the first instruction, the context stack contains a reference to the origin instance variable (e.g. `3@4`).%width=90&anchor=activation-step02](figures/interpreter_activation-step02.pdf)
+![After executing the first instruction, the context stack contains a reference to the `corner` instance variable (e.g. `3@4`).%width=90&anchor=activation-step02](figures/interpreter_activation-step02.pdf)
 
 **Step 1: Pushing Values to the Stack.**
 
-The first instruction in the method `Rectangle>>#width` pushes to the stack the value of the `origin` instance variable.
+The first instruction in the method `Rectangle>>#width` pushes to the stack the value of the `corner` instance variable.
 After its execution, the stack contains a new element: a reference to the object `3@4` (as shown in Figure *@activation-step02@*).
 Moreover, the program counter increases, indicating that the next instruction to execute is a message send.
 
 
+![ A new context is created for the execution of message `x` sent to the object popped of the stack of `Rectangle>>#width` context. The executing method is `Point>>#x`. `Rectangle>>#width` instruction pointer refers to the next instruction to execute once `x` message will return.%anchor=activation-step03&width=90](figures/interpreter_activation-step03.pdf)
 
 
 **Step 2: Message Sends.**
 
 The current instruction to execute, at program counter 26, performs the message send `x`.
-Executing a send first finds the receiver and looks up the method to execute.
-The receiver and arguments of the message are the top elements in the stack.
-In this case, since `x` is a unary message without arguments, the receiver is the top of the stack, our `3@4` object.
-Thus, looking up the selector `x` from the class `Point`, yields the method `Point>>x`.
+To execute a message send:
 
-Then, the instruction pops the receiver (and arguments that we did not have here) from the stack, and creates a new method context.
-As shown in Figure *@activation-step03@*, the method context refers to the method to execute to `Point>>#x`, the message receiver, initialize its program counter to the first program counter of the method (28), initialize all temps to `nil` (none in this case), starts with an empty stack, and sets as sender the previous execution context.
+- The execution first finds the receiver and looks up the method to execute. The receiver and arguments of the message are the top elements in the stack. In our case, since `x` is a message without argument, the receiver is the top of the stack, our `3@4` object. Thus, looking up the selector `x` from the class `Point`, yields the method `Point>>#x`.
 
-![ A new context is created for the execution of message `x` sent to the object popped of the stack of `Rectangle>>#width` context. The executing method is `Point>>#x`. `Rectangle>>#width` instruction pointer refers to the next instruction to execute once `x` message will finish. %anchor=activation-step03&width=90](figures/interpreter_activation-step03.pdf)
+- Then, the instruction pops the receiver (and arguments that we do not have here) from the stack and creates a new method context. As shown in Figure *@activation-step03@*, the method context refers to the method to execute (here `Point>>#x`) and the message receiver.
 
-Now the executing method is `Point>>#x`, with receiver `3@4`.
+- The interpreter initializes the new context so that its program counter points to the first bytecode of the method (28).
+It initializes all temporaries to `nil` (none in this case), starts with an empty stack, and sets as sender the previous execution context.
+
+- At this point, the executing method is `Point>>#x` with the receiver `3@4`.
 
 **Steps 3 and 4: Push and Return.**
 
