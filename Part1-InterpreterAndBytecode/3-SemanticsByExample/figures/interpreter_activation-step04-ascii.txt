@@ -2,11 +2,11 @@
    28 "push instance variable: x" | "Point>>#x"  |
 -> 29 "return top of stack"       | "pc = 29"    |
                                   | receiver  ---+-------------------------.
-                                  | temps - - - -|                         |
+                                  |- temps - - --|                         |
                                   | empty        |                         |
-                                  | stack - - - -|                         |
+                                  |- stack - - --|                         |
                                   | 3            |                         |
-                                  | - - - - - - -|                         |
+                                  |- - - - - - --|                         |
                                   | sender    -+ |                         |
                                   +------------+-+                         |
                                                |                           v
@@ -19,7 +19,7 @@
    29 "send: x                       " | "originX = nil"     |   | corner -+---'
    30 "pop into temporary: originX   " | "cornerX = nil"     |   +---------+
    31 "push temporary: cornerX       " |- stack - - - - - - -|
-   32 "push temporary: originX       " | 3@4                 | 
+   32 "push temporary: originX       " | empty               | 
    33 "send: -                       " |- - - - - - - - - - -|
    34 "returnTop                     " | sender           -+ |
       "                              " +-------------------+-+

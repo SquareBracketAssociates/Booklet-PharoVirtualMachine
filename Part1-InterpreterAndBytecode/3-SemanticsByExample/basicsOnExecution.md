@@ -155,7 +155,7 @@ This context is initialized as follows (as shown in Figure *@activation-step01@*
 
 ![After executing the first instruction, the context stack contains a reference to the `corner` instance variable (e.g. `3@4`).%width=90&anchor=activation-step02](figures/interpreter_activation-step02.pdf)
 
-**Step 1: Pushing Values to the Stack.**
+### Step 1: Pushing Values to the Stack
 
 The first instruction in the method `Rectangle>>#width` pushes to the stack the value of the `corner` instance variable.
 After its execution, the stack contains a new element: a reference to the object `3@4` (as shown in Figure *@activation-step02@*).
@@ -165,7 +165,7 @@ Moreover, the program counter increases, indicating that the next instruction to
 ![ A new context is created for the execution of message `x` sent to the object popped of the stack of `Rectangle>>#width` context. The executing method is `Point>>#x`. `Rectangle>>#width` instruction pointer refers to the next instruction to execute once `x` message will return.%anchor=activation-step03&width=90](figures/interpreter_activation-step03.pdf)
 
 
-**Step 2: Message Sends.**
+### Step 2: Message Sends
 
 The current instruction to execute, at program counter 26, performs the message send `x`.
 To execute a message send:
@@ -174,55 +174,53 @@ To execute a message send:
 
 - Then, the instruction pops the receiver (and arguments that we do not have here) from the stack and creates a new method context. As shown in Figure *@activation-step03@*, the method context refers to the method to execute (here `Point>>#x`) and the message receiver.
 
-- The interpreter initializes the new context so that its program counter points to the first bytecode of the method (28).
-It initializes all temporaries to `nil` (none in this case), starts with an empty stack, and sets as sender the previous execution context.
+- The interpreter initializes the new context so that its program counter points to the first bytecode of the method (28). It initializes all temporaries to `nil` (none in this case), starts with an empty stack, and sets as sender the previous execution context.
 
 - At this point, the executing method is `Point>>#x` with the receiver `3@4`.
 
-**Steps 3 and 4: Push and Return.**
+### Steps 3 and 4: Push and Return
 
 The first bytecode in the method `Point>>#x` pushes the value of the instance variable `x` of `3@4` to _current_ context's stack (as shown in Figure *@activation-step04@*).
 
-![Starting the execution of  `Point>>#x`: pushing the value of `x` to the stack. %anchor=activation-step04&width=90](figures/interpreter_activation-step04.pdf)
+![Starting the execution of  `Point>>#x` -- pushing the value of `x` to the stack. %anchor=activation-step04&width=90](figures/interpreter_activation-step04.pdf)
 
 The last instruction in this method returns the control to the sender context.
 The return value of this instruction is the top of the stack (3).
 When the return instruction gets executed, the current execution context gets discarded, and its sender becomes (again) the current execution context.
 The return value is then pushed to the stack of the new current context as shown in Figure *@activation-step05@*.
 
-![When the method `Point>>#x` returns a value, the context representing its execution is discarded and the execution resumes on the previous context. %anchor=activation-step05&width=90](figures/interpreter_activation-step05.pdf)
+![When the method `Point>>#x` returns a value - it is pushed to the caller context stack, the context representing its execution is discarded, and the execution resumes on the previous context.  %anchor=activation-step05&width=90](figures/interpreter_activation-step05.pdf)
 
 Now we are back executing our method `Rectangle>>#width`, and we are ready to restart the execution from where it was suspended: the program counter 27.
 
-{!comment=Stef here!}
 
-**Step 5: Popping and Storing into Temporary Variables.**
+### Step 5: Popping and Storing into Temporary Variables
 
 Back in `Rectangle>>#width`, the next instruction pops the top of the stack (oh this is the return value of the `x` message send!) and stores it in the temporary variable `cornerX` as shown in Figure *@activation-step06@*. Notice that this instruction stores the value and pops it to the stack all at once.
 Other instructions allow one to do stores without pops, or just pops without stores, or even pop combined with other instructions.
 Such instructions will be explained in the chapter about bytecode and interpreter optimizations.
 
-![The results of the message `x` are stored in the temporaries `originX` and `cornerX`. %anchor=activation-step06&width=90](figures/interpreter_activation-step06.pdf)
+![The result of the message `x` is stored in the temporary `cornerX`. %anchor=activation-step06&width=90](figures/interpreter_activation-step06.pdf)
 
 
-**Steps 6 through 12: Repeat with the Rectangle's origin.**
+### Steps 6 through 12: Repeat with the Rectangle's origin
 
 The next steps are similar to the previous ones, but done with the `origin` instance variable.
-The method pushes the `origin` instance variable value (1@2) to the stack, sends it the message `x`, and when it returns it pops the result and stores it in the temporary variable `originX` as shown in Figure *@activation-step06@*
+The method pushes the `origin` instance variable value (1@2) to the stack, sends it the message `x`, and when it returns it pops the result and stores it in the temporary variable `originX`.
 
 ![ Before pushing the temporaries to the stack before sending the message `-`.%anchor=activation-step11&width=90](figures/interpreter_activation-step11.pdf)
 
 Now we are ready for the last part of this method: the subtraction!
-But before executing the subtraction, we need to put all of its operands in the stack as shown in Figure *@activation-step11@*.
-Instructions at program counters 31 and 32 push the values of the temporary variables and leave us with the following context as shown in Figure *@activation-step1213@*.
+But before executing the subtraction, we need to push all of its operands to the stack as shown in Figure *@activation-step11@*.
+Instructions at program counters 31 and 32 push the values of the temporary variables and leave us with the following context as shown in Figure *@activation-step1213@*. It is important to see that when we execute `3 - 1` the receiver, (here the object `3`) is not on top of the stack but below the argument (here the object `1`).
 
-![Before sending the message `-`. %anchor=activation-step1213&width=90](figures/interpreter_activation-step1213.pdf)
+![Before sending the message `-`. Remark that the receiver is not the top of the stack. %anchor=activation-step1213&width=90](figures/interpreter_activation-step1213.pdf)
 
-#### Step 13: The Subtraction Primitive
+### Step 13: The Subtraction Primitive
 
 At program counter 33 we perform the message send `-`.
 Again, the send finds the receiver and looks up the method to execute.
-Here, the subtraction is a binary selector with one argument, thus the receiver is the value just before the top of the stack, the small integer 2 as shown in Figure.
+Here, the subtraction is a binary selector with one argument, thus the receiver is the value just before the top of the stack, the small integer 3 as shown in Figure *@activation-step1213@*.
 Thus, looking up the selector `-` from the class `SmallInteger`, yields the method `SmallInteger>>-`.
 
 Differently from the previous methods, `SmallInteger>>#-` is a primitive method:
@@ -235,7 +233,7 @@ SmallInteger >> - aNumber
 
 Primitive methods work differently from normal methods: they execute directly on the caller context (our `Rectangle>>#width` context).
 If the primitive instruction succeeds, the primitive operands are popped and the result is pushed.
-This is what happens in this case, `3 - 1` is a properly working subtraction that results in the value 2 as shown in Figure **.
+This is what happens in this case, `3 - 1` is a properly working subtraction that results in the value 2 as shown in Figure *@activation-step14@*.
 
 ![ The primitive succeeds - it did not create a new context but worked directly in the context of `Point>>#width`.%anchor=activation-step14&width=90](figures/interpreter_activation-step14.pdf)
 

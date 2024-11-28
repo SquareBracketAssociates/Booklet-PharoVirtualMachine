@@ -2,11 +2,11 @@
 -> 28 "push instance variable: x"| "Point>>#x"  |
    29 "return top of stack"      | "pc = 28"    |
                                  | receiver  ---+--------------------------.
-                                 | temps - - - -|                          |
+                                 |- temps - - --|                          |
                                  | empty        |                          |
-                                 | stack - - - -|                          |
+                                 |- stack - - --|                          |
                                  | empty        |                          |
-                                 | - - - - - - -|                          |
+                                 |- - - - - - --|                          |
                                  | sender    -+ |                          |
                                  +------------+-+                          |
                                               |                            v
