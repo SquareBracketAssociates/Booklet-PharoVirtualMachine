@@ -221,7 +221,8 @@ Instructions at program counters 31 and 32 push the values of the temporary vari
 At program counter 33 we perform the message send `-`.
 Again, the send finds the receiver and looks up the method to execute.
 Here, the subtraction is a binary selector with one argument, thus the receiver is the value just before the top of the stack, the small integer 3 as shown in Figure *@activation-step1213@*.
-Thus, looking up the selector `-` from the class `SmallInteger`, yields the method `SmallInteger>>-`.
+This illustrates that when we execute a message, the bytecode has to know the number of arguments of the message to be able to identify the receiver.
+Thus, looking up the selector `-` from the class `SmallInteger`, yields the method `SmallInteger>>#-`.
 
 Differently from the previous methods, `SmallInteger>>#-` is a primitive method:
 
@@ -238,38 +239,34 @@ This is what happens in this case, `3 - 1` is a properly working subtraction tha
 ![ The primitive succeeds - it did not create a new context but worked directly in the context of `Point>>#width`.%anchor=activation-step14&width=90](figures/interpreter_activation-step14.pdf)
 
 If the primitive instruction fails, we proceed to execute the method normally.
-The instruction pops the receiver (and arguments that we did not have here) from the stack, and creates a new method context.
+The instruction pops the receiver and arguments from the stack, and creates a new method context.
 The method context will reference the method to execute to `Point>>#-`, the message receiver, initialize its program counter to the first instruction that will execute `super - aNumber`.
 
 ### Points to consider
 
 The execution of the method `Point>>#width` illustrates some aspects that a real system will have to address. 
 
-- First the context stack may grow more depending on the level of instructions nesting. When using a contiguous memory region to represent compiled methods (as opposed to use a pointer to a separate data structure) the maximum depth size of the stack should be computed to avoid overflow.
+- First, the context stack may grow more depending on the level of instruction nesting inside an expression. When using a contiguous memory region to represent compiled methods (as opposed to using a pointer to a separate data structure) the maximum depth size of the stack should be computed to avoid overflow.
 
-- Second, contexts are a nice abstraction to understand program execution and to represent the execution  for reflective operations but they have drawbacks and because of this the virtual machine uses a different representation called _stack frame_ for normal execution and use contexts for reflective operation such as `thisContext`.
+- Second, contexts are a nice abstraction to understand program execution and to represent the execution  for reflective operations but they have drawbacks and because of this the virtual machine uses a different representation called _stack frame_ for normal execution and uses contexts for reflective operations such as `thisContext`.
 
 We list here the limits of the context representation:
 
-  - Each time a method sends a message, the receiver and arguments have to be copied to the new context. This is clearly a lost of time. 
-  - The representation of contexts as objects (also called a spaghetti stack), can spread stack elements in different memory location breaking the locality of data that microprocessors use to speed up execution.
+- Each time a method sends a message, the receiver and arguments have to be copied to the new context. This is clearly a lost of time. 
+
+- The representation of contexts as objects (also called a spaghetti stack), can spread stack elements in different memory locations breaking the locality of data that microprocessors use to speed up execution.
   
-Representing execution elements in contiguous way improves this two drawbacks. 
+Representing execution elements in a contiguous way improves these two drawbacks. 
 
 
 ### Conclusion
 
 This chapter presented a high-level overview of bytecode execution:
-- bytecode is executed one after the other in a method.
-- jump instructions change the sequential aspect of execution and move the program counter to an arbitrary instruction.
-- execution state is stored in contexts containing a stack and temporary variables. Values are stored into temporary variables using store instructions, and the results of subexpressions are stored in the context stack.
-- contexts also store the program counter, which is useful for following the execution and suspending a method execution
-- a message send suspends the current context and creates a new context for the called method
-- primitive methods execute a primitive instruction on the context of the sender, without creating a context. Only if the primitive fails a context is created and the fallback bytecode is executed.
-- from the perspective of the _sender_ context, the execution of a message send is a black box: a message send pops the arguments, and pushes the results. The sender does not need to know the implementation of the called method, whether it is a primitive method or not.
+- Bytecodes are executed one after the other in a method.
+- Jump instructions change the sequential aspect of execution and move the program counter to an arbitrary instruction.
+- Execution state is stored in contexts containing a stack and temporary variables. Values are stored into temporary variables using store instructions, and the results of subexpressions are stored in the context stack.
+- Contexts also store the program counter, which is useful for following the execution and suspending a method execution.
+- A message send suspends the current context and creates a new context for the called method.
+- Primitive methods execute a primitive instruction on the context of the sender, without creating a context. Only if the primitive fails a context is created and the fallback bytecode is executed.
+- From the perspective of the _sender_ context, the execution of a message send is a black box: a message send pops the arguments, and pushes the results. The sender does not need to know the implementation of the called method, whether it is a primitive method or not.
 
-
-### Little todo
-
-- explain briefly why bytecode starts a 25 or so.
-- 
