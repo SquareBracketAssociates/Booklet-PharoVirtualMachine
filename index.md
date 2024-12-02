@@ -44,7 +44,7 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 
 # JIT Compilation
 
-<!inputFile|path=Part2-JIT/CallingConventions/CallingConventions.md!>
+%<!inputFile|path=Part2-JIT/CallingConventions/CallingConventions.md!>
 
 ## Slang
 @cha:Slang
