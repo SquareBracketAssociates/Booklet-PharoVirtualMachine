@@ -1,12 +1,13 @@
               ╭--->+---------------------+
- || The Stack |   | callerFramePointer  -+---> null (bottom of stack )
- || Grows     |   | method               |
- \/ Down      |   | context              |
+              |   | callerFramePointer  -+---> null (bottom of stack )
+              |   | method               |
+              |   | context              |
               |   | flags                |
               |   | receiver             |
               |   | temp var 0           |
-              |   | stack value 1        |
-              |   | stack value 0        |
+              |   | stack value A        |
+              |   | stack value B        |
+              |   | stack value C        |
               |   | instructionPointer   |
               |╭-->+---------------------+
               `+--|-callerFramePointer   |
@@ -14,12 +15,12 @@
                |  | context              |
                |  | flags                |
                |  | receiver             |
-               |  | stack value 1        |
+               |  | stack value          |
                |  | instructionPointer   |
-framePointer --+-->+---------------------+
-               `--|-callerFramePointer   |
-                  | method               |
-                  | context              |
+framePointer --+-->+---------------------+        || The Stack
+               `--|-callerFramePointer   |        || grows
+                  | method               |        \/ down to 
+                  | context              |            lower addresses
                   | flags                |
                   | receiver             |
                   | temp var 0           |

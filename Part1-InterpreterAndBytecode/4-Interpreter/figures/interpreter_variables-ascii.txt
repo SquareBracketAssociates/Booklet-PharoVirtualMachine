@@ -4,8 +4,9 @@ instructionPointer -. |  | method -------------+--.
                     | |  | context             |   \
                     | |  | flags               |    '-->.--------------.
                     | |  | receiver            |        |object header |
-                    | |  | temp var 0          |        |~~~~~~~~~~~~~~|
-                    | |  | stack value 1       |        |literal 0     |
+                    | |  | - - - - - - - - - - |        |~~~~~~~~~~~~~~|
+                    | |  | temp var 0          |        |literal 0     |
+                    | |  | stack value 1       |        |...           |
                     | `->| stack value 0       |        |...           |
                     |    +---------------------+        |literal n     |
                     |                                   |~~~~~~~~~~~~~~|
