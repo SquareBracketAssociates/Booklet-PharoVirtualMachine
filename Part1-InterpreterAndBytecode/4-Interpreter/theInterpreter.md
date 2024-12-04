@@ -1,4 +1,5 @@
 ## The Interpreter
+@cha:interpreter
 
 At the heart of the Pharo virtual machine there is the interpreter, Pharo's main execution engine.
 Folklore says that interpreters are slow. Truth is they are. But they are also easy to implement and maintain.
@@ -82,12 +83,12 @@ Interpreter >> fetchNextBytecode
 > Each bytecode instruction fetches the next instruction. We will observe in the methods defining bytecodes that, differently from the interpreter C sketch at the beginning of the chapter, each instruction is responsible for fetching its next instruction. This implementation detail duplicates the instruction fetching code around the interpreter, while simplifying its translation to a threaded interpreter as it will be explained in the Slang chapter.
 
 The instruction pointer is not only manipulated to fetch instructions.
-Later in this chapter we will see how bytecode instructions manipulate it to implement control flow operations: jumps, message sends, and returns.
+Later in this chapter, we will see how bytecode instructions manipulate it to implement control flow operations: jumps, message sends, and returns.
 Moreover, later chapters will show the role of the instruction pointer to implement green-thread based concurrency.
 
 
 
-### Pushing and Popping, the Stack and the Stack Pointer
+### (moved to other chapter) Pushing and Popping, the Stack and the Stack Pointer
 
 The execution of Pharo code is supported mainly by a stack supporting operations such as push, pop and indexed access from the top.
 The stack is a contiguous region of memory of fixed size organized in slots of one word each.

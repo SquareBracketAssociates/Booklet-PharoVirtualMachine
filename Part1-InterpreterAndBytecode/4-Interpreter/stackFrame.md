@@ -2,7 +2,9 @@
 @cha:stackframe
 
 While the representation of execution as objects, _contexts_, is conceptually relevant, it has many drawbacks as mentioned in Chapter *@cha:SemanticsByExample@*. In this chapter 
-we present the stack frame used by the Pharo Virtual machine. We show how the Pharo virtual machine represents the execution stack as a contiguous memory region addressing the limits of context representation.
+we present the stack frame used by the Pharo Virtual machine. We show how the Pharo virtual machine represents the execution stack as a contiguous memory region addressing the limits of context representation. The stack frame is under the responsibility of the interpreter. This is why 
+the stack manipulation are operations defined within this class. 
+Chapter *@cha:interpreter@* will present in detail the functionalities of the interpreter, such as method lookup.
 
 We first discuss the stack value representation, then we discuss the structure of stack frame elements, and finally, we show that contrary to the context representation, with a stack frame arguments are not mixed with temporaries and do not have to be duplicated between caller and callee methods. 
 
@@ -15,7 +17,11 @@ The execution of Pharo code is supported mainly by a stack supporting operations
 
 The stack is a contiguous region of memory of fixed size organized in slots of one word each.
 The _base_ of the stack is where the stack begins, where its oldest elements are stored.
-Conversely, the _top_ of the stack is where the most recently pushed element is stored.
+Conversely, the _top_ of the stack is where the most recently pushed element is stored (see Figure *@stackGrowDownAddress@*).
+
+![The stack grows down. %width=70&anchor=stackGrowDownAddress](figures/stackGrowDownAddress.pdf)
+
+
 The stack is manipulated through a variable called `stackPointer`, which is a pointer to the top of the stack.
 
 
@@ -25,7 +31,6 @@ Pushing a value to the stack moves the stack pointer towards lower addresses. Po
 
 
 ![The stack grows down. %width=70&anchor=interpreterVariables](figures/interpreter_variables.pdf)
-
 
 
 Using the `stackPointer` variable the interpreter implements the following methods shown in Listing *@stackOps@*.
@@ -104,23 +109,6 @@ Notice that the stack pointer needs not to be stored: a suspended frame's stack 
 
 ![The call stack as a linked lists of frames in the stack. %width=70&anchor=interpreter_stack](figures/interpreter_call_stack.pdf)
 
-
-#### Stack Frame Flags
-
-Within each interpreter stack frame there is the flags, a bitfield storing interpreter meta-data about the frame.
-The two figures below show the structure of the flags in 64 and 32 bits architectures.
-The stack frame flags store, from lower to higher bits in the bit field:
-- **Method number of arguments:** A 1-byte field _caching_ the number of arguments, to avoid fetching it from the method.
-- **hasContext flag:** A 1-byte field used as a boolean, indicating if the frame has been reified or not.
-- **isBlock flag:** Only available in non-JIT VMs: It's a 1-byte field used as a boolean, indicating if the frame is for a block closure execution or not. In JIT VMs, this flag is available as as a tag in the method pointer.
-- **Number of backjumps performed in this method:** Only available in JIT VMs. It's a 1-byte field used as a counter, indicating how many backjumps where performed by this method execution during interpretation. If this field goes over a threshold, meaning that a long loop is being interpreted, the JIT compiler decides to compile the method and switch to compiled execution.
-
-![Structure of the frame flags in 64 bits. %anchor=interpreterFlags](figures/interpreter_flags.pdf)
-
-
->[! Design Tips ] 
-> Notice that the frame flags have a first constant field in the range 0-7 with value 1.
-This value is set to make the bitfield look as a tagged small integer, thus guarding the GC walking the stack from interpreting this value as a pointer.
 
 ### Setting up Stack Frames
 
