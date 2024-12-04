@@ -19,7 +19,7 @@ The stack is a contiguous region of memory of fixed size organized in slots of o
 The _base_ of the stack is where the stack begins, where its oldest elements are stored.
 Conversely, the _top_ of the stack is where the most recently pushed element is stored (see Figure *@stackGrowDownAddress@*).
 
-![The stack grows down. %width=30&anchor=stackGrowDownAddress](figures/stackGrowDownAddress.pdf)
+![The stack grows down. %width=70&anchor=stackGrowDownAddress](figures/stackGrowDownAddress.pdf)
 
 
 The stack is manipulated through a variable called `stackPointer`, which is a pointer to the top of the stack.
@@ -97,7 +97,7 @@ Using the top stack value is often done in combination with storing the values i
 Many bytecode instructions require accessing data that belongs to a particular method execution: the receiver, arguments, temporaries, or the current method to access its literals. Such an information is stored in the stack.
 
 The stack is split in regions called _stack frames_, or frames for short.
-The frames in the stack form a chain of frames, usually referred to as the _call stack_.
+The frames in the stack form a chain of frames, usually referred to as the _call stack_ as shown in Figure *@interpreter_stack@*.
 In the top of the stack there is the top stack frame representing the current method execution.
 
 ![The call stack as a linked lists of frames in the stack. %width=70&anchor=interpreter_stack](figures/interpreter_call_stack.pdf)
@@ -122,6 +122,13 @@ The frame on the top of the stack is said to be _active_.
 The active frame is delimited by the variables `stackPointer` at its top and `framePointer` at its base.
 While the `stackPointer` will move with each push/pop instruction, the `framePointer` points to the base of the current frame in the stack and does not change during a method execution.
 Moreover, the `instructionPointer` is a pointer within the bounds of the method of the active frame.
+
+### Key Interpreter Pointers
+
+Figure *@interpreterVariables@*
+
+
+
 
 All frames other than the active one are said to be _suspended_.
 Suspended frames need the values of their `framePointer`, `stackPointer` and `instructionPointer` to be stored so _e.g.,_ the stack can be traversed by the garbage collector and control can return to those frames after a return instruction.

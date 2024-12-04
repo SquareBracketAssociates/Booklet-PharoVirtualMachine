@@ -1,5 +1,5 @@
 framePointer ----------->+---------------------+
-stackPointer --------.   | callerFramePointer -+---> null "(bottom of stack)"
+stackPointer --------.   | callerFramePointer -+---> bottom of stack
 instructionPointer -. |  | method -------------+--.
                     | |  | context             |   \
                     | |  | flags               |    '-->.--------------.
