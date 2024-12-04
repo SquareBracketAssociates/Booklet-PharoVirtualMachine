@@ -123,9 +123,14 @@ The active frame is delimited by the variables `stackPointer` at its top and `fr
 While the `stackPointer` will move with each push/pop instruction, the `framePointer` points to the base of the current frame in the stack and does not change during a method execution.
 Moreover, the `instructionPointer` is a pointer within the bounds of the method of the active frame.
 
-### Key Interpreter Pointers
+#### Key Interpreter Pointers.
 
-Figure *@interpreterVariables@*
+Figure *@interpreterVariables@* illustrates a key part of the interpreter infrastructure. 
+The state of the interpreter is controlled by three important pointers:
+- The `framePointer` which refers to the currently active frame.
+- The `stackPointer` which refers to the top of the current frame stack value.
+- The `instructionPointer` which refers to the next bytecode to be executed. 
+
 
 
 
