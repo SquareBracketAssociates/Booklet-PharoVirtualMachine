@@ -1,102 +1,32 @@
-## The Interpreter
+## Stack Frame
+@cha:stackframe
 
-At the heart of the Pharo virtual machine there is the interpreter, Pharo's main execution engine.
-Folklore says that interpreters are slow. Truth is they are. But they are also easy to implement and maintain.
-They play a very important role in a multi-tiered architecture: optimized execution engines (such as JIT compilers) execute usually the commonly-executed code and fast execution paths, falling back to slower layers such as interpreters for the rest of the execution.
-Thus, the Pharo interpreter implements the entire semantics of Pharo: all bytecodes and primitives.
-This makes it a good target to study and understand how Pharo works.
+While the representation of execution as objects, _contexts_, is conceptually relevant, it has many drawbacks as mentioned in Chapter *@cha:SemanticsByExample@*. In this chapter 
+we present the stack frame used by the Pharo Virtual machine. We show how the Pharo virtual machine represents the execution stack as a contiguous memory region addressing the limits of context representation.
 
-This chapter visits the interpreter from a high-level point of view, using code excerpts and explaining along the way some basics of how interpreters work.
-This includes how the interpreter manages its execution state and the call stack, how it dispatches instructions, some illustrative instructions and some of its platform independent optimizations: instruction lookahead and static type predictions.
-The chapter on Slang VM generation presents machine dependent optimizations such as interpreter threading and autolocalization.
+We first discuss the stack value representation, then we discuss the structure of stack frame elements, and finally, we show that contrary to the context representation, with a stack frame arguments are not mixed with temporaries and do not have to be duplicated between caller and callee methods. 
 
-A section of this chapter is dedicated to message sends: the most important instruction in the Pharo programming language and in many object-oriented languages.
-Message-sends, as similar as they may look to statically-bound function calls, must implement late-bound execution.
-Sending a message requires looking up the corresponding method up in the receiver class hierarchy, which is one of the most common operations in Pharo, and one of the most complex and expensive too.
-One simple way to cope with such costs are global lookup caches.
-
-
-### A Bytecode Interpreter
-
-Pharo's execution engine is based on the execution of bytecode instructions.
-Bytecode instructions are organized as a list of instructions, where one instruction is executed after the other.
-An interpreter typically follows two main steps for each instruction: it fetches the next instruction and dispatches to the code that implements the instruction.
-
-Typically, interpreters are implemented using a `while` and a `switch` statement.
-The `while` statement executes indefinitely (or until the program exits).
-The `switch` statement contains a case per instruction and dispatches to the corresponding code depending on the read instruction.
-The following code (Listing *@Cinterp@*) illustrates a simple interpreter written the C programming language.
-
-```caption=Sketching an interpreter in C&anchor=Cinterp
-void interpret(){
-	while(true){
-		int instruction = fetchNextInstruction();
-		switch(instruction){
-			case INSTRUCTION_1:
-			   ...
-			   break;
-			case INSTRUCTION_2:
-			   ...
-			   break;
-			...
-		}
-	}
-}
-```
-
-#### Table dispatch
-
-Pharo's bytecode interpreter is not written as a case statement as shown before.
-Instead, it uses a table dispatch mechanism, where a table, namely the _bytecode table_ associates an instruction with the code to execute for that instruction.
-The bytecode table is an array ranging from 0 to 255, thus covering the entire bytecode set, and containing unary selectors.
-Instructions are dispatched by looking up the selector for an instruction, then using the selector to send a message to the interpreter using the message `perform:` (as shown in Listing *@dispatch@*).
-
-Note that while we write the message `perform:`, the C transpiler will generate a call to the corresponding function implementing the bytecode semantics.
-
-
-```caption=Pharo interpreter uses a table dispatch with symbols&anchor=dispatch
-Interpreter >> interpret
-	...
-	self fetchNextBytecode.
-	[ true ] whileTrue: [
-		self dispatchOn: currentBytecode in: BytecodeTable
-	].
-	...
-
-Interpreter >> dispatchOn: anInteger in: selectorArray
-	self perform: (selectorArray at: (anInteger + 1)).
-````
-
-### Instruction Fetching and the Instruction Pointer
-
-Mimicking how the CPU handles its own program counter, the Pharo interpreter manages its instruction stream using a variable called `ìnstructionPointer`, which is a pointer to the current instruction in the method under execution.
-
-Using the instruction pointer, the interpreter fetches instructions one-by-one sequentially from a method's bytecode list as shown in Listing *@fetchnext@*. Here the variable `objectMemory` is a pointer to the complete memory of the interpreter and the instructionPointer is just an address within the range of the currently executed compiled method.
-
-```caption=Low-level stack operations in the interpreter&anchor=fetchnext
-Interpreter >> fetchNextBytecode
-	^ objectMemory byteAt: (instructionPointer := instructionPointer + 1)
-```
-
->[! note ]
-> Each bytecode instruction fetches the next instruction. We will observe in the methods defining bytecodes that, differently from the interpreter C sketch at the beginning of the chapter, each instruction is responsible for fetching its next instruction. This implementation detail duplicates the instruction fetching code around the interpreter, while simplifying its translation to a threaded interpreter as it will be explained in the Slang chapter.
-
-The instruction pointer is not only manipulated to fetch instructions.
-Later in this chapter we will see how bytecode instructions manipulate it to implement control flow operations: jumps, message sends, and returns.
-Moreover, later chapters will show the role of the instruction pointer to implement green-thread based concurrency.
-
+In a nutshell, the temporaries are managed inside the current stack frame down at lower address from the receiver, while arguments are referred to up the memory from the current frame pointer to the previous stack frame. 
 
 
 ### Pushing and Popping, the Stack and the Stack Pointer
 
 The execution of Pharo code is supported mainly by a stack supporting operations such as push, pop and indexed access from the top.
+
 The stack is a contiguous region of memory of fixed size organized in slots of one word each.
 The _base_ of the stack is where the stack begins, where its oldest elements are stored.
 Conversely, the _top_ of the stack is where the most recently pushed element is stored.
 The stack is manipulated through a variable called `stackPointer`, which is a pointer to the top of the stack.
 
-**The stack grows down:** in Pharo, as in many other language implementations, the stack base is in a higher address than the stack top.
+
+>[! Important] 
+> The stack grows down: in Pharo, as in many other language implementations, the stack base is in a higher address than the stack top.
 Pushing a value to the stack moves the stack pointer towards lower addresses. Popping moves it towards higher addresses.
+
+
+![The stack grows down. %width=70&anchor=interpreterVariables](figures/interpreter_variables.pdf)
+
+
 
 Using the `stackPointer` variable the interpreter implements the following methods shown in Listing *@stackOps@*.
 
@@ -185,7 +115,7 @@ The stack frame flags store, from lower to higher bits in the bit field:
 - **isBlock flag:** Only available in non-JIT VMs: It's a 1-byte field used as a boolean, indicating if the frame is for a block closure execution or not. In JIT VMs, this flag is available as as a tag in the method pointer.
 - **Number of backjumps performed in this method:** Only available in JIT VMs. It's a 1-byte field used as a counter, indicating how many backjumps where performed by this method execution during interpretation. If this field goes over a threshold, meaning that a long loop is being interpreted, the JIT compiler decides to compile the method and switch to compiled execution.
 
-![Structure of the frame flags in 64 and 32 bits. %anchor=interpreterFlags](figures/interpreter_flags.pdf)
+![Structure of the frame flags in 64 bits. %anchor=interpreterFlags](figures/interpreter_flags.pdf)
 
 
 >[! Design Tips ] 
