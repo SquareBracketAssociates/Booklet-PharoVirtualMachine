@@ -62,10 +62,18 @@ The each portion of code is tagged to give direct access to it. For example:
 - The abort routine can be branched-to when method code fails if expected types mismatched.
 - You can skip access to the type checking by jumping to the start of the next code block  ( no-check entry offset ). 
 
+
+We take the example of a frameless method that has less  machine instructiona compared to the framefull ones, because there's no need for frame creation.
+
 Here is a sample assembly code of the method `(Object>>#yourself)` that presents three entry points. 
 A normal entry point
 
- ![ Entry Points of a frameless Method. %width=50&anchor=EntryPoints](Entrypoints.png)
+ ![ Entry Points of a frameless Method. %width=50&anchor=EntryPointsFrameless](Entrypoints.png)
+
+Framefull methods, on the other hand have a frame creation entry point
+
+
+ ![ Entry Points of a framefull Method. %width=50&anchor=EntryPointsFramefull](framefullMethodMachineCode.png)
 
 ### CogMethod in Pharo and C 
   
