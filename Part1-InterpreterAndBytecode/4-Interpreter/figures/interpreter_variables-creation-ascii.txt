@@ -1,0 +1,17 @@
+framePointer ----------->+---------------------+
+stackPointer --------.   | callerFramePointer -+---> caller frame
+                      |  | method -------------+--.
+                      |  | context             |   \
+                      |  | flags               |    '-->.--------------.
+                      |  | receiver            |        |object header |
+                      |  | - - - - - - - - - - |        |~~~~~~~~~~~~~~|
+                      |  | temp var 0          |        |literal 0     |
+                      |  | stack value 1       |        |...           |
+                      `->| stack value 0       |        |...           |
+                         +---------------------+        |literal n     |
+                                                        |~~~~~~~~~~~~~~|            instructionPointer
+                                                        |bytecode 1    |            |
+                                                        |bytecode 2    | <----------'
+                                                        |...           |
+                                                        |bytecode n    |
+                                                        '--------------'

@@ -97,10 +97,10 @@ Using the top stack value is often done in combination with storing the values i
 Many bytecode instructions require accessing data that belongs to a particular method execution: the receiver, arguments, temporaries, or the current method to access its literals. Such an information is stored in the stack.
 
 The stack is split in regions called _stack frames_, or frames for short.
-The frames in the stack form a chain of frames, usually referred to as the _call stack_ as shown in Figure *@interpreter_stack@*.
+The frames in the stack form a chain of frames, usually referred to as the _call stack_ as shown in Figure *@interpreterstack@*.
 In the top of the stack there is the top stack frame representing the current method execution.
 
-![The call stack as a linked lists of frames in the stack. %width=70&anchor=interpreter_stack](figures/interpreter_call_stack.pdf)
+![The call stack as a linked lists of frames in the stack. %width=70&anchor=interpreterstack](figures/interpreter_call_stack.pdf)
 
 
 ### Stack Frame Structure
@@ -109,6 +109,7 @@ Each stack frame represents the execution of a method and has three main parts.
 First, a fixed set of fields containing execution meta-data.
 Second, one slot for each temporary variable in the method, initialized to `nil`.
 Finally, a variable part containing the value stack where Pharo objects get pushed and popped when executing bytecode instructions.
+
 The fixed fields in a frame are the following:
 - **The caller's frame start:** a pointer used to indicate where does the caller's frame start in the stack. Used to reconstruct the call stack.
 - **The executing method:** used to extract literals and other method meta-data.
@@ -132,31 +133,31 @@ The state of the interpreter is controlled by three important pointers:
 - The `instructionPointer` which refers to the next bytecode to be executed. 
 
 
-
-
+### About Frame Suspension
 
 All frames other than the active one are said to be _suspended_.
-Suspended frames need the values of their `framePointer`, `stackPointer` and `instructionPointer` to be stored so _e.g.,_ the stack can be traversed by the garbage collector and control can return to those frames after a return instruction.
-A frame is suspended by pushing its instruction pointer to the stack before creating a new frame, and pushing its frame pointer as the first element of the next frame. Storing on each frame the frame pointer of the preceding frame transforms the stack in a linked lists of frames.
+Suspended frames need the values of _their_ `framePointer`, `stackPointer` and `instructionPointer` to be stored so _e.g.,_ the stack can be traversed by the garbage collector and control can return to those frames after a return instruction.
+
+A frame is suspended by pushing its instruction pointer to the stack before creating a new frame, and pushing its frame pointer as the first element of the next frame. Storing on each frame the frame pointer of the preceding frame transforms the stack in a linked lists of frames (See Figure *@interpreterstack@*).
 Thus, the stack can be reconstructed by iterating from the top frame up to its caller's frame start until the end of the stack.
-Notice that the stack pointer needs not to be stored: a suspended frame's stack pointer is the slot that precedes its suspended instruction pointer, which is found relative to its following frame.
+
+Notice that the stack pointer does not need to be stored: a suspended frame's stack pointer is the slot that precedes its suspended instruction pointer, which is found relative to its following frame.
 
 
 
 
-### Setting up Stack Frames
+### Setting up a Stack Frame
 
-Listing *@settingStackFrames@* shows how a new frame is created.
+Listing *@settingStackFrames@* presents an extract of the method `setUpFrameForMethod: aMethod receiver: rcvr`. It illustrates how a new frame is created.
 
 - First the current frame is suspended by pushing the instruction pointer and frame pointer.
 -  Once pushed, the `framePointer` can be overridden to mark the start of a new frame at the position of `stackPointer`.
 - Then the method, `nil` for context, flags, receiver, and temps are pushed.
 
+
 ```caption=Setting up a frame&anchor=settingStackFrames
 Interpreter >> setUpFrameForMethod: aMethod receiver: rcvr
-
-	| methodHeader numArgs numTemps rcvr |
-	methodHeader := objectMemory methodHeaderOf: aMethod.
+	...
 	numTemps := self temporaryCountOfMethodHeader: methodHeader.
 	numArgs := self argumentCountOfMethodHeader: methodHeader.
 	
@@ -180,7 +181,9 @@ Interpreter >> setUpFrameForMethod: aMethod receiver: rcvr
 	...
 ```
 
-#### Bytecodes Accessing the Stack Frame
+
+
+### Bytecodes Accessing the Stack Frame
 
 Given the structure of a stack, we can see that the all the fields in the fixed part of a frame can be found relative to the start of a frame, which for the first frame is the `framePointer`.
 This includes in particular the receiver and the temporary variables.
