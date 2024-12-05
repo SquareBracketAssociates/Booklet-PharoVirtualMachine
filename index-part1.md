@@ -26,6 +26,7 @@ This work is also supported by the Action Exploratoire Alamvic led by G. Polito 
 # Bytecode Execution
 
 <!inputFile|path=Part1-InterpreterAndBytecode/3-SemanticsByExample/basicsOnExecution.md!>
+<!inputFile|path=Part1-InterpreterAndBytecode/4-Interpreter/stackframe.md!>
 <!inputFile|path=Part1-InterpreterAndBytecode/4-Interpreter/theInterpreter.md!>
 <!inputFile|path=Part1-InterpreterAndBytecode/5-DeeperBytecode/methodsbytecode.md!>
 
