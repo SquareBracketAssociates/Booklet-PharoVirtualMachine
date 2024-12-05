@@ -22,25 +22,25 @@ stackPointer -+   |      | callerFramePointer  -+---> caller frame
               |   |      | stack value 0        |  /  | ...           | 
               |   |      | stack value 1        |  |    
               |   |      +----------------------+  |      
-              |   |      | bytecode 2           |-'
-              `---`----->| framePointer         |
+              |   |      | bytecode 2        ---|-'
+              `-->`------|-callerframePointer   |
 														 
 -------------------------------------------------------------------------------------------------
                   +----->+----------------------+
-stackPointer -----|--.   | callerFramePointer  -+---> caller frame
-                  |   |  | method --------------+---->.--------------.
-                  |   |  | context              |     | object header |
-                  |   |  | flags                |     | literal 0     |
-                  |   |  | receiver             |     | literal n     |  instructionPointer 
-                  |   |  | - - - - - - - - - - -|     | bytecode 1    |            |
-                  |   |  | temp var 0           |   +>| bytecode 2    |            |
-                  |   |  | stack value 0        |  /  | ...           |            |
-framePointer -----+---`->| stack value 1        |  |                               |
-                  |      +----------------------+  |                               | 
-                  |      | bytecode 2           |-'                                |
-                  `------| framePointer         |                                  |
+                  |      | callerFramePointer  -+---> caller frame
+                  |      | method --------------+---->.--------------.
+                  |      | context              |     | object header |
+                  |      | flags                |     | literal 0     |
+                  |      | receiver             |     | literal n     |  instructionPointer 
+                  |      | - - - - - - - - - - -|     | bytecode 1    |            |
+                  |      | temp var 0           |   +>| bytecode 2    |            |
+                  |      | stack value 0        |  /  | ...           |            |
+framePointer      |      | stack value 1        |  |                               |
+     |            |      +----------------------+  |                               | 
+     |            |      | bytecode 2         --|-'                                |
+     `----------->`------|-callerframePointer   |                                  |
                          | new method ----------+---->.--------------.             |
                          | context              |     | object header |            |
                          | flags                |     | literal 0     |            |
                          | new receiver         |     | bytecode 1    |<----------' 
-                         | temp var 0           |
+stackPointer ----------->| temp var 0           |
