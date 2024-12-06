@@ -387,7 +387,7 @@ This section explains the overall design of the object header and each of its fi
 The base object header contains meta data that the Virtual Machine uses for several purposes such as decoding an object's contents, maintaining garbage collection state, or even doing runtime type checks.
 Regardless of the architecture, the base header is 64 bits length, which means it is 2 words in 32 bits and 1 word in 64 bits as shown in Figure *@fig:objectheader@*.
 
-![Base Object Header. %width=100&anchor=fig:objectheader](figures/ObjectHeader.pdf)
+![Base Object Header. %width=100&anchor=fig:objectheader](figures/64bitsObjectHeader2.pdf)
 
 This header is composed of several fields, marked with different colors in the figure.
 From the most significant to the least significant bits, the fields are as follows:
