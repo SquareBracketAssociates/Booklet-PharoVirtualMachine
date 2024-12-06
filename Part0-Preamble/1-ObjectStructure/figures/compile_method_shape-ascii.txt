@@ -4,14 +4,14 @@ compiled method
                        v
 method header  -------->+---------------------+
 literal frame  -------->|- - - - - - - - - - -+
-                        |'Hello' 
-                        |#nextPutAll:
-                        |...
+                        |'Hello'              |
+                        |#nextPutAll:         |
+                        |...                  |
 bytecode -------------->+- - - - - - - - - - -+
-                        |80
-                        |put real one here
-                        |
+                        |80                   |
+                        |put real one here    |
+                        |                     |
 method trailer -------->+- - - - - - - - - - -+
-                        |
-                        |
+                        |                     |
+                        |                     |
 method end ------------>+---------------------+
