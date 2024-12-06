@@ -113,11 +113,11 @@ When a message send instruction is executed, the stack looks as follows:
 ![Preparing the Stack to send a message. %width=60&anchor=interpreterBeforeSend](figures/interpreter_send.pdf)
 
 
-#### Message Send Bytecodes
+### Message Send Bytecodes
 
 To illustrate how message send bytecodes work, let's examine the source code of bytecode `extSendBytecode`.
 The `extSendBytecode` bytecode is a two-byte bytecode implementing the general form of message sends.
-The first byte is the opcode of the instruction, the second byte encodes the literal index where to find selector in the highest 5 bits, and the number of arguments of the selector in the lowest 3 bits.
+The first byte is the opcode of the instruction, the second byte encodes the literal index where to find the selector in the highest 5 bits, and the number of arguments of the selector in the lowest 3 bits.
 
 After decoding the second byte and fetching the selector, the interpreter sets the interpreter variables `messageSelector` and `argumentCount`.
 The argument count is used to fetch the receiver: the receiver is on the stack, above the arguments, so it can be obtained using the expression `self stackValue: argumentCount`.
@@ -228,13 +228,9 @@ Interpreter >> methodDictionaryHash: oop mask: mask
 
 ```
 
-Small dictionaries, of size 8 or less by default, use a linear search and no hashing.
-Larger dictionaries, instead, use a hash-based lookup using open addressing with linear probing and wrap around.
-That is, the hashed index is probed to check if it is either the searched element, an empty slot indicated by `nil`, or another element.
-If the element is found or an empty slot is found, the search stops.
-However, if another element is found in the hashed index, the next index if probed.
-If the end of the array is reached, the search wraps and restarts from the beginning of the array.
-If the original index is reached again after wrapping, the search stops.
+- Small dictionaries, of size 8 or less by default, use a linear search and no hashing.
+- Larger dictionaries, instead, use a hash-based lookup using open addressing with linear probing and wrap around. That is, the hashed index is probed to check if it is either the searched element, an empty slot indicated by `nil`, or another element.
+If the element is found or an empty slot is found, the search stops. However, if another element is found in the hashed index, the next index if probed. If the end of the array is reached, the search wraps and restarts from the beginning of the array. If the original index is reached again after wrapping, the search stops.
 
 ```
 Interpreter >> lookupMethodInDictionary: dictionary 
@@ -317,7 +313,7 @@ Interpreter >> methodClassOf: methodPointer
 
 Once the method to execute is found, the following step is to activate the method in the stack.
 Activating a method implies creating a stack frame for it and prepare the interpreter to execute the instructions in that method.
-Frames are created by pushing the current instruction pointer, thus suspending the current frame, and then pushing all frame fields, as explained earlier in this chapter.
+Frames are created by pushing the current instruction pointer, thus suspending the current frame, and then pushing all frame fields, as explained earlier in Chapter *@cha:stackframe@*.
 
 ```
 Interpreter >> activateNewMethod
@@ -408,7 +404,7 @@ SmallInteger >> + aNumber
 
 #### Primitive Instructions and Calling Convention by Example
 
-Primitive instructions are stack-based instructions with a catch: they can fail.
+Primitive instructions are stack-based instructions with a catch: they can fail contrary to bytecode which cannot. 
 
 When called, primitive instructions expect all its arguments on the stack, plus the interpreter variable `numberOfArguments` set to the actual number of arguments of the message send.
 Thus, primitive instructions have two return values: a failure/success code, and an optional return value if success.

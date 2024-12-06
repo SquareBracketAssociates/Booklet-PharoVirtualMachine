@@ -87,9 +87,9 @@ Interpreter >> duplicateTopBytecode
 	self push: self stackTop
 ```
 
-Note that `popStackBytecode` just removes the top value from the stack without doing anything with it.
-Using the top stack value is often done in combination with storing the values into a temporary or an instance variable. 
-
+>[! Important ] 
+> Note that `popStackBytecode` just removes the top value from the stack without returning it.
+> Indeed bytecode do not return values. They store them either in the stack, in temporaries or instance variables. 
 
 
 ### The Call Stack
