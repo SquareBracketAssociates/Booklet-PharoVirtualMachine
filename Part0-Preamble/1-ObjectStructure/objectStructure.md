@@ -210,7 +210,7 @@ An object `A` references an object `B` with an absolute pointer to `B`'s base he
 Figure *@references@* shows two objects forming a cycle. Each object has a reference slot pointing to the other.
 References point to the object base header.
 
-![References to heap-allocated objects are pointers to an object's base header. %](figures/references2.pdf)
+![References to heap-allocated objects are pointers to an object's base header. %](figures/references3.pdf)
 
 
 ### Immediate Objects
@@ -255,7 +255,7 @@ Pointer tagging exploits this property by encoding data within the least signifi
 With these three bits, we can encode up to 7 different tags (111, 110, ... 001) that tell us how to interpret the most significant bits.
 
 
-Currently, Pharo supports integers, characters, and floating point numbers as immediate objects.
+Currently, Pharo supports integers, characters, and floating-point numbers as immediate objects.
 
 - In 64-bit architectures, they use the tags `001`, `010`, and `100` respectively, as shown in Figure *@fig:64bitsimm@*.
 
