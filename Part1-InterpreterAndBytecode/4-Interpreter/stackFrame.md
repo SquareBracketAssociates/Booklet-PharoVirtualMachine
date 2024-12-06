@@ -143,7 +143,7 @@ Thus, the stack can be reconstructed by iterating from the top frame up to its c
 
 Notice that the stack pointer does not need to be stored: a suspended frame's stack pointer is the slot that precedes its suspended instruction pointer, which is found relative to its following frame.
 
-
+![Creating a new stack frame main steps. %width=70&anchor=stackFrameCreation](figures/interpreter_variables_creation.pdf)
 
 
 ### Setting up a Stack Frame
@@ -154,7 +154,7 @@ Listing *@settingStackFrames@* presents an extract of the method `setUpFrameForM
 -  Once pushed, the `framePointer` can be overridden to mark the start of a new frame at the position of `stackPointer`.
 - Then the method, `nil` for context, flags, receiver, and temps are pushed.
 
-![Creating a new stack frame main steps. %width=70&anchor=stackFrameCreation](figures/interpreter_variables.pdf)
+
 
 
 ```caption=Setting up a frame&anchor=settingStackFrames

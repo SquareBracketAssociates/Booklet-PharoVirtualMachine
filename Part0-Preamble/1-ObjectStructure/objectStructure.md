@@ -261,8 +261,8 @@ Currently, Pharo supports integers, characters, and floating point numbers as im
 
 - In 32-bit architectures, floats are not represented as immediate objects, integers present a 1-bit tag `1`, while characters are represented with the 2-bit tag `10`, as shown in Figure *@fig:32bitsimm@*.
 
-![64-bit immediate objects. %width=100&anchor=fig:64bitsimm](figures/64bitsImmediate.pdf )
-![32-bit immediate objects. %width=100&anchor=fig:32bitsimm](figures/32bitsImmediate.pdf )
+![64-bit immediate objects. %width=100&anchor=fig:64bitsimm](figures/64bitsImmediate2.pdf )
+![32-bit immediate objects. %width=100&anchor=fig:32bitsimm](figures/32bitsImmediate2.pdf )
 
 The following code (Listing *@testingsmallintcaption@*) shows how we can tag, untag, and verify if a value is taggable.
 
@@ -357,7 +357,7 @@ However, to accommodate the 64 bits into 61 bits, immediate floats give up 3 bit
 The VM verifies that only immediate floats that do not lose information in this format are encoded as immediates.
 For floats that do not satisfy this constraint, floats use a boxed representation as explained in Section *@sec:boxing@*.
 
-![64 bits `SmallFloat` immediate. %width=100&anchor=fig:64bitsfloatimm](figures/64bitsFloatImmediate.pdf )
+![64 bits `SmallFloat` immediate. %width=100&anchor=fig:64bitsfloatimm](figures/64bitsFloatImmediate2.pdf )
 
 Figure *@fig:64bitsfloatimm@* shows the structure of a `SmallFloat`.
 The sign bit is moved to the lowest bit of the tagged value, and the highest 3 bits of the exponent are lost.
