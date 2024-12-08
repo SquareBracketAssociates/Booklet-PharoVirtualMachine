@@ -22,7 +22,7 @@ For example, 64-bit machines are machines that have a bit width of 64.
 Since nowadays the most common machines are 64-bit machines, we will focus our presentation on them.
 However, the Pharo VM also supports 32-bit machines for compatibility with smaller devices.
 
-![Word size and alignment on 32-bit and 64-bit architectures. %width=100&anchor=fig:32vs64Architectures](figures/architecture32vs64.pdf)
+![Word size and alignment on 32-bit and 64-bit architectures. %width=100&anchor=fig:32vs64Architectures](figures/AlignmentBetterExplained2.pdf)
 
 Memory is conceptually divided into cells of 1-byte length, each byte using 8 bits.
 Data is manipulated in units that group many bytes together.
@@ -200,10 +200,10 @@ In the Pharo VM, object references are called _ordinary object pointers_, or _oo
 
 There are two kinds of oops: object pointers to other objects and immediate objects (see Figure *@reference3@*)
 
-- Pointers work as normal pointers in low-level languages.
-- Immediate objects are objects encoded in invalid object pointers using a technique called _tagged pointers_ that takes advantage of pointer alignment.
+- Pointers work as normal pointers in low-level languages. When a piece of memory contains an address finishing by 000 it is a normal pointer to an object header. 
+- Immediate objects are objects encoded in invalid object pointers using a technique called _tagged pointers_ that takes advantage of pointer alignment. When a piece of memory contains an address not finishing by 000, it is the immediate object itself. 
 
-![References are pointers to an object's base header. Immediate objects embed value inside the references.%anchor=reference3](figures/references3AndImmediate.pdf)
+![References ending with 000 are pointers to an object's base header. Memory ending not with 000 represents immediate objects embedding value inside the references.%anchor=reference3](figures/referencesAndImmediates.pdf)
 
 Every object in Pharo has an address in memory, which is the memory address of its base header.
 An object `A` references an object `B` with an absolute pointer to `B`'s base header stored in one of `A`'s reference slots.
