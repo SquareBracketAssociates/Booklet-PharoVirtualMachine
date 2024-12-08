@@ -203,7 +203,7 @@ There are two kinds of oops: object pointers to other objects and immediate obje
 - Pointers work as normal pointers in low-level languages.
 - Immediate objects are objects encoded in invalid object pointers using a technique called _tagged pointers_ that takes advantage of pointer alignment.
 
-![References  are pointers to an object's base header. Immediate objects embed value inside the references.%anchor=reference3](figures/references3.pdf)
+![References are pointers to an object's base header. Immediate objects embed value inside the references.%anchor=reference3](figures/references3AndImmediate.pdf)
 
 Every object in Pharo has an address in memory, which is the memory address of its base header.
 An object `A` references an object `B` with an absolute pointer to `B`'s base header stored in one of `A`'s reference slots.
