@@ -172,7 +172,7 @@ Objects in Pharo are represented as a contiguous memory region with space for a 
 - The data zone contains data slots.
 Figure *@fig:objectLayout@* illustrates the layout of a 3-slot object in both 32-bit and 64-bit architectures.
 
-![Object layout and alignment on 32-bit and 64-bit architectures.  %width=90&anchor=fig:objectLayout](figures/objectLayout.pdf)
+![Object layout and alignment on 32-bit and 64-bit architectures.  %width=90&anchor=fig:objectLayout](figures/objectLayout2.pdf)
 
 Each object has a mandatory base header that contains common information such as its class, its size, and mutable bits for the Garbage Collector.
 When objects are more than 254 words long, they are considered large, and their actual size is stored in an overflow header that precedes the base header.
