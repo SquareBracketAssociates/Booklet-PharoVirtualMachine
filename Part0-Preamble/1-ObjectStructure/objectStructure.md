@@ -89,7 +89,7 @@ This means that a 64-bit word with the value `16rFEDCBA987654321` is stored back
 - The highest address `a+7` contains the most significant byte `16r0F` (see Fig. *@fig:LittleEndian@*).
 If we wanted to read the bytes in most-to-least significance order, then we need to iterate it backward: from `a+7` to `a`.
 
-![16rFEDCBA987654321 in 64-bits Little and Big-Endian. % width=95&anchor=fig:LittleEndian](figures/LittleBigEndian.drawio.pdf)
+![16rFEDCBA987654321 in 64-bits Little and Big-Endian. % width=95&anchor=fig:LittleEndian](figures/Endiannes2.pdf)
 
 ### Object Layout Formats
 @sec:layout
