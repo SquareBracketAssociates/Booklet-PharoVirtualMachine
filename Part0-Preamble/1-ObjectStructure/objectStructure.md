@@ -191,6 +191,8 @@ For example, a 3-slot byte array occupies 3 bytes in a word-long data slot.
 In such a case, the Pharo VM introduces padding _i.e.,_ filling space.
 Such unused filler is used to guarantee that the next object is aligned to the 8-byte boundary, a property that can be exploited for both performance and the representation of immediate objects explained in Section *@sec:alignment@*
 
+![References ending with 000 are pointers to an object's base header. Memory ending not with 000 represents immediate objects embedding value inside the references.%anchor=reference3](figures/referencesAndImmediates.pdf)
+
 ### References and Ordinary Object Pointers
 @sec:references
 
@@ -203,7 +205,6 @@ There are two kinds of oops: object pointers to other objects and immediate obje
 - Pointers work as normal pointers in low-level languages. When a piece of memory contains an address finishing by 000 it is a normal pointer to an object header. 
 - Immediate objects are objects encoded in invalid object pointers using a technique called _tagged pointers_ that takes advantage of pointer alignment. When a piece of memory contains an address not finishing by 000, it is the immediate object itself. 
 
-![References ending with 000 are pointers to an object's base header. Memory ending not with 000 represents immediate objects embedding value inside the references.%anchor=reference3](figures/referencesAndImmediates.pdf)
 
 Every object in Pharo has an address in memory, which is the memory address of its base header.
 An object `A` references an object `B` with an absolute pointer to `B`'s base header stored in one of `A`'s reference slots.
@@ -457,7 +458,7 @@ The 12 most significant bits in the class index indicate the page index. The 10 
 Each class stores its own index (in the class table) as its hash.
 This allows the VM to get the index of a class without iterating the entire class table, and to guarantee a unique identity hash per class.
 
-![Finding a class in the class table using its index. %anchor=classtable](figures/classtable.pdf )
+![Finding a class in the class table using its index. %anchor=classtable&width=70](figures/classtable.pdf )
 
 ### Encoding of the Object Format Field
 @sec:format_encoding
@@ -570,7 +571,7 @@ Indeed, the VM expects that classes have at least 3 reference slots, which are i
 The class format encodes the number of fixed slots in its instances, and the kind of object to create (the object format See Section *@sec:format_encoding@*).
 Both these bit fields will then be copied into the object header when an object is instantiated.
 
-![The class format encodes the object format and the number of slots. %width=60](figures/classformat.pdf)
+![The class format encodes the object format and the number of slots. %anchor=classFormat&width=50](figures/classformat.pdf)
 
 **Design Note: Precrunched redundant information.**
 Notice that having the number of slots of an object is actually redundant.
