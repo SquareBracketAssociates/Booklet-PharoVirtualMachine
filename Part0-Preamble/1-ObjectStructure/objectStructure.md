@@ -210,7 +210,7 @@ An object `A` references an object `B` with an absolute pointer to `B`'s base he
 Figure *@references@* shows two objects forming a cycle. Each object has a reference slot pointing to the other.
 References point to the object base header.
 
-![References to heap-allocated objects are pointers to an object's base header. %](figures/references3.pdf)
+![References to heap-allocated objects are pointers to an object's base header. %](figures/references4.pdf)
 
 
 ### Immediate Objects
