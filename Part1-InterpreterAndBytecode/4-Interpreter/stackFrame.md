@@ -183,15 +183,29 @@ Interpreter >> setUpFrameForMethod: aMethod receiver: rcvr
 	...
 ```
 
+### Stack Frame Flags
+
+Within each interpreter stack frame, there are some flags, a bitfield storing interpreter meta-data about the frame.
+This is important to know the number of arguments, or the number of backjumps.
+The two figures below show the structure of the flags in 64 and 32 bit architectures.
+The stack frame flags store, from lower to higher bits in the bit field:
+- **Method number of arguments:** A 1-byte field _caching_ the number of arguments, to avoid fetching it from the method.
+- **hasContext flag:** A 1-byte field used as a boolean, indicating if the frame has been reified or not.
+- **isBlock flag:** Only available in non-JIT VMs: It's a 1-byte field used as a boolean, indicating if the frame is for a block closure execution or not. In JIT VMs, this flag is available as a tag in the method pointer.
+- **Number of backjumps performed in this method:** Only available in JIT VMs. It's a 1-byte field used as a counter, indicating how many backjumps were performed by this method execution during interpretation. If this field goes over a threshold, meaning that a long loop is being interpreted, the JIT compiler decides to compile the method and switch to compiled execution.
+
+![Structure of the frame flags in 64 bits. %anchor=interpreterFlags](figures/interpreter_flags.pdf)
+
+Notice that the frame flags have a first constant field in the range 0-7 with value 1.
+This value is set to make the bitfield look like a tagged small integer, thus guarding the GC walking the stack from interpreting this value as a pointer.
 
 
 ### Bytecodes Accessing the Stack Frame
 
-Given the structure of a stack, we can see that the all the fields in the fixed part of a frame can be found relative to the start of a frame, which for the first frame is the `framePointer`.
-This includes in particular the receiver and the temporary variables.
-Thus, the bytecode that access these values are defined to read/write at an offset from the frame pointer.
+Given the structure of a stack, we can see that all the fields in the fixed part of a frame can be found relative to the start of a frame, which for the first frame is the `framePointer`. This includes in particular the receiver and the temporary variables.
+Thus, the bytecodes that access these values are defined to read/write at an offset from the frame pointer.
 
-The code that follows shows the bytecode that pushes `self` to the stack:
+The code that follows shows the bytecode that pushes `self` to the stack: Here `FoxReceiver` is an offset that from the `framePointer` identifies the receiver. 
 
 ```caption=The push receiver bytecode reads the receiver relative from the framePointer
 Interpreter >> receiver
@@ -202,22 +216,29 @@ Interpreter >> pushReceiverBytecode
 	self push: self receiver.
 ```
 
-Moreover, to read/write the nth real temporary variable we need to read/write the nth _above_ the fixed fields of the frame.
+To read/write the nth temporary we need to read/write the nth _below_ the fixed fields of the frame.
+
 The code below shows the bytecode that stores the top of the stack into a temporary variable and pops.
 This bytecode uses the `itemporary:in:put:` method that is used to write into a method's temporary.
 A similar method, `itemporary:in:` exists to read temporary variables.
 
-Remember that the bytecode set is designed so arguments are treated as temporaries.
-The code below shows that there are two execution paths: one for arguments, one for temporaries.
-The interpreter decides if the asked offset is for a temporary of an argument by comparing it to the number of arguments.
-The number of arguments is obtained from the fields flag.
-In this section we focus on the path for temporaries.
-We will explain the path for arguments in the next section.
 
-The interpreter indexes temporary variables using as base the field that follows the receiver field,
+Remember that the bytecode set is designed so arguments are treated as temporaries (since this is the case in the interpreter). 
+The code below shows two execution paths: one for arguments and one for temporaries.
+
+The interpreter decides if the asked offset is for a temporary or an argument by comparing it to the number of arguments.
+The number of arguments is obtained from the fields flag.
+Note that `memory readByteAt: theFP + FoxFrameFlags + 1` access the first byte of the frame flag word. 
+
+
+In this section, we focus on the path for temporaries. We will explain for arguments later. 
+
+The interpreter indexes temporary variables using as a basis the field that follows the receiver field,
 and as offset the offset of the temporary without taking arguments into account.
-In these two lines we see clearly that the stack grows down: to get the field _after_ we need to subtract from its position.
-Moreover, since all accesses are written as direct memory addresses, all offsets are computed in bytes, thus multiplying by the number of bytes in a word `objectMemory wordSize`.
+
+In these two lines we see that the stack grows down: to get the field _after_ we need to subtract from its position.
+Moreover, since all accesses are written as direct memory addresses, all offsets are computed in bytes, 
+thus multiplying by the number of bytes in a word `objectMemory wordSize`.
 
 
 ```caption=Storing
