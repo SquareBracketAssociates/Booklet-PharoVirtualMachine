@@ -1,52 +1,50 @@
 ## Introduction: The Virtual Machine Runtime
 
 This book explains many of the insides and interesting design points of the Pharo Virtual Machine.
-The Pharo Virtual Machine is what makes possible to execute Pharo programs: it manages the execution, the memory, and the access to external resources. It is also called a runtime system.
-That is, it provides a set of services and components that are available at run time to execute Pharo programs.
+The Pharo Virtual Machine is what makes the execution of Pharo programs possible: it manages the execution, the memory, and the access to external resources. It is also called a runtime system.
+That is, it provides a set of services and components that are available at runtime to execute Pharo programs.
 
 This chapter gives an overview of the VM components and how they are related to each other.
-Of course, these _many_ components will be explained in detail in _many_ subsequent chapters.
+Of course, these many components will be explained in detail in many subsequent chapters.
 You are free to read the book from beginning to end.
 For those who want a more guided lecture, the last section in this chapter proposes several reading orders.
 
 ### Runtime Environment Overview
 
 The VM is organized into many different components.
-We call _static components_ those components that exist prior to the time the VM is executed.
-Static components are shipped in VM libraries: for example, this is the case of the interpreter, the JIT compiler, and the garbage collector.
-We call _runtime components_ those components that are set up or created when the VM starts.
-For example, these are the memory where objects are allocated, the execution stack, or the cache where native methods are stored after JIT compilation.
+* We call _static components_ those components that exist prior to the time the VM is executed. Static components are shipped in VM libraries: for example, this is the case for the interpreter, the JIT compiler, and the garbage collector.
+* We call _runtime components_ those components that are set up or created when the VM starts. For example, these are the memory where objects are allocated, the execution stack, and the cache where native methods are stored after JIT compilation.
 
 Figure *@fig:runtime@* shows a very high-level view of the main VM components.
 
-![Runtime Overview. % anchor=fig:runtime](figures/runtime-system.pdf)
+![Runtime overview. % anchor=fig:runtime](figures/runtime-system.pdf)
 
 ### The Heap and the Memory Manager
 
-At the very core of the Pharo VM there is the memory manager, the façade to the _heap_ and all object accesses in the system.
-It implements two key responsibilities: memory management (_memory (de)allocation_) and object representation (_object encoding/decoding_). 
+At the very core of the Pharo VM there is the memory manager, which is the façade to the _heap_ and all object accesses in the system.
+It has two key responsibilities: memory management (_memory (de)allocation_) and object representation (_object encoding/decoding_). 
 
 
-The _heap_ is a space of memory where objects are stored.
+The _heap_ is the memory space where objects are stored.
 
 #### Memory management
 
 The memory manager is _the component_ whose main responsibility is the organization and management of the heap. It dynamically allocates the memory that is part of the heap and organizes the heap internals.
-It implements the algorithms that manipulate the heap: garbage collect unreachable objects, track reachable objects, move objects around.
+It implements the algorithms that manipulate the heap: garbage collecting unreachable objects, tracking reachable objects, and moving objects around.
 
-The current implementation implements two different strategies:
+The current implementation applies two different strategies:
 - a bump allocator with a copy collector for recently allocated objects and 
 - a free-list-based allocator with a mark-compact collector for old objects.
 
 #### Object representation
 The second key responsibility of the memory manager is to dictate how objects are represented in memory.
 It implements an object format called _Spur_ that specifies how many slots an object has, how much memory a slot occupies, how objects are aligned in memory, and so on. 
-The memory manager provides methods that _abstract_ the rest of the system from such internal details (yes, sometimes we don't need to know how many _shifts_ and _bitand_ are required to do something).
+The memory manager provides methods that _abstract_ the rest of the system from such internal details (yes, sometimes we don't need to know how many _shifts_ and _bitands_ are required to do something).
 
 ### An Image-based Virtual Machine
 
 Pharo is an image-based programming language.
-This means that all objects of a program can be saved into a so-called _snapshot_ or _image_, to be later restored.
+This means that all objects of a program can be saved into a so-called _snapshot_ or _image_, to be restored later.
 
 On the one hand, creating a snapshot is nothing else than making a dump of the heap into a file.
 All object references are stored as absolute pointers in memory.
@@ -62,7 +60,7 @@ Now the VM needs to have limited but important knowledge of some specific object
 In addition, the VM needs to know what is the specific message it should use when a method is not found.
 From that perspective the VM does not hardcode the fact that the error message for method not found is `doesNotUnderstand:`. 
 
-The runtime system requires, from time to time, to have specific information from the heap:
+The runtime system requires, from time to time, to have specific information about the heap:
 - where is the object `nil`?
 - where is the class `Array`?
 - what is the message that should be sent when the method is not found?
@@ -71,7 +69,7 @@ The runtime system requires, from time to time, to have specific information fro
 There is a need to have a kind of interface between the image (the sea of objects) and the VM executing such a sea of objects. In Pharo such an interface is cristalized by the _special objects array_.
 
 The special objects array is an array that references a set of special objects at _well-known indices_.
-The following snippet shows a couple of lines of the method `newSpecialObjectsArray` that recreates an array for such purposes (See Listing *@newSpecialObjectsArray@*).
+Listing *@newSpecialObjectsArray@* shows a couple of lines of the method `newSpecialObjectsArray` that recreates an array for such purposes.
 
 ```caption=An excerpt of the special objects array&anchor=newSpecialObjectsArray
 newSpecialObjectsArray
@@ -114,7 +112,7 @@ objectMemory splObj: SelectorCannotInterpret.
 
 ### The Interpreter and the Lookup Cache
 
-When executing Pharo code, two options are available: it's either executed by the interpreter or by compiled native code generated by an on-the-fly compiler (called a JIT). 
+When executing Pharo code, two options are available: it's either executed by the interpreter or by compiled native code generated by an on-the-fly compiler (called a JIT).
 
 #### Bytecode Interpreter
 The interpreter is less complex than the JIT. It executes code that has been executed a few times or cannot be compiled. When in charge of the execution, the interpreter executes Pharo bytecode, one by one.
@@ -147,7 +145,7 @@ To name some:
 - **Debugging and exception support:** on-demand reification of contexts, stack unwinds.
 - **System library support:** native code interfacing with system calls to manage, _e.g.,_ files and sockets.
 
-### How to Approach this Book
+### How to Read this Book
 
 This book is organized in _almost standalone_ chapters.
 Although we did our best to keep chapters independent of each other, understanding how objects are represented in memory could be important to understanding some of the garbage collector internals.
@@ -155,7 +153,7 @@ Because of this, the book is organized around a set of critical paths and periph
 
 Critical paths give an idea of dependencies between chapters.
 Typical critical paths are the ones to get into the JIT compiler or the memory manager.
-Peripheral chapters explain _optional(?)_ concepts and details, that extend your knowledge in an orthogonal way.
+Peripheral chapters explain concepts and details that extend your knowledge in an orthogonal way.
 This is for example the case of the VM debugging support and block closures.
 
 Of course, feel free to read them in any order you may like.
