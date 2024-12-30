@@ -27,14 +27,14 @@ Messages to `self` (_e.g.,_ `self foo`) perform a traditional method lookup star
 Messages to `super` (_e.g.,_ `super foo`) start the method lookup algorithm from the current method's superclass.
 We will review the method lookup semantics when looking at the interpreter implementation in the following chapters.
 
-**Temporary variables and parameters:** A method has a list of formal parameters and a list of manually declared temporary variables.
-Temporary variables and parameters are only accessible within the method that defines them and live during the entire method's execution.
+**Temporary variables and arguments:** A method has a list of formal arguments and a list of manually declared temporary variables.
+Temporary variables and arguments are only accessible within the method that defines them and live during the entire method's execution.
 In other words, they are allocated when a method execution starts and deallocated when a method returns.
-Each method invocation has its own set of temporary variables and parameters, property allowing recursion and concurrency (understanding why is left as an exercise for the reader).
+Each method invocation has its own set of temporary variables and arguments, property allowing recursion and concurrency (understanding why is left as an exercise for the reader).
 
-Temporary variables and parameters have each a unique 0-based index per method.
-Moreover, they share the same index namespace, meaning that no two temporaries or parameters can have the same index.
-For example, assuming a method with `N` parameters and `M` temporary variables, its parameters are indexed from 0 to `N`, and its temporary variables are indexed from `N+1` to `N+M`.
+Temporary variables and arguments have each a unique 0-based index per method.
+Moreover, they share the same index namespace, meaning that no two temporaries or arguments can have the same index.
+For example, assuming a method with `N` arguments and `M` temporary variables, its arguments are indexed from 0 to `N`, and its temporary variables are indexed from `N+1` to `N+M`.
 
 **Instance variables:** Instance variables are variables declared in a class, and allocated on each of its instances.
 That is, each instance has its own set (or copy) of the instance variables declared in its class, and can directly access only its own instance variables.
@@ -87,7 +87,7 @@ Different push instructions are:
 
 - push the current method receiver (`self`)
 - push an instance variable of the receiver
-- push a temporary/parameter
+- push a temporary/argument
 - push a literal
 - push the value of a literal variable
 - push the top of the stack, duplicating the stack top
