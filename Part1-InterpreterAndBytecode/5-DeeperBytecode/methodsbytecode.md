@@ -65,9 +65,9 @@ Single-byte parametrized bytecode instructions are organized in ranges, often of
 For example, 1-byte `push instance variable` instruction is organized in a range of 16 instructions (2^4).
 1-byte `push instance variable` instructions are encoded with bytes from 0 to 15, parameterized with indexes from 1 to 16 respectively.
 
-An alternative way of seeing this encoding is to see that an instruction opcode is not the byte on itself but the most significant bits of the byte. If we consider again the range of bytecodes `push instance variable`, the most significant nibble remains always zero regardless of the bytecode, while the lowest part always changes following the index to push.
+An alternative way of seeing this encoding is to see that an instruction opcode is not the byte on itself but the most significant bits of the byte. If we consider again the range of bytecodes `push instance variable`, the most significant nibble remains always zero regardless of the bytecode, while the lowest part always changes following the index to push. See Listing *@nibbles@*.
 
-```caption=Understanding encoding and nibbles
+```caption=Understanding encoding and nibbles.&anchor=nibbles
 "The most significant nibble is always 0 for this range of bytecode"
 0 to: 15 do: [ :e | self assert: ((e >> 4) bitAnd: 16rF) = 0 ].
 "The least significant nibble is always the index to push"
@@ -203,7 +203,7 @@ Extensions are composed by adding many prefixes to a given instruction.
 For example, the example in Listing *@jumpmorethan65535bytes@* shows a jump with two extensions of 1 and 2, to a jump with argument 3.
 This computes the jump offset of 66051 with the formula `(((1 << 8) + 2) << 8 + 3)`.
 
-````caption=Combining extensions to jump above 65535 bytes.&anchor=jumpmorethan65535bytes
+```caption=Combining extensions to jump above 65535 bytes.&anchor=jumpmorethan65535bytes
 "Jump forward 66051 bytes"
 extA 1
 extA 2
