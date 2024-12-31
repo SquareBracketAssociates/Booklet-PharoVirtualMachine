@@ -12,8 +12,8 @@ This includes how the interpreter manages its execution state and the call stack
 The chapter on Slang VM generation presents machine dependent optimizations such as interpreter threading and autolocalization.
 
 A section of this chapter is dedicated to message sends: the most important instruction in the Pharo programming language and in many object-oriented languages.
-Message-sends, as similar as they may look to statically-bound function calls, must implement late-bound execution.
-Sending a message requires looking up the corresponding method up in the receiver class hierarchy, which is one of the most common operations in Pharo, and one of the most complex and expensive too.
+Message sends, as similar as they may look to statically-bound function calls, must implement late-bound execution.
+Sending a message requires looking up the corresponding method in the receiver's class hierarchy, which is one of the most common operations in Pharo, and one of the most complex and expensive too.
 One simple way to cope with such costs are global lookup caches.
 
 
@@ -25,10 +25,10 @@ An interpreter typically follows two main steps for each instruction: it fetches
 
 Typically, interpreters are implemented using a `while` and a `switch` statement.
 The `while` statement executes indefinitely (or until the program exits).
-The `switch` statement contains a case per instruction and dispatches to the corresponding code depending on the read instruction.
-The following code (Listing *@Cinterp@*) illustrates a simple interpreter written the C programming language.
+The `switch` statement contains a case per instruction and dispatches to the corresponding code depending on the instruction.
+The code in Listing *@Cinterp@* illustrates a simple interpreter written the C programming language.
 
-```caption=Sketching an interpreter in C&anchor=Cinterp
+```caption=Sketching an interpreter in C.&anchor=Cinterp
 void interpret(){
 	while(true){
 		int instruction = fetchNextInstruction();
@@ -50,12 +50,12 @@ void interpret(){
 Pharo's bytecode interpreter is not written as a case statement as shown before.
 Instead, it uses a table dispatch mechanism, where a table, namely the _bytecode table_ associates an instruction with the code to execute for that instruction.
 The bytecode table is an array ranging from 0 to 255, thus covering the entire bytecode set, and containing unary selectors.
-Instructions are dispatched by looking up the selector for an instruction, then using the selector to send a message to the interpreter using the message `perform:` (as shown in Listing *@dispatch@*).
+Instructions are dispatched by looking up the selector for an instruction, then using the selector to send a message to the interpreter using the message `perform:`, as shown in Listing *@dispatch@*.
 
 Note that while we write the message `perform:`, the C transpiler will generate a call to the corresponding function implementing the bytecode semantics.
 
 
-```caption=Pharo interpreter uses a table dispatch with symbols&anchor=dispatch
+```caption=Pharo interpreter uses a table dispatch with symbols.&anchor=dispatch
 Interpreter >> interpret
 	...
 	self fetchNextBytecode.
@@ -65,16 +65,16 @@ Interpreter >> interpret
 	...
 
 Interpreter >> dispatchOn: anInteger in: selectorArray
-	self perform: (selectorArray at: (anInteger + 1)).
+	self perform: (selectorArray at: (anInteger + 1))
 ````
 
 ### Instruction Fetching and the Instruction Pointer
 
 Mimicking how the CPU handles its own program counter, the Pharo interpreter manages its instruction stream using a variable called `ìnstructionPointer`, which is a pointer to the current instruction in the method under execution.
 
-Using the instruction pointer, the interpreter fetches instructions one-by-one sequentially from a method's bytecode list as shown in Listing *@fetchnext@*. Here the variable `objectMemory` is a pointer to the complete memory of the interpreter and the instructionPointer is just an address within the range of the currently executed compiled method.
+Using the instruction pointer, the interpreter fetches instructions one by one sequentially from a method's bytecode list as shown in Listing *@fetchnext@*. Here the variable `objectMemory` is a pointer to the complete memory of the interpreter and the instructionPointer is just an address within the range of the currently executed compiled method.
 
-```caption=Low-level stack operations in the interpreter&anchor=fetchnext
+```caption=Low-level stack operations in the interpreter.&anchor=fetchnext
 Interpreter >> fetchNextBytecode
 	currentByteCode := objectMemory byteAt: (instructionPointer := instructionPointer + 1)
 ```
@@ -95,13 +95,12 @@ Thus, message sends are implemented as two-step operations: first the interprete
 
 #### Preparing the Stack
 
-Before executing a message send bytecode, all arguments, receiver included, need to be pushed to the stack in order.
+Before executing a message send bytecode, all arguments, receiver included, have to be pushed to the stack in order.
 That is, the receiver is pushed first, then each of the arguments from first to last, as illustrated in the following code.
 The generated bytecode instructions must include the corresponding push instructions before the message send, as follows:
 
-```caption=A send is preceeded by instructions that push the arguments
-"Translation of 
-  aNumber between: 17 and: 255"
+```caption=A send is preceded by instructions that push the arguments.
+"Translation of aNumber between: 17 and: 255"
 push aNumber
 push 17
 push 255
@@ -110,12 +109,12 @@ send #between:and:
 
 When a message send instruction is executed, the stack looks as follows:
 
-![Preparing the Stack to send a message. %width=60&anchor=interpreterBeforeSend](figures/interpreter_send.pdf)
+![Preparing the stack to send a message. %width=60&anchor=interpreterBeforeSend](figures/interpreter_send.pdf)
 
 
 ### Message Send Bytecodes
 
-To illustrate how message send bytecodes work, let's examine the source code of bytecode `extSendBytecode`.
+To illustrate how message send bytecodes work, let's examine the source code of bytecode `extSendBytecode`, as shown in Listing *@extSendBytecode@*.
 The `extSendBytecode` bytecode is a two-byte bytecode implementing the general form of message sends.
 The first byte is the opcode of the instruction, the second byte encodes the literal index where to find the selector in the highest 5 bits, and the number of arguments of the selector in the lowest 3 bits.
 
@@ -124,7 +123,7 @@ The argument count is used to fetch the receiver: the receiver is on the stack, 
 Finally, we obtain the receiver's class index and set it to the interpreter variable `lkupClassTag`.
 Both the `lkupClassTag` and `messageSelector` are used in the method lookup that is explained in the next section.
 
-```caption=The general form send bytecode
+```caption=The general form send bytecode.&anchor=extSendBytecode
 Interpreter >> extSendBytecode
 	| byte messageSelectorIndex messageArgumentCount |
 
@@ -158,18 +157,18 @@ Interpreter >> normalSend
 ### Method Lookup Overview
 
 The first step of interpreting a message send is finding the method to execute.
-Starting from the class of the receiver, the method lookup algorithm linearly searches on each class in the hierarchy, as shown in the code below (Listing *@methodlookup@*).
+Starting from the class of the receiver, the method lookup algorithm linearly searches on each class in the hierarchy, as shown in the Listing *@methodlookup@*.
 
 For each class, it takes the method dictionary from the second slot of the class object (`MethodDictionaryIndex` has value 1, second starting from 0), and looks up in the method dictionary for the method with the ???.
 
-Here, the method `lookupMethodInDictionary:` has two possible outcomes: 
+Here, the method `lookupMethodInDictionary:` has two possible outcomes:
 
 - If the method is found, it sets the interpreter variable `newMethod` with the method found and returns `true`.
 - if the method is not found, it returns `false`.
 
 If the method is found in the current method dictionary, the method `lookupMethodInClass:` returns.
 
-```caption=The lookup method&anchor=methodlookup
+```caption=The lookup method.&anchor=methodlookup
 Interpreter >> findNewMethodInClassTag: classTagArg ifFound: aBlock
 	"Entry was not found in the cache; look it up the hard way "
 	lkupClass := objectMemory classForClassTag: classTag.
@@ -209,7 +208,7 @@ The fixed instance variables are:
 - `tally`: the number of occupied slots in the dictionary
 - `array`: the method array
 
-![Method dictionaries implement hash table using a double array. %width=60&anchor=methoddict](figures/interpreter_method_dictionary.pdf)
+![Method dictionaries implement a hash table using a double array. %width=60&anchor=methoddict](figures/interpreter_method_dictionary.pdf)
 
 Although method dictionaries use selector objects as keys, any object is accepted.
 The search algorithm uses a simple hash function over the keys:
@@ -220,7 +219,7 @@ The search algorithm uses a simple hash function over the keys:
 The mask used is the variable size of the method dictionary, ensuring that the index is always within bounds of the dictionary without extra checks.
 
 
-```caption=The hashing function
+```caption=The hashing function.
 Interpreter >> methodDictionaryHash: oop mask: mask
 	^mask bitAnd: ((self isImmediate: oop)
 		ifTrue: [self integerValueOf: oop]
@@ -233,7 +232,7 @@ Interpreter >> methodDictionaryHash: oop mask: mask
 If the element is found or an empty slot is found, the search stops. However, if another element is found in the hashed index, the next index if probed. If the end of the array is reached, the search wraps and restarts from the beginning of the array. If the original index is reached again after wrapping, the search stops.
 
 ```
-Interpreter >> lookupMethodInDictionary: dictionary 
+Interpreter >> lookupMethodInDictionary: dictionary
 	| length index mask wrapAround nextSelector methodArray |
 
 	length := objectMemory numSlotsOf: dictionary.
@@ -317,10 +316,10 @@ Frames are created by pushing the current instruction pointer, thus suspending t
 
 ```
 Interpreter >> activateNewMethod
-    
+
 	"set up the stack frame for the method"
 	...
-	
+
 	"Set the interpreter instruction pointer to the first instruction of the method"
     instructionPointer := self pointerForOop:
 		                      (self
@@ -338,10 +337,10 @@ Notice that we do not need to clean the stack and moving the stack pointer upwar
 All values after the stack pointer become unreachable, and will eventually get overwritten on a next message send.
 
 In addition, remember that return instructions have a return value that need to be given to the caller.
-Passing the return value to the caller is made through the stack.
+Passing the return value to the caller is done through the stack.
 It's the callee's responsibility to pop the receiver and arguments and push the return value upon return.
 
-```caption=Returning from a method pops restores the caller's stack frame, pops the message receiver and arguments, and pushes the return value
+```caption=Returning from a method restores the caller's stack frame, pops the message receiver and arguments, and pushes the return value.
 Interpreter >> returnTopFromMethod
 
 	self commonReturn: self popStack
@@ -370,8 +369,8 @@ Interpreter >> frameStackedReceiverOffset: theFP
 	^self frameStackedReceiverOffsetNumArgs: (self frameNumArgs: theFP)
 ```
 
-The following figure shows the stack after a return instruction: the three interpreter variables have been restored destroying the callee frame.
-In the caller's frame, the stack values representing the receiver and arguments have been popped, the return value has been pushed.
+Figure *@return@* shows the stack after a return instruction: the three interpreter variables have been restored destroying the callee frame.
+In the caller's frame, the stack values representing the receiver and arguments have been popped, and the return value has been pushed.
 
 ![The stack before and after a return instruction.%anchor=return](figures/interpreter_return.pdf)
 
@@ -381,7 +380,7 @@ Now that we have seen in detail how message sends and the call stack work, let u
 
 - Receiver and arguments are pushed to the stack by the caller before the send instruction
 - Receiver and arguments remain on the stack, and are accessed relative to the new frame's base
-- Upon return, it's the callee's responsibility to pop the receiver and arguments and to push the return value to the stack
+- Upon return, it's the callee's responsibility to pop the receiver and arguments and to push the return value on the stack.
 
 We will slightly revisit this calling convention when introducing just-in-time compilation.
 
@@ -392,10 +391,10 @@ So far we have concentrated on interpreting bytecodes.
 In this  section we concentrate on the interpretation of primitive methods.
 
 Recall that primitive methods are normal methods that contain a reference to a primitive function.
-For example, the next code snippet shows the method `SmallInteger>>+` implementing the addition of two tagged integers.
+For example, the code snippet in Listing *@addition@* shows the method `SmallInteger>>+` implementing the addition of two tagged integers.
 This method has the pragma `primitive: 1` indicating that this method is a primitive method, referencing the primitive 1.
 
-```caption=The primitive method implementing addition in SmallInteger
+```caption=The primitive method implementing addition in SmallInteger.&anchor=addition
 SmallInteger >> + aNumber
 
 	<primitive: 1>
@@ -404,29 +403,28 @@ SmallInteger >> + aNumber
 
 #### Primitive Instructions and Calling Convention by Example
 
-Primitive instructions are stack-based instructions with a catch: they can fail contrary to bytecode which cannot. 
+Primitive instructions are stack-based instructions with a catch: they can fail, contrary to bytecode which cannot.
 
 When called, primitive instructions expect all its arguments on the stack, plus the interpreter variable `numberOfArguments` set to the actual number of arguments of the message send.
 Thus, primitive instructions have two return values: a failure/success code, and an optional return value if success.
 To allow this, primitive instructions store their error code in an interpreter variable, and their result on the stack.
 Invoking a primitive instruction follows the convention on return:
- - set the primitive failure code variable `primFailCode` to 0 on success, or an error code otherwise
- - if failure, leave the stack untouched
- - if success, pop the arguments, then push the result
+- set the primitive failure code variable `primFailCode` to 0 on success, or an error code otherwise
+- if failure, leave the stack untouched
+- if success, pop the arguments, then push the result
 
-The following code illustrates such concepts with `primitiveAdd` the primitive instruction that adds two tagged small integers.
-`primitiveAdd` first fetches it's two arguments from the top two slots of the stack.
+The following code illustrates such concepts with `primitiveAdd`, the primitive instruction that adds two tagged small integers. `primitiveAdd` first fetches its two arguments from the top two slots of the stack.
 Second, it checks if they are integer objects: if they are not, it returns indicating a failure.
-Third, it sums both integer values, and in case of overflow (_i.e.,_ in case the addition cannot be represented as a tagged small integer) it returns indicating a failure.
+Third, it sums both integer values, and in case of overflow (i.e., in case the addition cannot be represented as a tagged small integer) it returns indicating a failure.
 Finally, if the sum does not overflow, the two arguments are popped from the stack and the result is pushed.
 
 ```
-Interpreter >> primitiveAdd	
+Interpreter >> primitiveAdd
 	| maybeSmallInteger maybeSmallInteger2 result |
 
 	maybeSmallInteger := self stackValue: 0.
 	maybeSmallInteger2 := self stackValue: 1.
-	
+
 	(objectMemory isIntegerObject: maybeSmallInteger)
 		ifFalse: [ ^ self primitiveFail ].
 	(objectMemory isIntegerObject: maybeSmallInteger2)
@@ -442,15 +440,15 @@ Interpreter >> primitiveAdd
 ```
 
 Notice how this primitive does not do any destructive operation on the stack unless we are sure that it cannot fail.
-Alternatively, if it popped the top elements of the stack at the beginning, the stack should have been rebuilt upon failure, by re-pushing the arguments in the right order. 
+Alternatively, if it popped the top elements of the stack at the beginning, the stack should have been rebuilt upon failure, by re-pushing the arguments in the right order.
 
 **Design Note: when should a primitive fail?**
-The design of primitives is revolved around type-safety and memory-safety.
+The design of primitives revolves around type safety and memory safety.
 Since Pharo is a dynamically-typed programming language, types are not know in advance.
 Instead, types should be checked at runtime before performing dangerous operations.
-In the example above it checks the types of the arguments _and_ the non-overflow of the addition.
-Primitives that load/store from/into object slots type check the receiver and index arguments, but also check that the index is within bounds.
-Notice that such a design guide primitives to provide a clear separation between the _fast and slow paths_.
+In the example above, it checks the types of the arguments _and_ the non-overflow of the addition.
+Primitives that load from or store into object slots, type check the receiver and index arguments, but also check that the index is within bounds.
+Notice that such a design requires primitives to provide a clear separation between the _fast and slow paths_.
 Primitives generally provide a safe implementation for a fast path, leaving the slow path to the fallback code.
 
 ### Decoding a Method's Primitive Index
@@ -487,11 +485,12 @@ Interpreter >> literalCountOfHeader: headerPointer
 
 When a method is executed, the interpreter checks first if the method is a primitive method _i.e.,_ if it has its flag turned on.
 If that is the case, the interpreter invokes the primitive instead of activating the method.
-As with bytecode instructions, primitives use also table dispatch to map primitive numers (or indexes) to primitive functions.
+As with bytecode instructions, primitives use also table dispatch to map primitive numbers (or indexes) to primitive functions.
 The code that follows shows a sketch of the primitive table.
 
 ```
-	#(	(1 primitiveAdd)
+	#(
+		(1 primitiveAdd)
 		(2 primitiveSubtract)
 		(3 primitiveLessThan)
 		(4 primitiveGreaterThan)
@@ -506,7 +505,7 @@ The code that follows shows a sketch of the primitive table.
 	)
 ```
 
-To execute the primitive, we fetch the primitive function from the table, then we dispatch the primitive using `perform:`.
+To execute a primitive, we fetch the primitive function from the table, then we dispatch the primitive using `perform:`.
 The following piece of code shows a simplified version of Pharo's interpreter code.
 First, the interpreter decodes the primitive index and fetches the primitive function pointer.
 If the method has an associated primitive function, the function is executed.
@@ -537,14 +536,13 @@ From an interpreter point of view, these mechanisms are _callbacks_ to Pharo cod
 
 #### Does Not Understand
 
-When a message is sent, the method lookup searches the entire receiver's hierarchy for a method with the same selector as the message.
+When a message is sent, the method lookup searches the entire receiver's class hierarchy for a method with the same selector as the message.
 If the algorithm reaches the top of the hierarchy (`nil`), then the interpreter sends the `doesNotUnderstand:` message to the receiver.
-The interpreter massages a bit the stack and the interpreter state, and looks up the `doesNotUnderstand:` selector instead of the original selector.
+The interpreter massages the stack and the interpreter state a bit, and looks up the `doesNotUnderstand:` selector instead of the original selector.
 This creates the illusion that the VM replaced the original message by a `doesNotUnderstand:` message.
 
 Massaging the stack implies preparing it to send the `doesNotUnderstand:` message.
-The thing is, the stack contains the receiver and arguments of the message but `doesNotUnderstand:` expects as single argument: the reification of the original message.
-Then the original message reification is set up by:
+The thing is, the stack contains the receiver and arguments of the message but `doesNotUnderstand:` expects the reification of the original message as single argument. The original message reification is set up by:
 - allocating an array to hold all the original arguments
 - popping the arguments from the stack and store them in the new array
 - allocating a message object and storing in it the original selector, argument array and lookup class
@@ -553,7 +551,7 @@ Then the original message reification is set up by:
 
 Then, the `messageSelector` interpreter variable is overwritten with the `doesNotUnderstand:` selector found in the special objects array, and the lookup is restarted.
 
-```caption=The lookup method revisited with `doesNotUnderstand:` support
+```caption=The lookup method revisited with `doesNotUnderstand:` support.
 Interpreter >> lookupMethodInClass: class
 	| currentClass dictionary found |
 	<inline: false>
@@ -576,12 +574,12 @@ Interpreter >> lookupMethodInClass: class
 
 ### Cannot Interpret
 
-The VM implements also the `cannotInterpret:` hook: a hook that gets activated when the VM finds `nil` in the place of a class' method dictionary.
+The VM implements also the `cannotInterpret:` hook. It is activated when the VM finds `nil` in the place of a class' method dictionary.
 Similar to `doesNotUnderstand:`, `cannotInterpret:` requires massaging the stack and setting up the message reification.
-However, the lookup cannot be restarted from the original class, as this will find again a `nil` method dictionary and _loop_.
-Instead, `cannotInterpret:` restart's the lookup from the superclass of the class that had a `nil` method dictionary, cutting up the recursion.
+However, the lookup cannot be restarted from the original class, as this will find a `nil` method dictionary again and _loop_.
+Instead, `cannotInterpret:` restarts the lookup from the superclass of the class that had a `nil` method dictionary, stopping the recursion.
 
-```caption=The lookup method
+```caption=The lookup method.
 Interpreter >> lookupMethodInClass: class
 	| currentClass dictionary found |
 	<inline: false>
@@ -592,14 +590,14 @@ Interpreter >> lookupMethodInClass: class
 		dictionary := objectMemory
 			followObjField: MethodDictionaryIndex
 			ofObject: currentClass.
-		
+
 		dictionary = objectMemory nilObject ifTrue:
 			["MethodDict pointer is nil (hopefully due a swapped out stub)
 				-- raise exception #cannotInterpret:."
 			self createActualMessageTo: class.
 			messageSelector := objectMemory splObj: SelectorCannotInterpret.
 			^self lookupMethodInClass: (self superclassOf: currentClass)].
-		
+
 		found := self lookupMethodInDictionary: dictionary.
 		found ifTrue: [^currentClass].
 		currentClass := self superclassOf: currentClass ].
@@ -608,9 +606,9 @@ Interpreter >> lookupMethodInClass: class
 
 ### Conclusion
 
-In this chapter we studied how the interpreter Pharo interpreter is written.
+In this chapter we studied how the Pharo interpreter is written.
 Both bytecode and primitive instructions are implemented through method dispatch.
 The key instruction in Pharo is the message send.
-When a message send instruction is executed, it first looks up the method to execute in the receiver's hierarchy.
+When a message send instruction is executed, the interpreter first looks up the method to execute in the receiver's hierarchy.
 Then, if it is a primitive method, it executes the associated primitive instruction.
 If the primitive instruction fails or the method is a normal method, the method is _activated_: a frame is created and the method's bytecode gets executed.
