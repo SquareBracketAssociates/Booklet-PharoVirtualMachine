@@ -5,19 +5,19 @@ In this chapter we will show how you can develop a prototype version of static m
 A static method is a method with no lookup. It means that the call site defines the exact class
 where the method is defined. The VM has just to grab the method from such a class.
 
-For this introduction, we will
+For this introduction, we will:
 - define a new bytecode
 - extend the bytecode builder
 - extend the bytecode interpreter to handle this bytecode
 
 ### Bytecode table
 
-Since we will add a bytecode we start to have a look at the bytecode table.
+Since we will add a bytecode, we start to have a look at the bytecode table.
 You will find it in the method `StackInterpreter class >> #initializeBytecodeTableForSistsV1`
 
-This table links a bytecode and the method that defines its behavior. 
+This table links a bytecode and the method that defines its behavior.
 
-What you can see is that the bytecodes 246 and 247 are free. 
+What you can see is that the bytecodes 246 and 247 are free.
 
 ```
 ...
@@ -30,18 +30,18 @@ What you can see is that the bytecodes 246 and 247 are free.
 		"3 byte bytecodes"
 		(248		callPrimitiveBytecode)
 		(249		extPushFullClosureBytecode)
-...		
+...
 ```
 
-We will use the bytecode 246. 
-Once we will have extended the interpreter we will come back and modify such a table. 
+We will use the bytecode 246.
+Once we will have extended the interpreter we will come back and modify the table.
 
 
 ### About method execution
 
 Let us study a bit the normal message send bytecodes.
-For a default late bound message 
-- the receiver and args are on the stack
+For a default late bound message :
+- the receiver and arguments are on the stack
 - the method selector is stored in the method literal frame
 
 ```
@@ -53,9 +53,9 @@ For a default late bound message
 ```
 
 The table tells us that send bytecodes range from 128 to 175.
-Such bytecodes are compact in the sense that they encode their number of arguments. 
-In addition, they encode the place in the literal frame where the selector of the method to be looked up 
-is placed. 
+Such bytecodes are compact in the sense that they encode their number of arguments.
+In addition, they encode the place in the literal frame where the selector of the method to be looked up
+is placed.
 
 For example, 128 means that the selector is located in the first place of the literal frame.
 
@@ -64,14 +64,14 @@ For example, 128 means that the selector is located in the first place of the li
 > 0
 ```
 
-### Study 128 
+### Study 128
 
 The interpreter method associated to bytecode 128 is `sendLiteralSelector0ArgsBytecode`
 
 ```
 StackInterpreter >> sendLiteralSelector0ArgsBytecode
 	"Can use any of the first 16 literals for the selector."
-	
+
 	| rcvr |
 	messageSelector := self literal: (currentBytecode bitAnd: 16rF).
 	argumentCount := 0.
@@ -81,10 +81,10 @@ StackInterpreter >> sendLiteralSelector0ArgsBytecode
 	self commonSendOrdinary
 ```
 
-What we see is that 
+What we see is that:
 - The message selector is extracted from literal frame using the the bytecode encoding. 
-- Then it sets the number of argument, here to zero
-- It then looks the class up. 
+- Then it sets the number of arguments to zero
+- Tehn it looks up the class.
 - And finally executes the method `commonSendOrdinary`
 
 
@@ -94,7 +94,7 @@ StackInterpreter >> commonSendOrdinary
 	"Assume: messageSelector and argumentCount have been set, and that 
 	the receiver and arguments have been pushed onto the stack,"
 	"Note: This method is inlined into the interpreter dispatch loop."
-	
+
 	<sharedCodeInCase: #extSendBytecode>
 	self sendBreakpoint: messageSelector receiver: (self stackValue: argumentCount).
 	self doRecordSendTrace.
@@ -109,7 +109,7 @@ Then the interpreter fetches the next bytecode to be executed.
 
 ### A first version of sendStaticLiteralMethod
 
-The bytecode 246 is a two byte bytecode. 
+The bytecode 246 is a two byte bytecode.
 Let us start to define a new method `sendStaticLiteralMethodBytecode` that defines the behavior of the static send. Since we want to avoid performing a method lookup we decide that the compiled method
 the send will execute should be stored in the method literal frame.
 
@@ -117,7 +117,7 @@ the send will execute should be stored in the method literal frame.
 ```
 StackInterpreter >> sendStaticLiteralMethodBytecode
 	"two bytecodes
-		opecode 
+		opcode
 		literal offset "
 	| methodLiteralOffset |
 	methodLiteralOffset:= self fetchByte.
@@ -126,7 +126,7 @@ StackInterpreter >> sendStaticLiteralMethodBytecode
 	self fetchNextBytecode
 ```
 
-This is a first version because the interpreter may use the values of other global variable such as the argument count. We will refine this definition later. 
+This is a first version because the interpreter may use the values of other global variables such as the argument count. We will refine this definition later.
 
 Now we declare that the bytecode 246 is defined by `sendStaticLiteralMethod`
 
@@ -142,63 +142,63 @@ Now we declare that the bytecode 246 is defined by `sendStaticLiteralMethod`
 		"3 byte bytecodes"
 		(248		callPrimitiveBytecode)
 		(249		extPushFullClosureBytecode)
-...		
+...
 ```
 
 ### Compiling the VM
 
 
 Let us check that our additions do not break the VM build - so far we nearly do anything that could but this way you can practice.
-Note that we only compile the VM interpreter without the JIT compiler. 
+Note that we only compile the VM interpreter without the JIT compiler.
 
-- First save your code, the build will take the current branch has input. 
+- First save your code, the build will take the current branch as input.
 
-- Go to the iceberg folder in the pharo-local folder and execute the following. Here we asked to grab the binaries of external projects to make the compilation faster. 
+- Go to the iceberg folder in the pharo-local folder and execute the following. Here we ask to grab the binaries of external projects to make the compilation faster.
 
 ```
 cmake -S iceberg/pharo-vm -B build -DFLAVOUR=StackVM -DPHARO_DEPENDENCIES_PREFER_DOWNLOAD_BINARIES=TRUE
 ```
 
-Then we compile the Vm and the result will be in the build folder. 
+Then we compile the VM and the result will be in the build folder.
 
 ```
 cmake --build build --target=install
 ```
 
-We can now launch the resulting VM to execute your image as follows: 
+We can now launch the resulting VM to execute your image as follows:
 ```
 
 ./build/build/dist/Pharo.app/Contents/MacOS/Pharo ../YourImage.image --interactive
 ```
 
-Note that you will have to rebuild the VM in the following. 
+Note that you will have to rebuild the VM in the following.
 Before recompiling to not forget to save your code and remember that the build is taking the current branch as input.
 
 ### Getting a compiled method
 
-In this hands on, we focus on the virtual machine logic therefore we do not want to modify the syntax of Pharo. Still we need a way to get compiled methods with the new bytecode. 
+In this hands-on, we focus on the virtual machine logic. Therefore we do not want to modify the syntax of Pharo. Still we need a way to get compiled methods with the new bytecode.
 
-The Pharo compiler supports a bytecode builder, using the pragma `opalBytecodeMethod` 
-we can create the body of a method has the compiler would do. 
+The Pharo compiler provides a bytecode builder. By using the pragma `opalBytecodeMethod`
+we can create the body of a method as the compiler would do.
 
 For example the following method `exampleIRBuilder` just returns 2.
 
 ```
-MyXP >> exampleIRBuilder 
+MyXP >> exampleIRBuilder
 
 	<opalBytecodeMethod>
-		^ IRBuilder buildIR: [:builder | 
-			builder 
+		^ IRBuilder buildIR: [:builder |
+			builder
 				pushLiteral: 2;
 				returnTop ]
 ```
 
-Now we can just execute the method. 
+Now we can just execute the method.
 
 ```
 MyXP new exampleIRBuilder
 > 2
-``` 
+```
 
 Here is the definition of `factorial`, we call it `lateBoundFactorial` since we will define alternate versions using static message sends later.
 
@@ -229,19 +229,18 @@ Integer >> lateBoundFactorial
 			  returnTop ]
 ```
 
-Notice that here this is the default method passing message semantics. 
+Notice that this is the default method passing message semantics.
 
-To support static calls, we will define a new IR instruction in addition to the bytecode to be able to define static sends. 
+To support static calls, we will define a new IR instruction in addition to the bytecode to be able to define static sends.
 
 ### Fixing some Pharo logic
 
-Before continuing we should fix the method `refersToLiteral:` because it can loop 
-if if literal frame contains a compiled method and this is what we want to do for our solution.
+Before continuing we should fix the method `refersToLiteral:` because it can loop if literal frame contains a compiled method and this is what we want to do for our solution.
 
 
 ```
 CompiledCode >> refersToLiteral: aLiteral [
-	"Answer true if any literal in this method is literal,
+	"Answer true if any literal in this method is aLiteral,
 	even if embedded in array structure."
 
 	1 to: self numLiterals - self literalsToSkip do: [ :index | "exclude selector or additional method state (penultimate slot)
@@ -284,10 +283,10 @@ IRSendStatic >> calledMethod: aCompiledMethod
 	calledMethod := aCompiledMethod
 ```
 
-We also define a class method 
+We also define a class method
 
 ```
-IRSendStatic class >> 
+IRSendStatic class >>
 ```
 
 We define the corresponding methods to support the interaction with the Visitors who are responsible for
@@ -371,7 +370,7 @@ IRTranslator >> visitStaticSend: anIRStaticSend
 	gen sendStatic: anIRStaticSend calledMethod
 ```
 
-We define the method `sendStatic:`as follows: 
+We define the method `sendStatic:`as follows:
 
 ```
 IRBytecodeGenerator >> sendStatic: aMethod
@@ -383,8 +382,8 @@ IRBytecodeGenerator >> sendStatic: aMethod
 ```
 
 
-We finally emit the new bytecode: it basically emits the bytecode 246 followed by the literal frame offset in which the compiled method is stored. 
-A better version should do a bit of validation. 
+We finally emit the new bytecode: it basically emits the bytecode 246 followed by the literal frame offset in which the compiled method is stored.
+A better version should do a bit of validation.
 
 ```
 EncoderForSistaV1 >> genSendStatic: methodLiteralOffset
@@ -396,11 +395,11 @@ EncoderForSistaV1 >> genSendStatic: methodLiteralOffset
 
 ### Testing
 
-Now we define a simple method using a static send. This method adds one to the receiver. 
+Now we define a simple method using a static send. This method adds one to the receiver.
 
 
 ```
-Integer >> staticPlus 
+Integer >> staticPlus
 
 	<opalBytecodeMethod>
 
@@ -422,16 +421,15 @@ Integer >> staticPlus
 
 ### The case of recursion
 
-Since we are compiling a recursive method (factorial), we need a way so that the literal frame of this method refers to the compiled method itself. 
+Since we are compiling a recursive method (factorial), we need a way so that the literal frame of this method refers to the compiled method itself.
 
-For this as a temporarily solution we will introduce a placeholder that later we will patch. 
-Here is a definition of factorial where the recursive call is static. 
+As a temporary solution, we will introduce a placeholder that we will patch later. Here is a definition of factorial where the recursive call is static.
 
 ```
 Integer >> staticBoundRecursiveFactorial
 
 	<opalBytecodeMethod>
-	1halt.
+
 	^ IRBuilder buildIR: [ :builder |
 		  builder
 			  pushReceiver;
@@ -463,7 +461,7 @@ Object << #StaticRecursiveMethodPlaceHolder
 ```
 
 ```
-StaticRecursiveMethodPlaceHolder >> numArgs 
+StaticRecursiveMethodPlaceHolder >> numArgs
 
 	^ selector numArgs
 ```
@@ -496,39 +494,13 @@ IRMethod >> generate: trailer
 			compiledMethod classBinding: UndefinedObject binding.
 			compiledMethod selector: #UndefinedMethod ].
 	^ compiledMethod
-```	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```
 
 
 ### Better sendStaticLiteralMethodBytecode
 
-The first definition of `sendStaticLiteralMethodBytecode` was brittle. 
-Indeed the interpreter has some invariants and use about global variables that we did not
-reset correctly. 
+The first definition of `sendStaticLiteralMethodBytecode` was brittle.
+Indeed, the interpreter has some invariants and uses global variables that we did not reset correctly.
 
 This is the case for `argumentCount`. It is used by primitives to
 check how to access the stack and know how many elements to pop, and generally to check that the stack gets balanced after execution.
@@ -538,7 +510,7 @@ The second case is `primitiveIndex` and `primitiveFunctionPointer`.
 The function `executeNewMethod:` assumes that this index is set during lookup.
 Thus, if we don't set it, the value will be the one of the last method/primitive called leading to strange bugs.
 
-Here is the new version of the static send bycode logic. 
+Here is the new version of the static send bycode logic.
 
 ```
 StackInterpreter >> sendStaticLiteralMethodBytecode
@@ -664,9 +636,9 @@ Note that the staticBoundRecursiveFactorialHardcore is slower because the primit
 
 ### Limits and conclusion
 
-There is clearly some more effort to obtain a full working solution. For example, managing the code changes and recompilation of the methods.
+There is clearly some more effort needed to obtain a full working solution. For example, managing the code changes and recompilation of the methods.
 
-This tutorial misses
+This tutorial misses:
 - syntax support
 - JIT support
 - invalidation if the called method changes
