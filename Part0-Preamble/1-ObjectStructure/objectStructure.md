@@ -1,4 +1,5 @@
 ## Object Representation
+@cha:ObjectRepresentation
 
 Before delving inside the internals of the VM execution, it is important to understand the data it manipulates, in our case, Pharo objects.
 This chapter presents in-depth how objects are represented in memory.
