@@ -209,10 +209,10 @@ There are two kinds of oops: object pointers to other objects and immediate obje
 
 Every object in Pharo has an address in memory, which is the memory address of its base header.
 An object `A` references an object `B` with an absolute pointer to `B`'s base header stored in one of `A`'s reference slots.
-Figure *@references@* shows two objects forming a cycle. Each object has a reference slot pointing to the other.
+Figure *@fig:references@* shows two objects forming a cycle. Each object has a reference slot pointing to the other.
 References point to the object base header.
 
-![References to heap-allocated objects are pointers to an object's base header. %](figures/references4.pdf)
+![References to heap-allocated objects are pointers to an object's base header. %anchor=fig:references](figures/references4.pdf)
 
 
 ### Immediate Objects
