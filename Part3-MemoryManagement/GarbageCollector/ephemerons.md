@@ -1,6 +1,6 @@
 ## Weak Objects
 
-References to Objects are actually divided into two categories: strong and weak.
+References to objects are actually divided into two categories: strong and weak.
 
 ### Strong and Weak references
 
@@ -23,7 +23,7 @@ We call weak objects the objects that have all weak references.
 
 
 The format of an object encodes the instance specification \(_instSpec_\).
-The format of an object is stored in its header *@fig:objectHeader@*.
+The format of an object is stored in its header (see Figure *@fig:objectheader@*).
 The instSpec of a weak object is 4.
 This instance specification describes a layout that contains both a fixed part \(instances variables\) and a variable part.
 Every reference contained by this object will be weak.
