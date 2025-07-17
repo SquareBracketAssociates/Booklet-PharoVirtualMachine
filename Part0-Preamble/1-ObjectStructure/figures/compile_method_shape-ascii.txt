@@ -3,14 +3,15 @@ compiled method
                       \
                        v
 method header  -------->+---------------------+
-                        |'Hello' 
-                        |#nextPutAll:
-                        |...
-byte code ----------->  +---------------------+
-                        |80
-                        |put real one here
-                        |
-method trailer ---->    +---------------------+
-                        |
-                        |
-method end ---->        +---------------------+
+literal frame  -------->|- - - - - - - - - - -+
+                        |'Hello'              |
+                        |#nextPutAll:         |
+                        |...                  |
+bytecode -------------->+- - - - - - - - - - -+
+                        |80                   |
+                        |put real one here    |
+                        |                     |
+method trailer -------->+- - - - - - - - - - -+
+                        |                     |
+                        |                     |
+method end ------------>+---------------------+

@@ -1,0 +1,9 @@
+
+push A                   2000 +-------+
+push B                        |   A   |
+push C                   1900 +- - - -+
+                              |   B   |
+         stack top ----->1800 +- - - -+       | The stack grows 
+                              |   C   |       v down
+                         1600 +-------+
+                              |       |

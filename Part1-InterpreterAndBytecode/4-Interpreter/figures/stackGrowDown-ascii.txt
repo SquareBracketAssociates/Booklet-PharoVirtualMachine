@@ -1,0 +1,13 @@
+push A
+push B 
+push C
+                    +-------+
+                    |   A   |
+                    +- - - -+
+                    |   B   |
+                    +- - - -+
+stack top --------> |   C   |
+                    +-------+
+
+| The stack grows 
+v down                                              
