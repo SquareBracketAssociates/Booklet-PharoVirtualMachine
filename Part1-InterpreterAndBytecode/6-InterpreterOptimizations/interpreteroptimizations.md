@@ -62,8 +62,8 @@ This means somehow that the execution time of a message send operation is *domin
 In the rest of this chapter we will study three interpreter optimizations to improve this situation, all based on a single premise: "The best way to optimize message sends is to not do them at all".
 We can interpret this premise in two ways: 
 
- - avoiding the expensive lookup if possible
- - avoiding method activations in possible
+- avoiding the expensive lookup if possible
+- avoiding method activations in possible
 
 #### Analyzing Non Message Sends
 
@@ -113,10 +113,10 @@ This means that after each instruction is executed, a new instruction is fetched
 In the example shown above, such dispatching works by means of a reflective `perform:` operation.
 Overall, this means that for every instruction, and in particular for each one of our cheap assignment instructions we:
 
- - jump back to the beginning of the loop
- - fetch from memory the next instruction
- - lookup the instruction code in the table
- - dispatch the execution to the instruction code
+- jump back to the beginning of the loop
+- fetch from memory the next instruction
+- lookup the instruction code in the table
+- dispatch the execution to the instruction code
 
 If we again perform some naïf estimations, if we consider that each of these steps takes roughly the same time of our bytecode instruction, this means we have 4x overhead just because of the instruction dispatch.
 Later on this chapter we will study instruction lookahead, an interpreter optimization that improves this situation by avoiding unnecessary instruction dispatches.
@@ -143,10 +143,10 @@ The addition operator is a standard binary selector, that can be redefined by de
 In other words, the addition operator can be overloaded, and determining if it is a user-defined addition or a system-defined addition requires a method lookup.
 Finally, let us consider that:
 
- - although possible, such overloading is rare
- - even when overloading is present, operating with numbers will be much more common
- - and operating with integers is potentially more common than with floats (think loops and indexed variable accesses)
- - in addition, users will have higher performance expectations on number arithmetics
+- although possible, such overloading is rare
+- even when overloading is present, operating with numbers will be much more common
+- and operating with integers is potentially more common than with floats (think loops and indexed variable accesses)
+- in addition, users will have higher performance expectations on number arithmetics
 
 We optimize integer additions with static type predictions by defining a new *addition* bytecode instruction separate from the general case.
 This new instruction will have two paths differentiated by an integer type check on both operands.
