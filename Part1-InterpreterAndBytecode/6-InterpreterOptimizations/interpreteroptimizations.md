@@ -61,6 +61,7 @@ This means somehow that the execution time of a message send operation is *domin
 
 In the rest of this chapter we will study three interpreter optimizations to improve this situation, all based on a single premise: "The best way to optimize message sends is to not do them at all".
 We can interpret this premise in two ways: 
+
  - avoiding the expensive lookup if possible
  - avoiding method activations in possible
 
@@ -111,6 +112,7 @@ Interpreter >> dispatchOn: anInteger in: selectorArray
 This means that after each instruction is executed, a new instruction is fetched, the new instruction code is fetched and then executed.
 In the example shown above, such dispatching works by means of a reflective `perform:` operation.
 Overall, this means that for every instruction, and in particular for each one of our cheap assignment instructions we:
+
  - jump back to the beginning of the loop
  - fetch from memory the next instruction
  - lookup the instruction code in the table
@@ -140,6 +142,7 @@ To illustrate static type predictions let us consider the addition operator in P
 The addition operator is a standard binary selector, that can be redefined by developers in their own classes.
 In other words, the addition operator can be overloaded, and determining if it is a user-defined addition or a system-defined addition requires a method lookup.
 Finally, let us consider that:
+
  - although possible, such overloading is rare
  - even when overloading is present, operating with numbers will be much more common
  - and operating with integers is potentially more common than with floats (think loops and indexed variable accesses)
