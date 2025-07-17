@@ -59,6 +59,11 @@ The lookup operation traverses the class hierarchy of the receiver and looks for
 The method lookup takes a long time, even in the best cases, when compared with a normal function call.
 This means somehow that the execution time of a message send operation is *dominated* by the method lookup.
 
+In the rest of this chapter we will study three interpreter optimizations to improve this situation, all based on a single premise: "The best way to optimize message sends is to not do them at all".
+We can interpret this premise in two ways: 
+ - avoiding the expensive lookup if possible
+ - avoiding method activations in possible
+
 #### Analyzing Non Message Sends
 
 Let us now consider a simple temporary variable assignment operation in Pharo:
@@ -112,10 +117,63 @@ Overall, this means that for every instruction, and in particular for each one o
  - dispatch the execution to the instruction code
 
 If we again perform some naïf estimations, if we consider that each of these steps takes roughly the same time of our bytecode instruction, this means we have 4x overhead just because of the instruction dispatch.
+Later on this chapter we will study instruction lookahead, an interpreter optimization that improves this situation by avoiding unnecessary instruction dispatches.
 
 ### Global Lookup Cache
 
 ### Static Type Predictions
+
+As we stated before, the faster way to perform a message send is not doing it.
+However, avoiding message sends all the way is not an easy task for an interpreter.
+Because of the dynamically-typed nature of Pharo programs, we do not know beforehand the type of a message receiver, and thus neither the method to activate.
+Thus, the interpreter must be ready for the worst case: types and methods are unknown and a lookup must be done.
+Nevertheless, although Pharo programs are dynamic in nature, this does not mean that they are not *predictable* up to a certain extent.
+
+Static type predictions is a message send optimization that exploits such observation.
+The goal of the optimization is to *inline* common and predictable message sends in a fast path guarded by a type check.
+If the type check guard fails, the general case is implemented in a slow execution path.
+The general expectation is that common message sends will be sped up, while rare ones will be slightly penalized with a type check.
+Static type predictions were first described for the Self programming language by Holzle in his PhD thesis {!citation|ref=Holz94a!}.
+Nowadays, Pharo uses this technique to optimize for common low-level integer operations such as arithmetics, comparisons and bitwise manipulations.
+
+To illustrate static type predictions let us consider the addition operator in Pharo: `a + b`.
+The addition operator is a standard binary selector, that can be redefined by developers in their own classes.
+In other words, the addition operator can be overloaded, and determining if it is a user-defined addition or a system-defined addition requires a method lookup.
+Finally, let us consider that:
+ - although possible, such overloading is rare
+ - even when overloading is present, operating with numbers will be much more common
+ - and operating with integers is potentially more common than with floats (think loops and indexed variable accesses)
+ - in addition, users will have higher performance expectations on number arithmetics
+
+We optimize integer additions with static type predictions by defining a new *addition* bytecode instruction separate from the general case.
+This new instruction will have two paths differentiated by an integer type check on both operands.
+The fast path will inline the addition implementation if the check is a success, and perform a slow message send in case it fails.
+Additionally, in case of overflow, the Pharo semantics is to activate a user defined method, to *e.g.,* raise an exception.
+Thus, the slow path is taken also in case an overflow is detected.
+An excerpt of the code of this bytecode is shown below.
+
+```caption=The lookup method revisited with `doesNotUnderstand:` support.
+Interpreter >> bytecodeAdd
+	| rcvr arg result |
+	rcvr := self stackValue: 1.
+	arg := self stackValue: 0.
+
+	"Type check both operands"
+	(objectMemory areIntegers: rcvr and: arg) ifTrue: [
+		result := (objectMemory integerValueOf: rcvr) + (objectMemory integerValueOf: arg).
+		"Type check the result.
+		If overflow, roll back to the slow path"
+		(objectMemory isIntegerValue: result) ifTrue: [
+			self pop: 2 thenPush: (objectMemory integerObjectOf: result).
+			^ self fetchNextBytecode ]].
+
+	"Slow path: send"
+	messageSelector := self specialSelector: 0.
+	argumentCount := 1.
+	self normalSend
+```
+
+
 
 ### Frameless Methods
 
