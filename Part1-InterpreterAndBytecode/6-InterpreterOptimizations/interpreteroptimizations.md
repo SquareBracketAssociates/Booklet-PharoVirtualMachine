@@ -121,6 +121,28 @@ Overall, this means that for every instruction, and in particular for each one o
 If we again perform some naïf estimations, if we consider that each of these steps takes roughly the same time of our bytecode instruction, this means we have 4x overhead just because of the instruction dispatch.
 Later on this chapter we will study instruction lookahead, an interpreter optimization that improves this situation by avoiding unnecessary instruction dispatches.
 
+### Optimization Philosophy and Performance Mantras
+
+In the next couple of sections, we are going to study several optimizations done at the level of the interpreter to solve the issues mentioned before.
+Although the techniches differ, they share some common design, or better saying, a meta design.
+In other words, all of them share the same the general philosophy: don't do it.
+
+This kind philosophy is well (and funnily) summarized in Brendan Gregg's book System Performance, as the *how to improve performance checklist*.
+From most to least effective:
+
+- Don't do it
+- Do it, but don't do it again
+- Do it less
+- Do it later
+- Do it when they are not looking
+- Do it concurrently
+- Do it more cheaply
+
+The Pharo Virtual Machine, its interpreter, its compiler, its runtime, follow these mantras dearly.
+Lookup caches avoid double work.
+Special cases avoid expensive general work for simple computations.
+Baseline JIT compilation removes interpreter overhead.
+
 ### Global Lookup Cache
 
 ### Static Type Predictions
@@ -176,8 +198,65 @@ Interpreter >> bytecodeAdd
 	self normalSend
 ```
 
-
-
 ### Frameless Methods
 
-### Instruction Lookaheads
+### Super Instructions through Instruction Lookaheads
+
+We saw in previous sections that high instruction dispatch overhead appears when the instruction set (the bytecode) contains instructions that are *too granular*.
+That is, when the cost of dispatching in the same order of magnitude than the instruction itself.
+We said in the introduction that such an overhead can be lowered in the general case through techniques such as *threading* that will be explored in later chapters.
+However, part of this overhead can be solved from the design of the instruction set and the instruction implementation.
+
+For example, let us consider the following bytecode sequence containing a comparison and a conditional jump.
+Let us also consider that such a bytecode sequence is common in existing code.
+
+```
+push a
+push b
+send <
+jumpIfTrue label
+...
+
+label:
+...
+```
+
+In this scenario, one way to reduce instruction dispatch is to statically replace common sequences of instructions by single instructions.
+We saw in a previous chapter that one way to solve this issue is to use super instructions.
+The Pharo bytecode set contains many super instructions for common sequences of stack operations.
+The advantage of such super instructions is that instruction dispatch is cut by design, and instruction size may be reduced too.
+However, introducing super instructions in such a way is a costly design decision: the instruction set needs to be modified, together with the compiler and debugger, and all other tooling working on it.
+Moreover, each combination of instructions takes extra space in the instruction set.
+
+This section covers a different way to implement super instructions: the first instruction of a sequence looks ahead for the following instruction and executes the fast path (the super instruction code) if the next instruction makes part of the optimized sequence.
+This way, the instruction set does not need to change, only the interpreter or the language implementation.
+The trick to optimize the case above, is to mix it with static type predictions: we combine both instructions if the first send can be statically predicted for integers.
+This way, in the common case where we are comparing integers, we avoid the message send and the dispatch to the jump instruction altogether.
+
+In this example, we first define a new *comparison* bytecode instruction separate from the general send case.
+This new instruction will have two paths differentiated by an integer type check on both operands.
+The fast path will inline the comparison implementation if the check is a success, and perform a slow message send in case it fails.
+Additionally, in the this path, a second fast path appear: if the next instruction in the instruction stream is the expected `jump` instruction a fast inlines the implementation of the jump instruction.
+In case the instruction is not followed by an expected jump instruction, the result of the comparison is pushed to the stack and the message send is avoided completely.
+
+```caption=The lookup method revisited with `doesNotUnderstand:` support.
+Interpreter >> bytecodePrimLessThan
+	| rcvr arg aBool |
+	rcvr := self stackValue: 1.
+	arg := self stackValue: 0.
+	(objectMemory areIntegers: rcvr and: arg) ifTrue: [ | next |
+		next := self fetchByte. "assume next bytecode is jumpIfFalse (99%)"
+		(next == JUMP_FALSE and: [ (rcvr < arg) not ]) ifTrue: [ 
+			| offset |
+			offset := ...
+			^ self jump: offset ].
+		"Cases for jump if true and other boolean values..."
+		...
+		"Not followed by jump, but integers nevertheless, avoid the send"
+		^ self pushBoolean: rcvr < arg ].
+
+	"Slow path: send"
+	messageSelector := self specialSelector: 2.
+	argumentCount := 1.
+	self normalSend
+```
