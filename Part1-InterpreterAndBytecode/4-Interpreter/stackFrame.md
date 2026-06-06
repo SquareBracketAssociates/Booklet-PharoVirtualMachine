@@ -200,7 +200,7 @@ Notice that the frame flags have a first constant field in the range 0-7 with va
 This value is set to make the bitfield look like a tagged small integer, thus guarding the GC walking the stack from interpreting this value as a pointer.
 
 
-### Bytecodes Accessing the Stack Frame
+### Bytecode Accessing the Receiver
 
 Given the structure of a stack, we can see that all the fields in the fixed part of a frame can be found relative to the start of a frame, which for the first frame is the `framePointer`. This includes in particular the receiver and the temporary variables.
 Thus, the bytecodes that access these values are defined to read/write at an offset from the frame pointer.
@@ -216,32 +216,30 @@ Interpreter >> pushReceiverBytecode
 	self push: self receiver.
 ```
 
+
+### Bytecode Accessing Temporaries
+
+Let us study now another bytecode that store the top of the stack into a temporary variable (see *@storeAndPop@*).
+The code shows the bytecode that stores the top of the stack into a temporary variable and pops.
+
+```anchor=storeAndPop&caption=Bytecode definition to store the top of the stack into a temporary
+Interpreter >> storeAndPopTemporaryVariableBytecode
+	self fetchNextBytecode.
+	self
+		itemporary: (currentBytecode bitAnd: 7)
+		in: framePointer
+		put: self stackTop.
+	self pop: 1
+```
+
+Temporaries are located below the receiver, e.g. at a given offset from the framepointer. 
 To read/write the nth temporary we need to read/write the nth _below_ the fixed fields of the frame.
 
-The code below shows the bytecode that stores the top of the stack into a temporary variable and pops.
-This bytecode uses the `itemporary:in:put:` method that is used to write into a method's temporary.
+This bytecode uses the `itemporary:in:put:` method to write into a method's temporary (see Listing *@popIntoTemp@*).
 A similar method, `itemporary:in:` exists to read temporary variables.
 
 
-Remember that the bytecode set is designed so arguments are treated as temporaries (since this is the case in the interpreter). 
-The code below shows two execution paths: one for arguments and one for temporaries.
-
-The interpreter decides if the asked offset is for a temporary or an argument by comparing it to the number of arguments.
-The number of arguments is obtained from the fields flag.
-Note that `memory readByteAt: theFP + FoxFrameFlags + 1` access the first byte of the frame flag word. 
-
-
-In this section, we focus on the path for temporaries. We will explain for arguments later. 
-
-The interpreter indexes temporary variables using as a basis the field that follows the receiver field,
-and as offset the offset of the temporary without taking arguments into account.
-
-In these two lines we see that the stack grows down: to get the field _after_ we need to subtract from its position.
-Moreover, since all accesses are written as direct memory addresses, all offsets are computed in bytes, 
-thus multiplying by the number of bytes in a word `objectMemory wordSize`.
-
-
-```caption=Storing
+```caption=Storing values into temporaries&anchor=popIntoTemp
 Interpreter >> iframeNumArgs: theFP
 	^memory readByteAt: theFP + FoxFrameFlags + 1
 
@@ -259,23 +257,37 @@ Interpreter >> itemporary: offset in: theFP put: valueOop
 					  (self iframeReceiverLocation: theFP) - objectMemory wordSize
 					  + (frameNumArgs - offset * objectMemory wordSize)
 				  put: valueOop ]
-	
-
-Interpreter >> storeAndPopTemporaryVariableBytecode
-	self fetchNextBytecode.
-	self
-		itemporary: (currentBytecode bitAnd: 7)
-		in: framePointer
-		put: self stackTop.
-	self pop: 1
 ```
+
+
+Remember that the bytecode set is designed so arguments are treated as temporaries (since this is the case in `Context`). 
+Listing *@popIntoTemp@* shows two execution paths: one for arguments and one for temporaries.
+
+The interpreter decides if the asked offset is for a temporary or an argument by comparing it to the number of arguments.
+The number of arguments is obtained from the fields flag. Note that `memory readByteAt: theFP + FoxFrameFlags + 1` accesses the first byte of the frame flag word. 
+
+In this section, we focus on the path for temporaries. We will explain for arguments later. 
+
+The interpreter indexes temporary variables using as a basis the field that follows the receiver field,
+and as offset the offset of the temporary without taking arguments into account.
+
+In the two lines we see that the stack grows down: to get the field _after_ we need to subtract from its position.
+
+```
+  (self iframeReceiverLocation: theFP) - objectMemory wordSize
+  + (frameNumArgs - offset * objectMemory wordSize)
+```
+
+Moreover, since all accesses are written as direct memory addresses, all offsets are computed in bytes, 
+thus multiplying by the number of bytes in a word `objectMemory wordSize`.
+
+
 
 
 ### Conclusion
 
-In this chapter we studied how the interpreter Pharo interpreter is written.
-Both bytecode and primitive instructions are implemented through method dispatch.
-The key instruction in Pharo is the message send.
-When a message send instruction is executed, it first looks up the method to execute in the receiver's hierarchy.
-Then, if it is a primitive method, it executes the associated primitive instruction.
-If the primitive instruction fails or the method is a normal method, the method is _activated_: a frame is created and the method's bytecode gets executed.
+In this chapter, we studied how the interpreter Pharo manages the stack and its elements. 
+In particular we presented the stack frame: a way to structure the stack as a contiguous memory region 
+that avoids to copy arguments around stack frame elements. 
+With a stack frame, arguments are accessed in stack value of the caller and the temporaries are allocated after the fixed frame elements
+of the current stack frame elements. 
